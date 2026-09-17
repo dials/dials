@@ -663,7 +663,7 @@ class ProfileModellerExecutor(Executor):
         logger.debug("")
         logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d", frame0 + 1, frame1)
+        logger.info(" Images: %d -> %d", frame0 + 1, frame1)
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d", npart)
@@ -677,7 +677,7 @@ class ProfileModellerExecutor(Executor):
             logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug(" to have all or part of their intensity on each image.")
             logger.debug("")
             logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
             logger.debug("")
@@ -766,7 +766,7 @@ class ProfileValidatorExecutor(Executor):
         logger.debug("")
         logger.debug(" Beginning modelling job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d", frame0, frame1)
+        logger.info(" Images: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d", npart)
@@ -780,7 +780,7 @@ class ProfileValidatorExecutor(Executor):
             logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug(" to have all or part of their intensity on each image.")
             logger.debug("")
             logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
             logger.debug("")
@@ -876,7 +876,7 @@ class IntegratorExecutor(Executor):
         logger.debug("")
         logger.debug(" Beginning integration job %d", job.index)
         logger.info("")
-        logger.info(" Frames: %d -> %d", frame0, frame1)
+        logger.info(" Images: %d -> %d", frame0, frame1)
         logger.info("")
         logger.info(" Number of reflections")
         logger.info("  Partial:     %d", npart)
@@ -891,7 +891,7 @@ class IntegratorExecutor(Executor):
             logger.debug(
                 " The following histogram shows the number of reflections predicted"
             )
-            logger.debug(" to have all or part of their intensity on each frame.")
+            logger.debug(" to have all or part of their intensity on each image.")
             logger.debug("")
             logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
             logger.debug("")
