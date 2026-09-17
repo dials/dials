@@ -498,8 +498,6 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        # if self.target.dim > 3 and not cluster:
-        # pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
         self.pca_components = pca.components_
 
@@ -513,6 +511,10 @@ class CosymAnalysis(symmetry_base, Subject):
                 rotated_coords = rot_coord
             else:
                 rotated_coords = np.vstack([rotated_coords, rot_coord])
+
+        # The below limit of 6 dimensions is only for plotting the PCA matrix plot
+        # 6 is an arbitrary limit, as too many dimensions make for an ugly plot
+
         if rotated_coords.shape[1] > 6:
             rotated_coords = rotated_coords[:, 0:6]
             dim_list = list(range(0, 6))

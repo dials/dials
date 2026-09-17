@@ -8,9 +8,6 @@ from dials.util.plotly_utils import round_for_json
 def plot_coords(coords, labels=None, key="cosym_coordinates", pcs=None):
     coord_x = coords[:, 0]
     coord_y = coords[:, 1]
-
-    # coord_x = coords[:, dim1]
-    # coord_y = coords[:, dim2]
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
 
     if not pcs:
