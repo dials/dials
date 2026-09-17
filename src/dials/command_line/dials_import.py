@@ -12,6 +12,7 @@ from ordered_set import OrderedSet
 import dxtbx.model.compare as compare
 import libtbx.phil
 from dxtbx.imageset import ImageSequence
+from dxtbx.model import MissingMetadataError
 from dxtbx.model.experiment_list import (
     Experiment,
     ExperimentList,
@@ -21,7 +22,11 @@ from dxtbx.sequence_filenames import template_regex_from_list
 
 from dials.util import Sorry, log, show_mail_handle_errors
 from dials.util.multi_dataset_handling import generate_experiment_identifiers
-from dials.util.options import ArgumentParser, flatten_experiments
+from dials.util.options import (
+    ArgumentParser,
+    flatten_experiments,
+    format_kwargs_from_params,
+)
 from dials.util.version import dials_version
 
 logger = logging.getLogger("dials.command_line.import")
@@ -189,7 +194,7 @@ phil_scope = libtbx.phil.parse(
 )
 
 
-def _extract_or_read_imagesets(params):
+def _extract_or_read_imagesets(params, user_phils=None):
     """
     Return a list of ImageSets, importing them via alternative means if necessary.
 
@@ -198,6 +203,9 @@ def _extract_or_read_imagesets(params):
 
     Args:
         params: The phil.scope_extract from dials.import
+        user_phils: The phil sources the user supplied, used to work out which
+            geometry overrides to hand to Format classes that declare missing
+            metadata
 
     Returns: A list of ImageSet objects
     """
@@ -207,15 +215,7 @@ def _extract_or_read_imagesets(params):
 
     # Check we have some filenames
     if len(experiments) == 0:
-        # FIXME Should probably make this smarter since it requires editing here
-        # and in dials.import phil scope
-        try:
-            format_kwargs = {
-                "dynamic_shadowing": params.format.dynamic_shadowing,
-                "multi_panel": params.format.multi_panel,
-            }
-        except AttributeError:
-            format_kwargs = None
+        format_kwargs = format_kwargs_from_params(params, user_phils=user_phils)
 
         # Check if a template has been set and print help if not, otherwise try to
         # import the images based on the template input
@@ -515,7 +515,16 @@ class MetaDataUpdater:
              - A problem reading the images with one of the dxtbx format classes
              - A lack of header information in the file itself.
 
-          You can override this by specifying the metadata as geometry parameters
+          You may be able to supply the missing metadata as geometry parameters,
+          for example
+
+              dials.import <images> geometry.beam.wavelength=0.9795 \\
+                  geometry.detector.distance=200
+
+          but note that this only works if the format class builds beam and
+          detector models at all. A format class that cannot read some of its
+          metadata should declare that with dxtbx's missing_metadata mechanism,
+          which asks for the values it needs by name.
         """
                 )
 
@@ -885,7 +894,12 @@ def do_import(
         sys.exit(0)
 
     # Re-extract the imagesets to rebuild experiments from
-    imagesets = _extract_or_read_imagesets(params)
+    try:
+        imagesets = _extract_or_read_imagesets(params, user_phils=parser.user_phils)
+    except MissingMetadataError as e:
+        # The message is already complete and actionable; re-raise as Sorry only to
+        # keep it out from behind the "please report this bug" banner
+        raise Sorry(str(e)) from None
 
     metadata_updater = MetaDataUpdater(params)
     experiments = metadata_updater(imagesets)
