@@ -20,6 +20,7 @@ from dials_algorithms_profile_model_gaussian_rs_ext import (
     PartialityMultiCalculator,
     ideal_profile_double,
     ideal_profile_float,
+    inflate_bboxes,
     zeta_factor,
 )
 

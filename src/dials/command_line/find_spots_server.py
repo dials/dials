@@ -270,7 +270,7 @@ indexing_min_spots = 10
                 experiments = ProfileModelFactory.create(params, experiments, reference)
 
                 # Compute the bounding box
-                predicted.compute_bbox(experiments)
+                predicted.compute_bbox(experiments, bbox_params=params.integration.bbox)
 
                 # Create the integrator
                 integrator = create_integrator(params, experiments, predicted)
