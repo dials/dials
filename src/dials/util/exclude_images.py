@@ -23,10 +23,12 @@ phil_scope = iotbx.phil.parse(
     .multiple = True
     .help = "Input in the format exp:start:end"
             "Exclude a range of images (start, stop) from the dataset with"
-            "experiment identifier exp  (inclusive of frames start, stop)."
+            "experiment identifier exp  (inclusive of images start, stop)."
             "Multiple ranges can be given in one go, e.g."
             "exclude_images=0:150:200,1:200:250"
             "exclude_images='0:150:200 1:200:250'"
+            "The experiment may be given as * to apply the same range to"
+            "every dataset, e.g. exclude_images=*:21:100"
     .short_caption = "Exclude images"
     .expert_level = 1
 
@@ -96,11 +98,38 @@ def get_selection_for_valid_image_ranges(reflection_table, experiment):
     return flex.bool(reflection_table.size(), True)  # else say all valid
 
 
+_SYNTAX_HELP = """
+Ranges are given as start:stop, using colons: note that this differs from
+image_range=start,stop as used by dials.import and dials.slice_sequence,
+because here a comma separates one range from the next, e.g.
+exclude_images=0:100:150,1:120:200. Multiple ranges may also be separated by
+spaces, or given as repeated exclude_images= parameters. The experiment may be
+given as * to apply the same range to every dataset, e.g. exclude_images=*:21:100
+"""
+
+
+def _all_identifiers(experiments, reflections):
+    """Return the identifiers of every dataset, for expanding a * wildcard.
+
+    Prefer the experiments, as those are what the image ranges will be set on;
+    fall back on the identifiers recorded in the reflection tables.
+    """
+    if experiments:
+        return [exp.identifier for exp in experiments]
+    identifiers = []
+    for table in reflections or []:
+        for expid in table.experiment_identifiers().values():
+            if expid not in identifiers:
+                identifiers.append(expid)
+    return identifiers
+
+
 def _parse_exclude_images_commands(commands, experiments, reflections):
     """Parse a list of list of command line options.
 
     e.g. commands = [['1:101:200'], ['0:201:300']]
     or commands = [[101:200]] allowable for a single experiment.
+    The experiment may be given as * to mean every dataset, e.g. [['*:101:200']]
     builds and returns a list of tuples (exp_id, (start, stop))
 
 
@@ -120,6 +149,7 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(experiments) > 1:
                     raise ValueError(
                         "Exclude images must be in the form experimentnumber:start:stop for multiple experiments"
+                        + _SYNTAX_HELP
                     )
                 else:
                     ranges_to_remove.append(
@@ -129,8 +159,12 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(vals) != 3:
                     raise ValueError(
                         "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
-                        + " Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
+                        + _SYNTAX_HELP
                     )
+                if vals[0] == "*":
+                    for expid in _all_identifiers(experiments, reflections):
+                        ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
+                    continue
                 dataset_id = int(vals[0])
                 if reflections:
                     for table in reflections:
