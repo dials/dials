@@ -65,6 +65,19 @@ reference = None
 include scope dials.util.reference.reference_phil_str
 include scope dials.algorithms.symmetry.cosym.phil_scope
 
+dimensions_method = minimization *projection
+  .type = choice
+  .short_caption = "Method for automatic determination of dimensions"
+  .help = "How to obtain the functional as a function of the number of"
+          "dimensions, when dimensions=Auto."
+          "minimization minimises once per candidate dimension, each time from"
+          "fresh random coordinates."
+          "projection minimises once, at the largest dimension, and obtains the"
+          "rest of the curve by projecting that solution onto its leading"
+          "principal directions: one minimisation rather than one per"
+          "dimension."
+  .expert_level = 2
+
 relative_length_tolerance = 0.05
   .type = float(value_min=0)
 

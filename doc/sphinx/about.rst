@@ -54,8 +54,9 @@ Development Teams
 DIALS UK
 ----------
 
-Development of DIALS in the UK is funded by the `Wellcome Trust`_,
-`Diamond Light Source`_ and `CCP4`_, and led by `Dr Gwyndaf Evans`_.
+Development of DIALS in the UK has been funded by the `Wellcome Trust`_,
+`Diamond Light Source`_, `CCP4`_ and `BBSRC`_. It is currently led by `Dr James Beilsten-Edmands`_,
+`Dr Nicholas Devenish`_ and `Dr David Waterman`_.
 
 DIALS US
 ----------
@@ -101,8 +102,11 @@ Matthew Webber.
 .. _`Boost.Python`: http://www.boost.org/doc/libs/1_59_0/libs/python/doc/index.html
 .. _`cctbx`: https://github.com/cctbx
 .. _`CCP4`: http://www.ccp4.ac.uk/
+.. _`BBSRC`: https://www.ukri.org/councils/bbsrc/
 .. _`Diamond Light Source`: http://www.diamond.ac.uk/Home.html
-.. _`Dr Gwyndaf Evans`: http://www.diamond.ac.uk/Beamlines/Mx/VMXm/Staff/Evans.html
+.. _`Dr James Beilsten-Edmands`: https://www.diamond.ac.uk/Instruments/Mx/MX-Data-Analysis/Staff/James-Beilsten-Edmands.html
+.. _`Dr Nicholas Devenish`: https://www.diamond.ac.uk/Instruments/Mx/MX-Data-Analysis/Staff/Nicholas-Devenish.html
+.. _`Dr David Waterman`: https://www.sc.stfc.ac.uk/team/
 .. _`Dr Aaron Brewster`: https://biosciences.lbl.gov/profiles/aaron-brewster/
 .. _`Lawrence Berkeley National Laboratory`: http://www.lbl.gov/
 .. _`National Institutes of Health`: http://www.nih.gov/

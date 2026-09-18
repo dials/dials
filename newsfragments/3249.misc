@@ -1,0 +1,1 @@
+Remove ``--use-environment`` flag from bootstrap. Conda-forge compilers no longer provide an external environment.

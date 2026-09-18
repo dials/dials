@@ -1,0 +1,1 @@
+``dials.integrate``: report per-block ranges as ``Images:`` rather than ``Frames:``, since "image" is the term used everywhere else in DIALS and understood by users.
