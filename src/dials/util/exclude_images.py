@@ -108,22 +108,6 @@ given as * to apply the same range to every dataset, e.g. exclude_images=*:21:10
 """
 
 
-def _all_identifiers(experiments, reflections):
-    """Return the identifiers of every dataset, for expanding a * wildcard.
-
-    Prefer the experiments, as those are what the image ranges will be set on;
-    fall back on the identifiers recorded in the reflection tables.
-    """
-    if experiments:
-        return [exp.identifier for exp in experiments]
-    identifiers = []
-    for table in reflections or []:
-        for expid in table.experiment_identifiers().values():
-            if expid not in identifiers:
-                identifiers.append(expid)
-    return identifiers
-
-
 def _parse_exclude_images_commands(commands, experiments, reflections):
     """Parse a list of list of command line options.
 
@@ -162,7 +146,7 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                         + _SYNTAX_HELP
                     )
                 if vals[0] == "*":
-                    for expid in _all_identifiers(experiments, reflections):
+                    for expid in experiments.identifiers():
                         ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
                     continue
                 dataset_id = int(vals[0])
