@@ -416,7 +416,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         p_g = np.array(gaps).argmax()
 
-        x_g = x[p_g + p_m]
+        x_g = int(x[p_g + p_m])
 
         logger.info(
             dials.util.tabulate(
@@ -424,15 +424,15 @@ class CosymAnalysis(symmetry_base, Subject):
             )
         )
 
-        logger.info("Best number of dimensions: %i", x_g)
-        if int(x_g) < 2:
+        logger.info(f"Best number of dimensions: {x_g}")
+        if x_g < 2:
             logger.info(
                 "As a minimum of 2-dimensions is required, dimensions have been set to 2."
             )
             self.target.set_dimensions(2)
         else:
-            self.target.set_dimensions(int(x_g))
-        logger.info("Using %i dimensions for analysis", self.target.dim)
+            self.target.set_dimensions(x_g)
+        logger.info(f"Using {self.target.dim} dimensions for analysis")
 
         return dimensions, functional
 
