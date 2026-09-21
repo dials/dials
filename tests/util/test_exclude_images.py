@@ -74,25 +74,25 @@ def test_parse_exclude_images_commands_wildcard():
             make_scan_experiment(expid="2"),
         ]
     )
-    ranges = _parse_exclude_images_commands([["*:21:100"]], experiments, None)
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    r2 = flex.reflection_table()
+    r2.experiment_identifiers()[2] = "2"
+    ranges = _parse_exclude_images_commands([["*:21:100"]], experiments, [r0, r1, r2])
     assert ranges == [("0", (21, 100)), ("1", (21, 100)), ("2", (21, 100))]
 
     # mixing a wildcard with an explicit dataset is allowed
-    ranges = _parse_exclude_images_commands([["*:21:100,1:1:5"]], experiments, None)
+    ranges = _parse_exclude_images_commands(
+        [["*:21:100,1:1:5"]], experiments, [r0, r1, r2]
+    )
     assert ranges == [
         ("0", (21, 100)),
         ("1", (21, 100)),
         ("2", (21, 100)),
         ("1", (1, 5)),
     ]
-
-    # with no experiments, fall back on the reflection table identifiers
-    r0 = flex.reflection_table()
-    r0.experiment_identifiers()[0] = "0"
-    r1 = flex.reflection_table()
-    r1.experiment_identifiers()[1] = "1"
-    ranges = _parse_exclude_images_commands([["*:21:100"]], [], [r0, r1])
-    assert ranges == [("0", (21, 100)), ("1", (21, 100))]
 
 
 def test_exclude_image_ranges_wildcard():
