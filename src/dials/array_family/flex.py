@@ -143,6 +143,7 @@ from dials.array_family.flex_ext import (  # noqa: F401
 from dials_array_family_flex_ext import (  # noqa: F401
     Binner,
     PixelListShoeboxCreator,
+    frame_sliced_shoebox,
     int6,
     observation,
     reflection_table,

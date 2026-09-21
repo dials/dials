@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from dxtbx.model import Experiment, ExperimentList, Scan
+from dxtbx.model import Experiment, ExperimentList, Goniometer, Scan
 
 from dials.array_family import flex
 from dials.util.exclude_images import (
@@ -25,7 +25,9 @@ from dials.util.exclude_images import (
 
 def make_scan_experiment(image_range=(1, 100), expid="0"):
     """Make an experiment with a scan"""
-    return Experiment(scan=Scan(image_range, (0.0, 1.0)), identifier=expid)
+    return Experiment(
+        scan=Scan(image_range, (0.0, 1.0)), identifier=expid, goniometer=Goniometer()
+    )
 
 
 def make_scanless_experiment(expid="1"):

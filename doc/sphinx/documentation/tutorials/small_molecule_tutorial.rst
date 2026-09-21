@@ -61,7 +61,16 @@ Here the lattices overlap in the reciprocal lattice view above, the indexing sho
 
 .. code-block:: bash
 
-   dials.index imported.expt strong.refl
+   dials.index imported.expt strong.refl joint_indexing=True
+
+Since there is more than one sequence in ``imported.expt``, ``dials.index`` will
+not guess whether the sequences come from one sample or from several, and will
+stop with an error if you do not say.
+Here all four sequences were measured from the same crystal, so
+``joint_indexing=True`` is correct and gives a single crystal model shared by all
+four sequences.
+If instead the sequences came from *different* samples you would pass
+``joint_indexing=False``, and each sequence would be indexed independently.
 
 Without any additional input, the indexing will determine the most appropriate primitive (i.e. triclinic) lattice parameters and orientation which describe the observed reciprocal lattice positions.
 
@@ -78,7 +87,7 @@ Once this has run you can manually rerun indexing with:
 
 .. code-block:: bash
 
-   dials.index imported.expt strong.refl space_group=P222
+   dials.index imported.expt strong.refl space_group=P222 joint_indexing=True
 
 to assign the lattice, or manually reindex the data to match setting #5 (though in this case that is a no-op) - or as mentioned above proceed with the lattice unconstrained.
 

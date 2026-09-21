@@ -11,8 +11,12 @@
 #ifndef DIALS_MODEL_DATA_SHOEBOX_H
 #define DIALS_MODEL_DATA_SHOEBOX_H
 
+#include <cmath>
+#include <limits>
 #include <scitbx/array_family/tiny_types.h>
 #include <scitbx/array_family/small.h>
+#include <scitbx/mat3.h>
+#include <cctbx/miller.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/observation.h>
 #include <dials/algorithms/image/centroid/centroid_image.h>
@@ -33,6 +37,7 @@ namespace dials { namespace model {
   using dials::model::Foreground;
   using dials::model::Intensity;
   using dials::model::Valid;
+  using scitbx::mat3;
   using scitbx::af::int2;
   using scitbx::af::int3;
   using scitbx::af::int6;
@@ -551,6 +556,300 @@ namespace dials { namespace model {
       flat = true;
       DIALS_ASSERT(is_consistent());
     }
+  };
+
+  /**
+   * A class to hold per-frame results calculated from a shoebox.
+   *
+   * All the results are arrays of length nz, where nz is the number of frames
+   * in the shoebox. They are calculated once, on construction, after which the
+   * object is read-only.
+   */
+  template <typename FloatType = ProfileFloatType>
+  class FrameSlicedShoebox {
+  public:
+    typedef FloatType float_type;
+
+    /**
+     * Initialise an empty object
+     */
+    FrameSlicedShoebox() {}
+
+    /**
+     * Calculate the per-frame results from a shoebox
+     * The arrays of experimental models are indexed by image number rather than
+     * by frame of the shoebox, so that a whole column of shoeboxes can be sliced
+     * without first cutting each of them out.
+     *
+     * @param sbox The shoebox, which must have its data and background arrays
+     *             allocated and must not be flat
+     * @param h The Miller index of the reflection
+     * @param phi_cal The predicted scan rotation angle in radians of the
+     *                reflection, as held by the third part of the xyzcal.mm
+     *                column
+     * @param sigma_phi The standard deviation in radians of the rocking curve
+     *                  of the reflection in the scan rotation angle. For the
+     *                  Gaussian reciprocal space profile model this is
+     *                  sigma_m / |zeta|
+     * @param phi The scan rotation angle in radians at the centre of each frame
+     *            of the scan, as held by FrameOrientations.phi
+     * @param phi_scan_points The scan rotation angle in radians at each scan
+     *                        point of the scan, that is at the boundaries
+     *                        between frames, as held by
+     *                        FrameOrientations.phi_scan_points. There is one
+     *                        more of these than there are frames
+     * @param UB The lattice orientation matrix at the centre of each frame of
+     *           the scan, as held by FrameOrientations.UB
+     * @param s0 The beam vector at the centre of each frame of the scan, as
+     *           held by FrameOrientations.s0
+     * @param first_frame The image number that the first element of phi, UB and
+     *                    s0 refers to, as held by FrameOrientations.images[0]
+     */
+    FrameSlicedShoebox(const Shoebox<FloatType>& sbox,
+                       const cctbx::miller::index<>& h,
+                       double phi_cal,
+                       double sigma_phi,
+                       const af::const_ref<double>& phi,
+                       const af::const_ref<double>& phi_scan_points,
+                       const af::const_ref<mat3<double> >& UB,
+                       const af::const_ref<vec3<double> >& s0,
+                       int first_frame) {
+      DIALS_ASSERT(UB.size() == phi.size());
+      DIALS_ASSERT(s0.size() == phi.size());
+      DIALS_ASSERT(phi_scan_points.size() == phi.size() + 1);
+      DIALS_ASSERT(sigma_phi > 0.0);
+      DIALS_ASSERT(sbox.is_data_allocated());
+      DIALS_ASSERT(sbox.is_background_allocated());
+      DIALS_ASSERT(sbox.is_consistent());
+
+      // A flat shoebox has had its frames summed together, so there is nothing
+      // left to slice
+      DIALS_ASSERT(!sbox.flat);
+
+      std::size_t nz = sbox.zsize();
+      std::size_t ny = sbox.ysize();
+      std::size_t nx = sbox.xsize();
+
+      frames_ = af::shared<int>(nz, 0);
+      phi_ = af::shared<double>(nz, 0.0);
+      excitation_error_ = af::shared<double>(nz, 0.0);
+      partiality_ = af::shared<double>(nz, 0.0);
+      summation_intensity_ = af::shared<double>(nz, 0.0);
+      summation_intensity_variance_ = af::shared<double>(nz, 0.0);
+      summation_intensity_valid_ = af::shared<bool>(nz, true);
+
+      // A pixel must be all of these to contribute to the background pixel
+      // count, as in the Summation class
+      uint8_t background_code = Valid | Background | BackgroundUsed;
+
+      vec3<double> hd((double)h[0], (double)h[1], (double)h[2]);
+
+      // The reflection is modelled as rocking through the diffracting condition
+      // with a Gaussian profile of width sigma_phi centred on phi_cal, so the
+      // fraction of it recorded between two rotation angles is the difference
+      // between the values of that Gaussian's cumulative distribution function
+      // there. This scale converts an angle measured from phi_cal into the
+      // argument of the error function
+      double partiality_scale = 1.0 / (std::sqrt(2.0) * sigma_phi);
+
+      // Accumulators for the summation integration, named to match the
+      // Summation class in algorithms/integration/sum/summation.h. The variance
+      // of a frame depends on the pixel counts of the whole shoebox, so the
+      // sums of each frame are converted into a variance only once every frame
+      // has been visited
+      af::shared<double> sum_p(nz, 0.0);
+      af::shared<double> sum_b(nz, 0.0);
+      std::size_t n_signal = 0;
+      std::size_t n_background = 0;
+
+      for (std::size_t k = 0; k < nz; ++k) {
+        // The shoebox z coordinates are zero-based array indices, whereas image
+        // numbers are one-based, to match FrameOrientations.images
+        frames_[k] = sbox.zoffset() + (int)k + 1;
+
+        // Look the experimental models of this frame up by its image number
+        int iframe = frames_[k] - first_frame;
+        DIALS_ASSERT(iframe >= 0 && (std::size_t)iframe < phi.size());
+        phi_[k] = phi[iframe];
+
+        // The reciprocal lattice point of the reflection on this frame. The
+        // excitation error is the distance from that point to the surface of
+        // the Ewald sphere, measured along the beam direction, and is positive
+        // for a point inside the sphere.
+        //
+        // Splitting the point into its components along and across the beam,
+        // moving it by e along the beam puts it on the sphere when
+        //
+        //   e = sqrt(|s0|^2 - |r_across|^2) - |s0| - r_along
+        //
+        // If |r_across| > |s0| then the line through the point parallel to the
+        // beam misses the sphere altogether and there is no answer to give. That
+        // can only happen very close to 90 degree scattering, where a distance
+        // measured along the beam diverges, so return NaN there
+        vec3<double> r = UB[iframe] * hd;
+        double s0_length = s0[iframe].length();
+        double r_along = r * (s0[iframe] / s0_length);
+        double r_across_sq = r.length_sq() - r_along * r_along;
+        double radicand = s0_length * s0_length - r_across_sq;
+        excitation_error_[k] = radicand >= 0.0
+                                 ? std::sqrt(radicand) - s0_length - r_along
+                                 : std::numeric_limits<double>::quiet_NaN();
+
+        // The fraction of the reflection recorded between the two boundaries of
+        // this frame. PartialityCalculator3D does the same over the boundaries
+        // of the whole shoebox, so these sum to the partiality of the reflection
+        partiality_[k] =
+          0.5
+          * (std::erf((phi_scan_points[iframe + 1] - phi_cal) * partiality_scale)
+             - std::erf((phi_scan_points[iframe] - phi_cal) * partiality_scale));
+
+        for (std::size_t j = 0; j < ny; ++j) {
+          for (std::size_t i = 0; i < nx; ++i) {
+            uint8_t code = sbox.mask(k, j, i);
+
+            // Summation integration of this frame alone. A foreground pixel
+            // that cannot be summed invalidates the intensity of the frame,
+            // just as it invalidates the whole reflection in Summation
+            if ((code & Foreground) == Foreground) {
+              if ((code & Valid) == Valid && (code & Overlapped) == 0) {
+                sum_p[k] += (double)sbox.data(k, j, i);
+                sum_b[k] += (double)sbox.background(k, j, i);
+                n_signal++;
+              } else {
+                summation_intensity_valid_[k] = false;
+              }
+            } else if ((code & background_code) == background_code) {
+              n_background++;
+            }
+          }
+        }
+
+        summation_intensity_[k] = sum_p[k] - sum_b[k];
+      }
+
+      // Summation::variance() returns |I| + |Ib| (1 + m/n), where m and n are
+      // the numbers of foreground and background pixels. Taking the absolute
+      // values only to guard against a negative result, that is the same as
+      //
+      //   Var(I) = sum_p + sum_b * m / n
+      //
+      // in which both terms are sums over the pixels of the shoebox. The
+      // background of a frame was determined from the background pixels of the
+      // whole shoebox rather than from that frame alone, so m / n here is the
+      // ratio for the whole shoebox too, and the variances of the frames
+      // therefore sum to the variance of the whole reflection
+      double m_n = n_background > 0 ? (double)n_signal / (double)n_background : 0.0;
+      for (std::size_t k = 0; k < nz; ++k) {
+        summation_intensity_variance_[k] = sum_p[k] + sum_b[k] * m_n;
+      }
+    }
+
+    /**
+     * Construct directly from the per-frame arrays.
+     *
+     * This is intended for deserialization only, which has to rebuild an object
+     * without the shoebox it was originally calculated from. It is deliberately
+     * not exposed to Python, so that the object remains read-only there.
+     */
+    FrameSlicedShoebox(const af::shared<int>& frames,
+                       const af::shared<double>& phi,
+                       const af::shared<double>& excitation_error,
+                       const af::shared<double>& partiality,
+                       const af::shared<double>& summation_intensity,
+                       const af::shared<double>& summation_intensity_variance,
+                       const af::shared<bool>& summation_intensity_valid)
+        : frames_(frames),
+          phi_(phi),
+          excitation_error_(excitation_error),
+          partiality_(partiality),
+          summation_intensity_(summation_intensity),
+          summation_intensity_variance_(summation_intensity_variance),
+          summation_intensity_valid_(summation_intensity_valid) {
+      DIALS_ASSERT(phi_.size() == frames_.size());
+      DIALS_ASSERT(excitation_error_.size() == frames_.size());
+      DIALS_ASSERT(partiality_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_variance_.size() == frames_.size());
+      DIALS_ASSERT(summation_intensity_valid_.size() == frames_.size());
+    }
+
+    /** @returns The number of frames */
+    std::size_t size() const {
+      return frames_.size();
+    }
+
+    /** @returns The one-based image number of each frame */
+    af::shared<int> frames() const {
+      return frames_;
+    }
+
+    /** @returns The scan rotation angle in radians at the centre of each frame */
+    af::shared<double> phi() const {
+      return phi_;
+    }
+
+    /** @returns The excitation error at the centre of each frame, that is the
+     *           distance of the reciprocal lattice point from the surface of
+     *           the Ewald sphere measured along the beam direction, positive if
+     *           the point is inside the sphere. NaN where a line through the
+     *           point parallel to the beam does not reach the sphere */
+    af::shared<double> excitation_error() const {
+      return excitation_error_;
+    }
+
+    /** @returns The fraction of the reflection recorded on each frame, that is
+     *           the portion of its rocking curve that the frame spans. These
+     *           sum to the partiality of the whole reflection */
+    af::shared<double> partiality() const {
+      return partiality_;
+    }
+
+    /** @returns The summation integration intensity of each frame */
+    af::shared<double> summation_intensity() const {
+      return summation_intensity_;
+    }
+
+    /** @returns The variance of the summation intensity of each frame */
+    af::shared<double> summation_intensity_variance() const {
+      return summation_intensity_variance_;
+    }
+
+    /** @returns For each frame, whether every foreground pixel could be summed,
+     *           and so whether the summation intensity of that frame is valid */
+    af::shared<bool> summation_intensity_valid() const {
+      return summation_intensity_valid_;
+    }
+
+    /** @returns True if the per-frame arrays are all equal */
+    bool operator==(const FrameSlicedShoebox& rhs) const {
+      if (size() != rhs.size()) {
+        return false;
+      }
+      return frames_.const_ref().all_eq(rhs.frames_.const_ref())
+             && phi_.const_ref().all_eq(rhs.phi_.const_ref())
+             && excitation_error_.const_ref().all_eq(rhs.excitation_error_.const_ref())
+             && partiality_.const_ref().all_eq(rhs.partiality_.const_ref())
+             && summation_intensity_.const_ref().all_eq(
+               rhs.summation_intensity_.const_ref())
+             && summation_intensity_variance_.const_ref().all_eq(
+               rhs.summation_intensity_variance_.const_ref())
+             && summation_intensity_valid_.const_ref().all_eq(
+               rhs.summation_intensity_valid_.const_ref());
+    }
+
+    /** @returns True if any of the per-frame arrays differ */
+    bool operator!=(const FrameSlicedShoebox& rhs) const {
+      return !(*this == rhs);
+    }
+
+  private:
+    af::shared<int> frames_;
+    af::shared<double> phi_;
+    af::shared<double> excitation_error_;
+    af::shared<double> partiality_;
+    af::shared<double> summation_intensity_;
+    af::shared<double> summation_intensity_variance_;
+    af::shared<bool> summation_intensity_valid_;
   };
 
 }};  // namespace dials::model
