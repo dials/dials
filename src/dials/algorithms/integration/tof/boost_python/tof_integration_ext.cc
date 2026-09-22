@@ -368,9 +368,20 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   BOOST_PYTHON_MODULE(dials_algorithms_tof_integration_ext) {
     class_<TOFProfile1DIBIXParams>("TOFProfile1DIBIXParams", no_init)
-      .def(
-        init<double, double, double, double, double, double, double, int, bool, bool>())
+      .def(init<double,
+                double,
+                double,
+                double,
+                double,
+                double,
+                double,
+                double,
+                int,
+                bool,
+                bool>())
       .def_readwrite("A", &TOFProfile1DIBIXParams::A)
+      .def_readwrite("A_min", &TOFProfile1DIBIXParams::A_min)
+      .def_readwrite("A_max", &TOFProfile1DIBIXParams::A_max)
       .def_readwrite("alpha", &TOFProfile1DIBIXParams::alpha)
       .def_readwrite("alpha_min", &TOFProfile1DIBIXParams::alpha_min)
       .def_readwrite("alpha_max", &TOFProfile1DIBIXParams::alpha_max)
