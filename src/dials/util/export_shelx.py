@@ -73,7 +73,7 @@ def export_shelx(scaled_data, experiment_list, params):
     _write_ins(
         experiment_list,
         best_unit_cell=params.mtz.best_unit_cell,
-        composition=params.shelx.composition,
+        composition=params.small_molecule.composition or "CH",
         ins_file=params.shelx.ins,
     )
 

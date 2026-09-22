@@ -572,6 +572,12 @@ def test_shelx_ins(dials_data, tmp_path):
         "CELL": (5.48154, 8.21578, 12.14570, 90.0000, 90.0000, 90.0000),
         "ZERR": (0.00050, 0.00073, 0.00109, 0.0034, 0.0037, 0.0037),
     }
+    # no composition was given, so the default of CH is used. That carries no
+    # element counts, so the UNIT instruction is left for the user to fill in
+    sfac_unit = {
+        "SFAC": "C H",
+        "UNIT": "0 0",
+    }
 
     with (tmp_path / "dials.ins").open() as fh:
         for line in fh:
@@ -580,6 +586,8 @@ def test_shelx_ins(dials_data, tmp_path):
             if instruction in cell_esds:
                 result = tuple(map(float, tokens[2:8]))
                 assert result == pytest.approx(cell_esds[instruction], abs=0.0001)
+            elif instruction in sfac_unit:
+                assert " ".join(tokens[1:]) == sfac_unit[instruction]
 
 
 def test_shelx_ins_best_unit_cell(dials_data, tmp_path):
@@ -723,8 +731,8 @@ def test_cif(dials_data, tmp_path):
     )
 
 
-def test_cif_chemical_formula(dials_data, tmp_path):
-    block = _export_cif(dials_data, tmp_path, "chemical_formula=C3H7NO2S")
+def test_cif_composition(dials_data, tmp_path):
+    block = _export_cif(dials_data, tmp_path, "composition=C3H7NO2S")
     assert block.find_value("_chemical_formula_sum") == "'C3 H7 N O2 S'"
     assert float(block.find_value("_chemical_formula_weight")) == pytest.approx(
         121.16, abs=0.01

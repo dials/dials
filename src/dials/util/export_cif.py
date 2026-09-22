@@ -104,7 +104,7 @@ def export_cif(scaled_data, experiment_list, params):
     block = doc.add_new_block(params.cif.datablock)
 
     _write_audit(block)
-    _write_chemical(block, params.cif.chemical_formula, space_group)
+    _write_chemical(block, params.small_molecule.composition, space_group)
     _write_cell(block, experiment_list, params, scaled_data, wavelength)
     _write_symmetry(block, space_group)
     _write_experiment(block, experiment_list, wavelength)
@@ -128,19 +128,19 @@ def _write_audit(block):
     block.set_pair("_computing_cell_refinement", gemmi.cif.quote(DIALS_CITATION))
 
 
-def _write_chemical(block, chemical_formula, space_group):
+def _write_chemical(block, composition, space_group):
     """Write the chemical formula items, if a composition was supplied. A
     composition given as a bare list of elements carries no counts, so only the
     formula string can be written in that case."""
 
-    if chemical_formula is None:
+    if composition is None:
         return
-    counts = parse_compound(chemical_formula)
+    counts = parse_compound(composition)
     if not any(counts.values()):
         logger.info(
             "Composition %s has no element counts, so only _chemical_formula_sum "
             "will be written",
-            chemical_formula,
+            composition,
         )
         block.set_pair(
             "_chemical_formula_sum", gemmi.cif.quote(" ".join(counts.keys()))

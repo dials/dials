@@ -91,7 +91,7 @@ Examples::
   # Export to CIF
   dials.export scaled.expt scaled.refl format=cif
   dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
-  dials.export scaled.expt scaled.refl format=cif chemical_formula=C3H7NO2S
+  dials.export scaled.expt scaled.refl format=cif composition=C3H7NO2S
   dials.export scaled.expt scaled.refl format=cif \\
       "cif.extra=_diffrn_source_type=LaB6 gun" \\
       cif.extra=_diffrn_precession_semi_angle=1.0
@@ -272,6 +272,19 @@ phil_scope = parse(
 
   }
 
+  small_molecule {
+
+    composition = None
+      .type = str
+      .help = "The chemical composition of the asymmetric unit, e.g. C3H7NO2S."
+              "Used by both format=shelx and format=cif. For format=shelx this"
+              "gives the SFAC & UNIT instructions, defaulting to CH if not"
+              "given. For format=cif it gives _chemical_formula_sum,"
+              "_chemical_formula_weight and _cell_formula_units_Z, which are"
+              "omitted if this is not given."
+
+  }
+
   shelx {
 
     hklout = dials.hkl
@@ -280,9 +293,6 @@ phil_scope = parse(
     ins = dials.ins
       .type = path
       .help = "The output ins file"
-    composition = CH
-      .type = str
-      .help = "The chemical composition of the asymmetric unit"
     scale = True
       .type = bool
       .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
@@ -297,11 +307,6 @@ phil_scope = parse(
     hklout = dials.cif
       .type = path
       .help = "The output CIF file"
-    chemical_formula = None
-      .type = str
-      .help = "The chemical composition of the asymmetric unit, e.g. C3H7NO2S."
-              "Used to write _chemical_formula_sum, _chemical_formula_weight and"
-              "_cell_formula_units_Z, which are omitted if this is not given."
     scale_group_code = False
       .type = bool
       .help = "Write _diffrn_refln_scale_group_code from the experiment"
