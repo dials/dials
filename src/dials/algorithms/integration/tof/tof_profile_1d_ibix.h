@@ -27,6 +27,8 @@ namespace dials { namespace algorithms {
    */
   struct TOFProfile1DIBIXParams {
     double A;
+    double A_min;
+    double A_max;
     double alpha;
     double alpha_min;
     double alpha_max;
@@ -37,7 +39,8 @@ namespace dials { namespace algorithms {
     bool optimize_profile;       // If false the profile is generated with input params
     bool show_profile_failures;  // Prints debugging information
 
-    TOFProfile1DIBIXParams(double A,
+    TOFProfile1DIBIXParams(double A_min,
+                           double A_max,
                            double alpha,
                            double alpha_min,
                            double alpha_max,
@@ -48,7 +51,9 @@ namespace dials { namespace algorithms {
                            bool optimize_profile,
                            bool show_profile_failures)
 
-        : A(A),
+        : A(A_min),
+          A_min(A_min),
+          A_max(A_max),
           alpha(alpha),
           alpha_min(alpha_min),
           alpha_max(alpha_max),
@@ -199,6 +204,7 @@ namespace dials { namespace algorithms {
                      double alpha_,
                      double beta_,
                      double T_ph_,
+                     const std::array<double, 2> A_bounds,
                      const std::array<double, 2> alpha_bounds,
                      const std::array<double, 2> beta_bounds,
                      int n_restarts_)
@@ -234,9 +240,10 @@ namespace dials { namespace algorithms {
       sigma = estimate_sigma_from_fwhm(tof, y_norm.const_ref());
 
       // Param bounds (A, alpha, beta, sigma, T_ph)
-      min_bounds = {1., alpha_bounds[0], beta_bounds[0], sigma / 4.0, tof.front()};
+      min_bounds = {
+        A_bounds[0], alpha_bounds[0], beta_bounds[0], sigma / 4.0, tof.front()};
 
-      max_bounds = {1e4 * intensity_max,
+      max_bounds = {A_bounds[1],
                     alpha_bounds[1],
                     beta_bounds[1],
                     std::max(100., sigma * 4.0),
@@ -268,7 +275,7 @@ namespace dials { namespace algorithms {
        */
 
       // Not enough data
-      if (tof.size() >= 3) {
+      if (tof.size() <= 3) {
         return 1.0;
       }
 
@@ -555,6 +562,7 @@ namespace dials { namespace algorithms {
     double T_ph = tof_z[max_index];
 
     // Fit profile
+    const std::array<double, 2> A_bounds = {profile_params.A_min, profile_params.A_max};
     const std::array<double, 2> alpha_bounds = {profile_params.alpha_min,
                                                 profile_params.alpha_max};
     const std::array<double, 2> beta_bounds = {profile_params.beta_min,
@@ -566,6 +574,7 @@ namespace dials { namespace algorithms {
                              profile_params.alpha,
                              profile_params.beta,
                              T_ph,
+                             A_bounds,
                              alpha_bounds,
                              beta_bounds,
                              profile_params.n_restarts);

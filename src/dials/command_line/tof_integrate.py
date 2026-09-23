@@ -167,6 +167,12 @@ profile_1d_ibix{
     max_beta = 1.0
         .type = float
         .help = "Max beta value for optimization"
+    min_A = 1.0
+        .type = float
+        .help = "Min A value for optimization"
+    max_A = 1e4
+        .type = float
+        .help = "Max A value for optimization"
     n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
@@ -509,14 +515,21 @@ def integrate_reflection_table_for_experiment(
     if params.method == "profile_1d_ibix":
         alpha = params.profile_1d_ibix.init_alpha
         beta = params.profile_1d_ibix.init_beta
-        A = 1.0
+        min_A = params.profile_1d_ibix.min_A
+        max_A = params.profile_1d_ibix.max_A
+        if min_A > max_A:
+            raise ValueError(
+                f"profile_1d_ibix.min_A ({min_A}) is larger than "
+                f"profile_1d_ibix.max_A ({max_A})"
+            )
         min_alpha = params.profile_1d_ibix.min_alpha
         max_alpha = params.profile_1d_ibix.max_alpha
         min_beta = params.profile_1d_ibix.min_beta
         max_beta = params.profile_1d_ibix.max_beta
         n_restarts = params.profile_1d_ibix.n_restarts
         profile_1d_ibix_params = TOFProfile1DIBIXParams(
-            A,
+            min_A,
+            max_A,
             alpha,
             min_alpha,
             max_alpha,

@@ -1,0 +1,1 @@
+Modified `tof_profile_1d_ibix` to allow the user to specify bounds of A parameter, and made these bounds independent of reflection intensity.
