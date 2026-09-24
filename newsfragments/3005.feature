@@ -1,0 +1,1 @@
+Enable pickling for ImageVolume, MultiPanelImageVolume, BackgroundStatistics, and MultiPanelBackgroundStatistics
