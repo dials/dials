@@ -182,7 +182,7 @@ class CosymAnalysis(symmetry_base, Subject):
             apply_sigma_correction=apply_sigma_correction,
         )
         Subject.__init__(
-            self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
+            self, events=["optimised", "pca", "analysed_symmetry", "analysed_clusters"]
         )
 
         # remove those with less than min_reflections after setup.
@@ -477,6 +477,7 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.dim, NN * n_sym_ops
         ).transpose()
 
+    @Subject.notify_event(event="pca")
     def _principal_component_analysis(self, cluster=False):
         # Perform PCA
         from sklearn.decomposition import PCA
@@ -497,10 +498,37 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        if self.target.dim > 3 and not cluster:
-            pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
         self.pca_components = pca.components_
+
+        # rotate and save coords for plotting
+
+        cob_mat = np.linalg.inv(np.transpose(self.pca_components))
+        rotated_coords = np.array([])
+        for data in self.coords:
+            rot_coord = np.matmul(cob_mat, data)
+            if rotated_coords.size == 0:
+                rotated_coords = rot_coord
+            else:
+                rotated_coords = np.vstack([rotated_coords, rot_coord])
+
+        # The below limit of 6 dimensions is only for plotting the PCA matrix plot
+        # 6 is an arbitrary limit, as too many dimensions make for an ugly plot
+
+        if rotated_coords.shape[1] > 6:
+            rotated_coords = rotated_coords[:, 0:6]
+            dim_list = list(range(0, 6))
+        else:
+            dim_list = list(range(0, self.target.dim))
+
+        axes_labels = {
+            str(i): f"PC {i + 1} ({var:.1f}%)"
+            for i, var in enumerate(self.explained_variance_ratio * 100)
+        }
+
+        self.rotated_coords = rotated_coords
+        self.dim_list = dim_list
+        self.pca_axes_labels = axes_labels
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):
