@@ -485,12 +485,10 @@ namespace dials { namespace algorithms {
                          sample_to_source_distance,
                          setting_rotation);
 
-        // A shoebox with no counts anywhere has no ellipsoid to fit.  This is
-        // common for weak predicted reflections, and more common the finer the
-        // ToF binning.  compute_weighted_ellipsoid would throw
-        // "Values must not all be zero." from inside a worker thread, which
-        // aborts the whole run rather than skipping the reflection, so handle
-        // it here: no counts means no foreground.
+        /*
+         * If there are no foreground counts in the ellipse,
+         * skip the reflection
+         */
         double total_counts =
           std::accumulate(shoebox_values.begin(), shoebox_values.end(), 0.0);
         if (!(total_counts > 0.0)) {
