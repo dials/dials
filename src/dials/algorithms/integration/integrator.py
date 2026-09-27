@@ -229,7 +229,7 @@ def generate_phil_scope():
           .type = float(value_min=1.0)
           .help = "Bounding box expansion factor"
 
-        min_added_volume = 3600
+        min_added_volume = 4400
           .type = int(value_min=1)
           .help = "Target minimum added pixel volume for the background region of"
                   "bounding boxes."
