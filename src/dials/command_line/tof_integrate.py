@@ -193,21 +193,27 @@ profile_1d_profilelib
 {
     init_alpha = 0.03
         .type = float
-        .help = "Initial alpha value before optimization"
+        .help = "Initial alpha value before optimization. Not critical: the"
+                "bounds below decide the outcome, and 0.03 against 0.005 moves"
+                "nothing measurable on MANDI."
     init_beta = 0.03
         .type = float
         .help = "Initial beta value before optimization"
-    min_alpha = 0.02
+    min_alpha = 1e-5
         .type = float
-        .help = "Min alpha value for optimization. The default suits SXD; MANDI"
-                "peaks fit alpha near 0.005 and need a lower bound than this."
-    max_alpha = 1.0
+        .help = "Min alpha value for optimization. Wide enough for a"
+                "short-pulse source: MANDI peaks fit alpha near 0.005, so the"
+                "0.02 that suits a long-pulse instrument is a floor the data"
+                "cannot reach, and a parameter pinned to it gives a rising edge"
+                "far too sharp to match the peak."
+    max_alpha = 10.0
         .type = float
         .help = "Max alpha value for optimization"
-    min_beta = 0.0
+    min_beta = 1e-5
         .type = float
-        .help = "Min beta value for optimization"
-    max_beta = 1.0
+        .help = "Min beta value for optimization. Not zero: beta = 0 makes the"
+                "profile identically zero."
+    max_beta = 10.0
         .type = float
         .help = "Max beta value for optimization"
     min_A = 1.0
