@@ -18,12 +18,19 @@
 #include <scitbx/constants.h>
 #include <dials/model/data/mask_code.h>
 #include <dials/algorithms/integration/tof/tof_profile_1d_ibix.h>
+#include <dials/algorithms/integration/tof/tof_profile_1d_profilelib.h>
 #include <dials/algorithms/integration/tof/tof_profile_1d_ic.h>
 #include <dials/algorithms/integration/tof/tof_profile_3d_gutmann.h>
 #include <dials/algorithms/integration/tof/tof_profile_3d_ic.h>
 #include <dials/algorithms/integration/tof/tof_profile_3d_ibix.h>
 #include <dials/algorithms/scaling/tof/tof_scaling.h>
 #include <dials/util/thread_pool.h>
+#include <atomic>
+#include <chrono>
+#include <mutex>
+#include <vector>
+#include <iostream>
+#include <thread>
 
 namespace dials { namespace algorithms {
 
@@ -449,6 +456,78 @@ namespace dials { namespace algorithms {
     return result;
   }
 
+  /*
+   * One entry of a profile library: a peak shape and where on the detector it
+   * was measured.  Shapes vary across the detector, so a weak reflection takes
+   * the shape of the nearest strong one, as Mantid keys its library on
+   * (phi, theta).
+   */
+  struct ProfileLibraryEntry {
+    int panel = 0;
+    double x = 0.0;
+    double y = 0.0;
+    IBIXShape shape;
+  };
+
+  /*
+   * Variance of a profile-fitted intensity.
+   *
+   * With the shape held fixed the intensity is linear in the amplitude, so
+   * weighted least squares gives its error exactly: for data with per-slice
+   * variances v_i and a model m_i, var(I) = I^2 / sum(m_i^2 / v_i).
+   *
+   * The per-slice variances are not carried through the corrections, so they are
+   * taken as the summation variance distributed across the slices in proportion
+   * to counts plus twice background. That keeps the absolute scale tied to the
+   * summation variance, which is the one checked against the scatter of symmetry
+   * equivalents, while letting the profile do what it should: a slice the fitted
+   * peak says holds no signal stops contributing noise. The result is at most the
+   * summation variance and below it when the peak is concentrated, which is where
+   * copying the summation variance was overestimating sigma.
+   */
+  inline double profile_fit_variance(const ShoeboxIntegrationResult& shoebox_result,
+                                     const scitbx::af::shared<double>& model,
+                                     double I_prf) {
+    const std::size_t n = model.size();
+    if (n == 0 || !(shoebox_result.variance > 0.0) || !(I_prf > 0.0)) {
+      return 0.0;
+    }
+    if (shoebox_result.projected_intensity.size() != n
+        || shoebox_result.projected_background.size() != n) {
+      return 0.0;
+    }
+
+    double weight_total = 0.0;
+    scitbx::af::shared<double> weight(n, 0.0);
+    for (std::size_t i = 0; i < n; ++i) {
+      double signal = std::max(shoebox_result.projected_intensity[i], 0.0);
+      double background = std::max(shoebox_result.projected_background[i], 0.0);
+      weight[i] = signal + 2.0 * background;
+      weight_total += weight[i];
+    }
+    if (!(weight_total > 0.0)) {
+      return 0.0;
+    }
+
+    double inv_sum = 0.0;
+    for (std::size_t i = 0; i < n; ++i) {
+      double v = shoebox_result.variance * weight[i] / weight_total;
+      if (!(v > 0.0) || !std::isfinite(model[i])) {
+        continue;
+      }
+      inv_sum += (model[i] * model[i]) / v;
+    }
+    if (!(inv_sum > 0.0)) {
+      return 0.0;
+    }
+    double var = (I_prf * I_prf) / inv_sum;
+    if (!std::isfinite(var) || var <= 0.0) {
+      return 0.0;
+    }
+    // Never claim to beat counting statistics over the whole box
+    return std::min(var, shoebox_result.variance);
+  }
+
   // Profile fitting strategy
   class ProfileFitter {
   public:
@@ -456,6 +535,35 @@ namespace dials { namespace algorithms {
     virtual bool fit(const ShoeboxIntegrationResult& shoebox_result,
                      double& I_prf,
                      double& var_prf) = 0;
+
+    /*
+     * Fitters that build a profile library need the table twice: once to
+     * measure shapes on strong reflections, and once to apply them. Fitters
+     * that do not simply leave these alone.
+     */
+    virtual bool needs_two_passes() const {
+      return false;
+    }
+
+    // Pass one: offer a reflection as a candidate library entry
+    virtual void collect(const ShoeboxIntegrationResult& shoebox_result,
+                         int panel,
+                         double x,
+                         double y) {}
+
+    // Pass two: fit with the shape taken from the library
+    virtual bool fit_with_library(const ShoeboxIntegrationResult& shoebox_result,
+                                  int panel,
+                                  double x,
+                                  double y,
+                                  double& I_prf,
+                                  double& var_prf) {
+      return fit(shoebox_result, I_prf, var_prf);
+    }
+
+    virtual std::size_t library_size() const {
+      return 0;
+    }
   };
 
   class Profile1DIBIXFitter : public ProfileFitter {
@@ -474,6 +582,155 @@ namespace dials { namespace algorithms {
 
   private:
     TOFProfile1DIBIXParams params_;
+  };
+
+  /*
+   * Profile fitting against a library of shapes measured on strong reflections,
+   * after Mantid's IntegratePeaksProfileFitting: fit the peak shape where there
+   * are enough counts to determine it, store it against where it was measured,
+   * then hold it fixed and fit only the amplitude and position everywhere else.
+   *
+   * The peak shape is the same back-to-back exponential profile_1d_ibix fits,
+   * so the two share their model and their fitting machinery; what differs is
+   * that a weak reflection is never asked to determine its own shape.
+   *
+   * library_min_corr is the correlation a free fit must reach for its shape to
+   * enter the library.  It is deliberately looser than the threshold used to
+   * accept an intensity: a shape only has to be the right shape, and 0.9 is met
+   * by almost any smooth curve over the seven points of a coarse projection
+   * while being close to unreachable over fifty fine ones.
+   */
+  class Profile1DProfilelibFitter : public ProfileFitter {
+  public:
+    explicit Profile1DProfilelibFitter(TOFProfile1DProfilelibParams params)
+        : params_(params),
+          min_i_sigma_(params.library_min_i_sigma),
+          min_corr_(params.library_min_corr) {}
+
+    bool needs_two_passes() const override {
+      return true;
+    }
+
+    // Pass one: fit freely, and keep the shape if the reflection is strong
+    // enough to have determined it
+    void collect(const ShoeboxIntegrationResult& shoebox_result,
+                 int panel,
+                 double x,
+                 double y) override {
+      if (!shoebox_result.success || !(shoebox_result.variance > 0.0)) {
+        return;
+      }
+      double i_sigma = shoebox_result.intensity / std::sqrt(shoebox_result.variance);
+      if (!(i_sigma >= min_i_sigma_)) {
+        return;
+      }
+
+      TOFProfile1DProfilelibParams local = params_;  // the fit mutates nothing shared
+      local.trust_min_corr = min_corr_;              // see Profile1DProfilelibFitter
+      double I_prf = 0.0;
+      IBIXShape shape;
+      bool ok =
+        fit_profile_1d_profilelib_shape(shoebox_result.projected_intensity.const_ref(),
+                                        shoebox_result.tof_z.const_ref(),
+                                        local,
+                                        I_prf,
+                                        boost::none,
+                                        false,
+                                        &shape);
+      if (!ok || !shape.valid) {
+        return;
+      }
+
+      ProfileLibraryEntry entry;
+      entry.panel = panel;
+      entry.x = x;
+      entry.y = y;
+      entry.shape = shape;
+
+      std::lock_guard<std::mutex> lock(mutex_);
+      library_.push_back(entry);
+    }
+
+    // Pass two: take the shape of the nearest library entry, on the same panel
+    // where possible, and fit only the amplitude and position
+    bool fit_with_library(const ShoeboxIntegrationResult& shoebox_result,
+                          int panel,
+                          double x,
+                          double y,
+                          double& I_prf,
+                          double& var_prf) override {
+      var_prf = shoebox_result.variance;
+      const ProfileLibraryEntry* entry = nearest(panel, x, y);
+      if (entry == nullptr) {
+        return false;
+      }
+      std::size_t n = shoebox_result.projected_intensity.size();
+      scitbx::af::shared<double> model(n, 0.0);
+      bool ok =
+        fit_profile_1d_profilelib_forced(shoebox_result.projected_intensity.const_ref(),
+                                         shoebox_result.tof_z.const_ref(),
+                                         entry->shape,
+                                         params_.A_min,
+                                         params_.A_max,
+                                         I_prf,
+                                         model);
+      if (!ok) {
+        return false;
+      }
+      double fitted_var = profile_fit_variance(shoebox_result, model, I_prf);
+      if (fitted_var > 0.0) {
+        var_prf = fitted_var;
+      }
+      return true;
+    }
+
+    // Only reached if the library is empty
+    bool fit(const ShoeboxIntegrationResult& shoebox_result,
+             double& I_prf,
+             double& var_prf) override {
+      var_prf = shoebox_result.variance;
+      TOFProfile1DProfilelibParams local = params_;
+      return fit_profile_1d_profilelib_shape(
+        shoebox_result.projected_intensity.const_ref(),
+        shoebox_result.tof_z.const_ref(),
+        local,
+        I_prf);
+    }
+
+    std::size_t library_size() const override {
+      return library_.size();
+    }
+
+  private:
+    const ProfileLibraryEntry* nearest(int panel, double x, double y) const {
+      const ProfileLibraryEntry* best = nullptr;
+      double best_d2 = std::numeric_limits<double>::infinity();
+      // Prefer the same panel; fall back to any panel if it holds no shapes
+      for (int same_panel = 1; same_panel >= 0; --same_panel) {
+        for (const auto& e : library_) {
+          if (same_panel && e.panel != panel) {
+            continue;
+          }
+          double dx = e.x - x;
+          double dy = e.y - y;
+          double d2 = dx * dx + dy * dy;
+          if (d2 < best_d2) {
+            best_d2 = d2;
+            best = &e;
+          }
+        }
+        if (best != nullptr) {
+          break;
+        }
+      }
+      return best;
+    }
+
+    TOFProfile1DProfilelibParams params_;
+    double min_i_sigma_;
+    double min_corr_;
+    std::vector<ProfileLibraryEntry> library_;
+    mutable std::mutex mutex_;
   };
 
   class Profile1DICFitter : public ProfileFitter {
@@ -632,9 +889,64 @@ namespace dials { namespace algorithms {
       variances_prf.resize(reflection_table.size());
     }
 
+    // Progress counters, so that a long fit reports something while it runs
+    std::atomic<std::size_t> n_done(0);
+    std::atomic<std::size_t> n_prf_ok(0);
+    std::atomic<std::size_t> n_collected(0);
+
+    // Pass one, when the fitter builds a library: measure shapes on the strong
+    // reflections before anything is fitted against them
+    auto shape_worker = [&](std::size_t start, std::size_t end) {
+      for (std::size_t i = start; i < end; ++i) {
+        if (refl_flags[i] & dials::af::DontIntegrate) {
+          ++n_collected;
+          continue;
+        }
+        Shoebox<> shoebox = shoeboxes[i];
+        int6 bbox = bboxes[i];
+
+        // Corrected exactly as in the second pass, so that a shape is measured
+        // on the same quantity it will later be fitted against
+        Shoebox<> i_shoebox, e_shoebox;
+        const Shoebox<>* i_shoebox_ptr = nullptr;
+        const Shoebox<>* e_shoebox_ptr = nullptr;
+        if (incident_params) {
+          i_shoebox = i_shoeboxes[i];
+          e_shoebox = e_shoeboxes[i];
+          i_shoebox_ptr = &i_shoebox;
+          e_shoebox_ptr = &e_shoebox;
+        }
+
+        ShoeboxCorrectorInputs inputs = prepare_shoebox_corrector_inputs(
+          shoebox, bbox, geometry.image_size, i_shoebox_ptr, e_shoebox_ptr);
+
+        PixelCorrector corrector(
+          geometry,
+          apply_lorentz_correction,
+          inputs.shoebox_pixel_count.n_signal,
+          inputs.shoebox_pixel_count.n_background,
+          incident_params.get_ptr(),
+          absorption_params.get_ptr(),
+          incident_params ? &inputs.smoothed_incident : nullptr,
+          incident_params ? &inputs.smoothed_empty : nullptr,
+          incident_params ? &inputs.shoebox_pixel_count.n_contrib : nullptr);
+
+        ShoeboxIntegrationResult shoebox_result = integrate_shoebox(
+          shoebox, bbox, geometry, corrector, inputs.shoebox_pixel_count.success);
+
+        if (shoebox_result.success) {
+          double cx = 0.5 * (bbox[0] + bbox[1]);
+          double cy = 0.5 * (bbox[2] + bbox[3]);
+          profile_fitter->collect(shoebox_result, shoebox.panel, cx, cy);
+        }
+        ++n_collected;
+      }
+    };
+
     auto worker = [&](std::size_t start, std::size_t end) {
       for (std::size_t i = start; i < end; ++i) {
         if (refl_flags[i] & dials::af::DontIntegrate) {
+          ++n_done;
           continue;
         }
         Shoebox<> shoebox = shoeboxes[i];
@@ -677,19 +989,51 @@ namespace dials { namespace algorithms {
           bool profile_success = false;
           double I_prf = 0.0, var_prf = 0.0;
           if (shoebox_result.success) {
-            profile_success = profile_fitter->fit(shoebox_result, I_prf, var_prf);
+            if (profile_fitter->needs_two_passes()) {
+              double cx = 0.5 * (bbox[0] + bbox[1]);
+              double cy = 0.5 * (bbox[2] + bbox[3]);
+              profile_success = profile_fitter->fit_with_library(
+                shoebox_result, shoebox.panel, cx, cy, I_prf, var_prf);
+            } else {
+              profile_success = profile_fitter->fit(shoebox_result, I_prf, var_prf);
+            }
           }
           if (profile_success) {
             intensities_prf[i] = I_prf;
             variances_prf[i] = var_prf;
           }
           succeeded_prf[i] = profile_success;
+          if (profile_success) {
+            ++n_prf_ok;
+          }
         }
+        ++n_done;
       }
     };
 
-    dials::util::ThreadPool pool(n_threads);
     std::size_t chunk_size = (n_reflections + n_threads - 1) / n_threads;
+
+    /*
+     * Pass one, for fitters that build a profile library.  Runs to completion
+     * before the second pass starts, so that every reflection sees the whole
+     * library rather than however much of it happened to exist when its turn
+     * came.
+     */
+    if (profile_fitter && profile_fitter->needs_two_passes()) {
+      std::cout << "      measuring profile shapes on strong reflections" << std::endl;
+      dials::util::ThreadPool shape_pool(n_threads);
+      for (int t = 0; t < n_threads; ++t) {
+        std::size_t start = t * chunk_size;
+        std::size_t end = std::min(start + chunk_size, n_reflections);
+        if (start >= end) break;
+        shape_pool.post([=]() { shape_worker(start, end); });
+      }
+      shape_pool.wait();
+      std::cout << "      profile library holds " << profile_fitter->library_size()
+                << " shapes from " << n_reflections << " reflections" << std::endl;
+    }
+
+    dials::util::ThreadPool pool(n_threads);
 
     for (int t = 0; t < n_threads; ++t) {
       std::size_t start = t * chunk_size;
@@ -699,7 +1043,39 @@ namespace dials { namespace algorithms {
       pool.post([=]() { worker(start, end); });
     }
 
+    /*
+     * Report progress every few seconds while the pool drains.  Profile
+     * fitting a large table can take many minutes with nothing else to show
+     * that it is making progress, and the running fit fraction says early on
+     * whether the chosen method is working at all.
+     */
+    std::atomic<bool> pool_finished(false);
+    std::thread reporter([&]() {
+      const auto interval = std::chrono::seconds(10);
+      auto next = std::chrono::steady_clock::now() + interval;
+      while (!pool_finished.load()) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        if (std::chrono::steady_clock::now() < next) {
+          continue;
+        }
+        next += interval;
+        std::size_t done = n_done.load();
+        if (done == 0 || done >= n_reflections) {
+          continue;
+        }
+        std::cout << "      " << done << " / " << n_reflections << " reflections ("
+                  << (100 * done / n_reflections) << " %)";
+        if (profile_fitter) {
+          std::cout << ", profile fitted " << n_prf_ok.load() << " ("
+                    << (100 * n_prf_ok.load() / done) << " % so far)";
+        }
+        std::cout << std::endl;
+      }
+    });
+
     pool.wait();
+    pool_finished.store(true);
+    reporter.join();
 
     reflection_table["intensity.sum.value"] = intensities;
     reflection_table["intensity.sum.variance"] = variances;
