@@ -771,54 +771,25 @@ class XrayFrame(XFBaseClass):
                         x + width, y + height
                     )
                 except AttributeError:
-                    x1 = min(
-                        [
-                            p.get_pixel_lab_coord(c)[0] / p.get_pixel_size()[0]
-                            for p in detector
-                            for c in [
-                                (0, 0),
-                                (0, p.get_image_size()[1]),
-                                (p.get_image_size()[0], 0),
-                                (p.get_image_size()[0], p.get_image_size()[1]),
-                            ]
+                    # picture pixels have the pitch of the finest panel, so
+                    # convert lab coordinates with that common pixel size
+                    from .flex_image import get_picture_pixel_size
+
+                    picture_px = get_picture_pixel_size(detector)
+                    corners_lab = [
+                        p.get_pixel_lab_coord(c)
+                        for p in detector
+                        for c in [
+                            (0, 0),
+                            (0, p.get_image_size()[1]),
+                            (p.get_image_size()[0], 0),
+                            (p.get_image_size()[0], p.get_image_size()[1]),
                         ]
-                    )
-                    y1 = min(
-                        [
-                            p.get_pixel_lab_coord(c)[1] / p.get_pixel_size()[1]
-                            for p in detector
-                            for c in [
-                                (0, 0),
-                                (0, p.get_image_size()[1]),
-                                (p.get_image_size()[0], 0),
-                                (p.get_image_size()[0], p.get_image_size()[1]),
-                            ]
-                        ]
-                    )
-                    x2 = max(
-                        [
-                            p.get_pixel_lab_coord(c)[0] / p.get_pixel_size()[0]
-                            for p in detector
-                            for c in [
-                                (0, 0),
-                                (0, p.get_image_size()[1]),
-                                (p.get_image_size()[0], 0),
-                                (p.get_image_size()[0], p.get_image_size()[1]),
-                            ]
-                        ]
-                    )
-                    y2 = max(
-                        [
-                            p.get_pixel_lab_coord(c)[1] / p.get_pixel_size()[1]
-                            for p in detector
-                            for c in [
-                                (0, 0),
-                                (0, p.get_image_size()[1]),
-                                (p.get_image_size()[0], 0),
-                                (p.get_image_size()[0], p.get_image_size()[1]),
-                            ]
-                        ]
-                    )
+                    ]
+                    x1 = min(c[0] / picture_px for c in corners_lab)
+                    y1 = min(c[1] / picture_px for c in corners_lab)
+                    x2 = max(c[0] / picture_px for c in corners_lab)
+                    y2 = max(c[1] / picture_px for c in corners_lab)
 
                 # Map > View - determine layout in X direction
                 x_offset = x1
