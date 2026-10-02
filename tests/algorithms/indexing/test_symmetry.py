@@ -199,3 +199,69 @@ def test_find_matching_symmetry(crystal_symmetry):
             assert uc_inp.change_basis(cb_op_inp_best).is_similar_to(
                 cs.as_reference_setting().best_cell().unit_cell()
             )
+
+
+# A monoclinic crystal whose beta is within a fraction of a degree of 90 has a
+# metrically orthorhombic lattice, which offers a monoclinic subgroup for each of
+# the three axes. The Le Page deltas of the three are all tiny and their ordering
+# follows the noise in the refined angles, so choosing by delta alone put the
+# twofold on a different axis for different crystals. With the unit cell known,
+# the subgroup that reproduces it must win.
+pseudo_orthorhombic_target = crystal.symmetry(
+    unit_cell=(188.812, 123.851, 209.336, 90, 89.991, 90),
+    space_group_symbol="P 1 21 1",
+)
+# Triclinic cells as indexing in P1 produces them: lengths in the reduced-cell
+# order and each angle a little off 90, arranged so that each axis in turn is
+# the one with the smallest deviation from monoclinic metric symmetry.
+pseudo_orthorhombic_triclinic_cells = [
+    (123.76, 188.79, 209.45, 90.05, 90.17, 90.22),
+    (123.76, 188.79, 209.45, 90.22, 90.05, 90.17),
+    (123.76, 188.79, 209.45, 90.17, 90.22, 90.05),
+    (123.76, 188.79, 209.45, 89.80, 90.10, 89.95),
+    (123.76, 188.79, 209.45, 90.10, 89.80, 90.12),
+    (123.76, 188.79, 209.45, 89.90, 90.14, 89.75),
+]
+
+
+@pytest.mark.parametrize("unit_cell", pseudo_orthorhombic_triclinic_cells)
+def test_apply_symmetry_pseudo_orthorhombic_known_cell(unit_cell):
+    target = pseudo_orthorhombic_target
+    B = scitbx.matrix.sqr(
+        uctbx.unit_cell(unit_cell).fractionalization_matrix()
+    ).transpose()
+    cryst = Crystal(B, sgtbx.space_group())
+
+    handler = symmetry.SymmetryHandler(
+        unit_cell=target.unit_cell(), space_group=target.space_group()
+    )
+    new_cryst, cb_op = handler.apply_symmetry(cryst)
+    assert new_cryst is not None
+    final = new_cryst.change_basis(cb_op)
+    # The twofold lands on the 124 A axis, i.e. the cell comes out in the known
+    # setting rather than one of the two other monoclinic settings of the lattice.
+    assert final.get_unit_cell().is_similar_to(
+        target.unit_cell(), relative_length_tolerance=0.01, absolute_angle_tolerance=0.5
+    )
+    assert target.space_group().is_compatible_unit_cell(final.get_unit_cell())
+
+
+@pytest.mark.parametrize("unit_cell", pseudo_orthorhombic_triclinic_cells)
+def test_find_matching_symmetry_pseudo_orthorhombic_known_cell(unit_cell):
+    target = pseudo_orthorhombic_target
+    target_best = target.as_reference_setting().best_cell().unit_cell()
+    uc = uctbx.unit_cell(unit_cell)
+
+    best_subgroup = symmetry.find_matching_symmetry(
+        uc, target.space_group(), target_unit_cell=target_best
+    )
+    assert (
+        best_subgroup["best_subsym"]
+        .unit_cell()
+        .is_similar_to(
+            target_best, relative_length_tolerance=0.01, absolute_angle_tolerance=0.5
+        )
+    )
+    assert uc.change_basis(best_subgroup["cb_op_inp_best"]).is_similar_to(
+        target_best, relative_length_tolerance=0.01, absolute_angle_tolerance=0.5
+    )

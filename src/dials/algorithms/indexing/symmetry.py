@@ -76,14 +76,32 @@ def find_matching_symmetry(
     max_delta=5,
     best_monoclinic_beta=True,
     target_bravais_str=None,
+    target_unit_cell=None,
+    relative_length_tolerance=0.1,
+    absolute_angle_tolerance=5,
 ):
+    """Find the subgroup of the lattice symmetry of unit_cell that has the Bravais
+    type of the target space group.
+
+    Where more than one such subgroup exists, the one with the smallest Le Page
+    delta is chosen, unless target_unit_cell is given: then subgroups whose best
+    cell is similar to it (within the given tolerances) are preferred, and the
+    smallest delta decides only among those. This matters for a lattice whose
+    metric pseudo-symmetry exceeds that of the target space group, e.g. a
+    monoclinic crystal with beta close to 90 degrees, where the lattice offers a
+    monoclinic subgroup for each of the three axes and the deltas alone cannot
+    say which axis carries the twofold. target_unit_cell is compared with each
+    subgroup's best cell, so it should itself be a best cell in the reference
+    setting, as returned by crystal.symmetry.as_reference_setting().best_cell().
+    If no subgroup matches the target cell, the smallest delta is used as before.
+    """
     cs = crystal.symmetry(unit_cell=unit_cell, space_group=sgtbx.space_group())
     if target_bravais_str is None:
         target_bravais_str = str(
             bravais_lattice(group=target_space_group.info().reference_setting().group())
         )
     best_subgroup = None
-    best_angular_difference = 1e8
+    best_key = None
 
     # code based on cctbx/sgtbx/lattice_symmetry.py but optimised to only
     # look at subgroups with the correct bravais type
@@ -155,8 +173,20 @@ def find_matching_symmetry(
             reduced_cell=minimum_symmetry.unit_cell(), space_group=acentric_supergroup
         )
 
-        if max_angular_difference < best_angular_difference:
-            best_angular_difference = max_angular_difference
+        # Rank a subgroup first by whether it reproduces the known cell, then by
+        # its Le Page delta, so that a mismatch with the known cell is only
+        # accepted when no subgroup matches it.
+        matches_target_cell = (
+            target_unit_cell is None
+            or best_subsym.unit_cell().is_similar_to(
+                target_unit_cell,
+                relative_length_tolerance=relative_length_tolerance,
+                absolute_angle_tolerance=absolute_angle_tolerance,
+            )
+        )
+        key = (not matches_target_cell, max_angular_difference)
+        if best_key is None or key < best_key:
+            best_key = key
             best_subgroup = {
                 "subsym": subsym,
                 "ref_subsym": ref_subsym,
@@ -170,8 +200,17 @@ def find_matching_symmetry(
 
 
 class SymmetryHandler:
-    def __init__(self, unit_cell=None, space_group=None, max_delta=5):
+    def __init__(
+        self,
+        unit_cell=None,
+        space_group=None,
+        max_delta=5,
+        relative_length_tolerance=0.1,
+        absolute_angle_tolerance=5,
+    ):
         self._max_delta = max_delta
+        self._relative_length_tolerance = relative_length_tolerance
+        self._absolute_angle_tolerance = absolute_angle_tolerance
         self.target_symmetry_primitive = None
         self.target_symmetry_reference_setting = None
         self.cb_op_inp_ref = None
@@ -273,18 +312,45 @@ class SymmetryHandler:
         max_delta = self._max_delta
         items = iotbx_converter(crystal_model.get_unit_cell(), max_delta=max_delta)
         target_sg_ref = target_space_group.info().reference_setting().group()
-        best_angular_difference = 1e8
 
+        # When the unit cell is known, prefer the subgroup whose best cell
+        # reproduces it, and let the Le Page delta decide only among those. A
+        # lattice with more metric symmetry than the target space group offers
+        # several subgroups of the right Bravais type (three monoclinic settings
+        # of a pseudo-orthorhombic cell, say), and their deltas are then all
+        # small and interchangeable from one image to the next, so choosing by
+        # delta alone would put the symmetry axis on a different lattice axis
+        # for different crystals. Without a known cell, or when no subgroup
+        # matches it, the smallest delta is used as before.
+        target_unit_cell = None
+        if self.target_symmetry_reference_setting.unit_cell() is not None:
+            target_unit_cell = (
+                self.target_symmetry_reference_setting.best_cell().unit_cell()
+            )
         best_subgroup = None
+        best_key = None
         for item in items:
             if bravais_lattice(group=target_sg_ref) != item["bravais"]:
                 continue
-            if item["max_angular_difference"] < best_angular_difference:
-                best_angular_difference = item["max_angular_difference"]
+            matches_target_cell = target_unit_cell is None or item[
+                "best_subsym"
+            ].unit_cell().is_similar_to(
+                target_unit_cell,
+                relative_length_tolerance=self._relative_length_tolerance,
+                absolute_angle_tolerance=self._absolute_angle_tolerance,
+            )
+            key = (not matches_target_cell, item["max_angular_difference"])
+            if best_key is None or key < best_key:
+                best_key = key
                 best_subgroup = item
 
         if best_subgroup is None:
             return None, None
+        if best_key[0]:
+            logger.debug(
+                "No subgroup of the lattice symmetry reproduces the known unit cell; "
+                "choosing by Le Page delta alone"
+            )
 
         cb_op_inp_best = best_subgroup["cb_op_inp_best"]
         best_subsym = best_subgroup["best_subsym"]

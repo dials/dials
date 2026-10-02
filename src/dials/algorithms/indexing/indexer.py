@@ -487,6 +487,8 @@ class Indexer:
             unit_cell=target_unit_cell,
             space_group=target_space_group,
             max_delta=self.params.known_symmetry.max_delta,
+            relative_length_tolerance=self.params.known_symmetry.relative_length_tolerance,
+            absolute_angle_tolerance=self.params.known_symmetry.absolute_angle_tolerance,
         )
         return
 

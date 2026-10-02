@@ -166,8 +166,16 @@ def filter_known_symmetry(
 
     for model in crystal_models:
         uc = model.get_unit_cell()
+        # Prefer the subgroup that reproduces the target cell, so a candidate is
+        # only rejected below when no setting of it matches the known cell.
         best_subgroup = find_matching_symmetry(
-            uc, None, max_delta=max_delta, target_bravais_str=target_bravais_str
+            uc,
+            None,
+            max_delta=max_delta,
+            target_bravais_str=target_bravais_str,
+            target_unit_cell=target_unit_cell,
+            relative_length_tolerance=relative_length_tolerance,
+            absolute_angle_tolerance=absolute_angle_tolerance,
         )
         if best_subgroup is not None:
             if target_symmetry.unit_cell() is not None and not (
