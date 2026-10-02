@@ -725,7 +725,9 @@ class StillsIndexer(Indexer):
         if params.refinement.reflections.outlier.algorithm != "sauter_poon":
             return refiner.selection_used_for_refinement()
 
-        px_sz = experiments[0].detector[0].get_pixel_size()
+        # pixel sizes may differ between panels, so convert each reflection
+        # to mm using the pixel size of the panel it was recorded on
+        px_sizes = [p.get_pixel_size() for p in experiments[0].detector]
 
         class Match:
             pass
@@ -733,6 +735,7 @@ class StillsIndexer(Indexer):
         matches = []
         for item in RR.rows():
             m = Match()
+            px_sz = px_sizes[item["panel"]]
             m.x_obs = item["xyzobs.px.value"][0] * px_sz[0]
             m.y_obs = item["xyzobs.px.value"][1] * px_sz[1]
             m.x_calc = item["xyzcal.px"][0] * px_sz[0]
