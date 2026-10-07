@@ -231,7 +231,9 @@ class symmetry_base:
 
     def _parallel_normalisation(self, normalise, id):
 
-        intensities = self.intensities.select(self.dataset_ids == id)
+        intensities = self.intensities.select(
+            self.dataset_ids == id
+        )  # Try this before and make this a static function
 
         dials_logger = logging.getLogger("dials")
 
