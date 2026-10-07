@@ -41,6 +41,10 @@ output {
     .type = float
     .help = "Override for domain size. If None, use the crystal's domain size, if"
             "available"
+  force_imageset_conversion = False
+    .type = bool
+    .help = "If True, convert the imageset data structure into type Imageset."
+            "If False, retain the existing datastructure, typically an ImageSequence."
   half_mosaicity_deg = None
     .type = float
     .help = "Override for mosaic angle. If None, use the crystal's mosaic angle, if"
@@ -164,14 +168,24 @@ def sequence_to_stills(experiments, reflections, params):
             elif params.output.half_mosaicity_deg is not None:
                 crystal.set_half_mosaicity_deg(params.output.half_mosaicity_deg)
 
-            new_experiment = Experiment(
-                detector=experiment.detector,
-                beam=experiment.beam,
-                crystal=crystal,
-                scan=experiment.scan[i_scan_point : i_scan_point + 1],
-                goniometer=experiment.goniometer,
-                imageset=experiment.imageset,
-            )
+            if params.output.force_imageset_conversion:
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    imageset=experiment.imageset.as_imageset()[
+                        i_scan_point : i_scan_point + 1
+                    ],
+                )
+            else:
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    scan=experiment.scan[i_scan_point : i_scan_point + 1],
+                    goniometer=experiment.goniometer,
+                    imageset=experiment.imageset,
+                )
 
             # Each reflection in a 3D shoebox can be found on multiple images.
             # Slice the reflections such that any reflection on this scan point
