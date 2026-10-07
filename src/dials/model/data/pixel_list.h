@@ -11,6 +11,8 @@
 #ifndef DIALS_MODEL_DATA_PIXEL_LIST_H
 #define DIALS_MODEL_DATA_PIXEL_LIST_H
 
+#include <limits>
+#include <vector>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
@@ -32,6 +34,26 @@ namespace dials { namespace model {
                ? (a[1] < b[1] ? true
                               : (a[1] == b[1] ? (a[2] < b[2] ? true : false) : false))
                : false));
+    }
+
+    /** Find the root of a set, halving the path as we go */
+    inline std::size_t find_root(std::vector<int>& parent, std::size_t i) {
+      while (static_cast<std::size_t>(parent[i]) != i) {
+        parent[i] = parent[parent[i]];
+        i = parent[i];
+      }
+      return i;
+    }
+
+    /** Join two sets, keeping the lower index as the root */
+    inline void join(std::vector<int>& parent, std::size_t a, std::size_t b) {
+      std::size_t ra = find_root(parent, a);
+      std::size_t rb = find_root(parent, b);
+      if (ra < rb) {
+        parent[rb] = ra;
+      } else if (rb < ra) {
+        parent[ra] = rb;
+      }
     }
 
   }  // namespace detail
@@ -265,23 +287,41 @@ namespace dials { namespace model {
      * Label the pixels in 3D
      */
     af::shared<int> labels_3d() const {
-      // Adjacency list type
-      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-        AdjacencyList;
+      return labels(true);
+    }
 
+    /**
+     * Label the pixels in 2D
+     */
+    af::shared<int> labels_2d() const {
+      return labels(false);
+    }
+
+  private:
+    /**
+     * Label connected pixels using union-find on a flat array. This uses a few
+     * bytes per pixel, compared with hundreds for a boost::adjacency_list.
+     * Labels are numbered in order of each component's first pixel, which
+     * matches the numbering given by boost::connected_components.
+     */
+    af::shared<int> labels(bool threed) const {
       if (coords_.size() == 0) {
         return af::shared<int>();
       }
+      DIALS_ASSERT(coords_.size() <= std::numeric_limits<int>::max());
 
-      // Calculate the coordinate indices
-      for (std::size_t i = 0; i < coords_.size(); ++i) {
-        if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
-        }
+      // Check the coordinates are sorted
+      for (std::size_t i = 1; i < coords_.size(); ++i) {
+        DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
       }
 
-      // Create a graph of coordinates
-      AdjacencyList graph(coords_.size());
+      // Each pixel starts in its own set
+      std::vector<int> parent(coords_.size());
+      for (std::size_t i = 0; i < parent.size(); ++i) {
+        parent[i] = i;
+      }
+
+      // Join neighbouring pixels
       std::size_t i1 = 0, i2 = 0, i3 = 0;
       for (; i1 < coords_.size() - 1; ++i1) {
         vec3<int> a0 = coords_[i1];
@@ -289,80 +329,36 @@ namespace dials { namespace model {
         vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
         vec3<int> a3(a0[0] + 1, a0[1], a0[2]);
         if (coords_[i1 + 1] == a1) {
-          boost::add_edge(i1, i1 + 1, graph);
+          detail::join(parent, i1, i1 + 1);
         }
         if (a0[1] < size_[0] - 1) {
           for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
             ;
           if (coords_[i2] == a2) {
-            boost::add_edge(i1, i2, graph);
+            detail::join(parent, i1, i2);
           }
         }
-        if (a0[0] < last_frame_ - 1) {
+        if (threed && a0[0] < last_frame_ - 1) {
           if (i2 > i3) i3 = i2;
           for (; detail::lessthan(coords_[i3], a3) && i3 < coords_.size() - 1; ++i3)
             ;
           if (coords_[i3] == a3) {
-            boost::add_edge(i1, i3, graph);
+            detail::join(parent, i1, i3);
           }
         }
       }
 
-      // Do the connected components
-      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
-      DIALS_ASSERT(labels.size() == coords_.size());
-      int num = boost::connected_components(graph, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
+      // The root of each set is its lowest index, so it is labelled before
+      // any other member of the set
+      af::shared<int> labels(coords_.size(), af::init_functor_null<int>());
+      int num = 0;
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        std::size_t root = detail::find_root(parent, i);
+        labels[i] = (root == i) ? num++ : labels[root];
+      }
       return labels;
     }
 
-    /**
-     * Label the pixels in 2D
-     */
-    af::shared<int> labels_2d() const {
-      // Adjacency list type
-      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-        AdjacencyList;
-
-      if (coords_.size() == 0) {
-        return af::shared<int>();
-      }
-
-      // Calculate the coordinate indices
-      for (std::size_t i = 0; i < coords_.size(); ++i) {
-        if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
-        }
-      }
-
-      // Create a graph of coordinates
-      AdjacencyList graph(coords_.size());
-      std::size_t i1 = 0, i2 = 0;
-      for (; i1 < coords_.size() - 1; ++i1) {
-        vec3<int> a0 = coords_[i1];
-        vec3<int> a1(a0[0], a0[1], a0[2] + 1);
-        vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
-        if (coords_[i1 + 1] == a1) {
-          boost::add_edge(i1, i1 + 1, graph);
-        }
-        if (a0[1] < size_[0] - 1) {
-          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
-            ;
-          if (coords_[i2] == a2) {
-            boost::add_edge(i1, i2, graph);
-          }
-        }
-      }
-
-      // Do the connected components
-      af::shared<int> labels(num_vertices(graph));
-      DIALS_ASSERT(labels.size() == coords_.size());
-      int num = boost::connected_components(graph, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
-    }
-
-  private:
     int2 size_;
     int first_frame_;
     int last_frame_;
