@@ -164,14 +164,24 @@ def sequence_to_stills(experiments, reflections, params):
             elif params.output.half_mosaicity_deg is not None:
                 crystal.set_half_mosaicity_deg(params.output.half_mosaicity_deg)
 
-            new_experiment = Experiment(
-                detector=experiment.detector,
-                beam=experiment.beam,
-                crystal=crystal,
-                imageset=experiment.imageset.as_imageset()[
-                    i_scan_point : i_scan_point + 1
-                ],
-            )
+            if experiment.scan and experiment.goniometer:
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    scan=experiment.scan[i_scan_point : i_scan_point + 1],
+                    goniometer=experiment.goniometer,
+                    imageset=experiment.imageset,
+                )
+            else:
+                new_experiment = Experiment(
+                    detector=experiment.detector,
+                    beam=experiment.beam,
+                    crystal=crystal,
+                    imageset=experiment.imageset.as_imageset()[
+                        i_scan_point : i_scan_point + 1
+                    ],
+                )
 
             # Each reflection in a 3D shoebox can be found on multiple images.
             # Slice the reflections such that any reflection on this scan point
