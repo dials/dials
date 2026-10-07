@@ -11,6 +11,8 @@
 #ifndef DIALS_ALGORITHMS_SPOT_FINDING_HELPERS_H
 #define DIALS_ALGORITHMS_SPOT_FINDING_HELPERS_H
 
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/connected_components.hpp>
 #include <dials/array_family/reflection_table.h>
 #include <dxtbx/array_family/flex_table_suite.h>
 #include <dials/algorithms/image/connected_components/connected_components.h>

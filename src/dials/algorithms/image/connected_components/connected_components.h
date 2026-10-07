@@ -13,8 +13,9 @@
 
 #include <ctime>
 #include <algorithm>
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/connected_components.hpp>
+#include <limits>
+#include <vector>
+#include <boost/unordered_map.hpp>
 #include <scitbx/vec2.h>
 #include <scitbx/vec3.h>
 #include <scitbx/array_family/tiny_types.h>
@@ -28,6 +29,79 @@ namespace dials { namespace algorithms {
   using scitbx::af::int2;
   using scitbx::af::int3;
 
+  /**
+   * A disjoint-set forest (union-find) for connected component labelling. It
+   * uses 4 bytes per element, in contrast to boost::adjacency_list, which
+   * needs hundreds of bytes per element for the same job.
+   */
+  class DisjointSets {
+  public:
+    DisjointSets() {}
+
+    /** Start with n elements, each in its own set */
+    explicit DisjointSets(std::size_t n) : parent_(n) {
+      DIALS_ASSERT(n <= std::numeric_limits<int>::max());
+      for (std::size_t i = 0; i < n; ++i) {
+        parent_[i] = i;
+      }
+    }
+
+    /** @returns The number of elements */
+    std::size_t size() const {
+      return parent_.size();
+    }
+
+    /**
+     * Add an element in a set of its own
+     * @returns The index of the new element
+     */
+    std::size_t add() {
+      DIALS_ASSERT(parent_.size() < std::numeric_limits<int>::max());
+      parent_.push_back(parent_.size());
+      return parent_.size() - 1;
+    }
+
+    /**
+     * Join the sets containing a and b. The lower index is kept as the root.
+     */
+    void join(std::size_t a, std::size_t b) {
+      std::size_t ra = find(a);
+      std::size_t rb = find(b);
+      if (ra < rb) {
+        parent_[rb] = ra;
+      } else if (rb < ra) {
+        parent_[ra] = rb;
+      }
+    }
+
+    /**
+     * @returns The label of each element. Sets are numbered in order of their
+     * lowest element, which matches the numbering given by
+     * boost::connected_components.
+     */
+    af::shared<int> labels() const {
+      af::shared<int> labels(parent_.size(), af::init_functor_null<int>());
+      int num = 0;
+      for (std::size_t i = 0; i < labels.size(); ++i) {
+        // The parent is never after the element, so is already labelled
+        labels[i] = (parent_[i] == i) ? num++ : labels[parent_[i]];
+      }
+      return labels;
+    }
+
+  private:
+    /** Find the root of a set, halving the path as we go */
+    std::size_t find(std::size_t i) {
+      while (static_cast<std::size_t>(parent_[i]) != i) {
+        parent_[i] = parent_[parent_[i]];
+        i = parent_[i];
+      }
+      return i;
+    }
+
+    std::vector<int> parent_;
+  };
+
   template <std::size_t DIM>
   class LabelImageStack;
 
@@ -37,10 +111,6 @@ namespace dials { namespace algorithms {
   template <>
   class LabelImageStack<2> {
   public:
-    // Adjacency list type
-    typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-      AdjacencyList;
-
     /**
      * Initialise the class with the size of the desired image.
      * @param size The size of the images
@@ -79,17 +149,17 @@ namespace dials { namespace algorithms {
         for (std::size_t i = 0; i < size_[1]; ++i) {
           if (mask(j, i)) {
             // Add the vertex
-            vertex_a = add_vertex(graph_);
+            vertex_a = sets_.add();
             coords_.push_back(vec3<int>(k_, j, i));
             values_.push_back(image(j, i));
 
             // Add edges to this vertex
             if (i > 0 && mask(j, i - 1)) {
-              boost::add_edge(vertex_a, vertex_a - 1, graph_);
+              sets_.join(vertex_a, vertex_a - 1);
             }
             if (j > 0 && mask(j - 1, i)) {
               std::size_t vertex_b = buffer_[i];
-              boost::add_edge(vertex_a, vertex_b - 1, graph_);
+              sets_.join(vertex_a, vertex_b - 1);
             }
             buffer_[i] = vertex_a + 1;
           } else {
@@ -122,14 +192,11 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_), af::init_functor_null<int>());
-      int num = boost::connected_components(graph_, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
+      return sets_.labels();
     }
 
   private:
-    AdjacencyList graph_;
+    DisjointSets sets_;
     af::shared<vec3<int> > coords_;
     af::shared<int> values_;
     af::shared<std::size_t> buffer_;
@@ -143,10 +210,6 @@ namespace dials { namespace algorithms {
   template <>
   class LabelImageStack<3> {
   public:
-    // Adjacency list type
-    typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-      AdjacencyList;
-
     /**
      * Initialise the class with the size of the desired image.
      * @param size The size of the images
@@ -187,21 +250,21 @@ namespace dials { namespace algorithms {
         for (std::size_t i = 0; i < size_[1]; ++i) {
           if (mask(j, i)) {
             // Add the vertex
-            vertex_a = add_vertex(graph_);
+            vertex_a = sets_.add();
             coords_.push_back(vec3<int>(k_, j, i));
             values_.push_back(image(j, i));
 
             // Add edges to this vertex
             if (i > 0 && mask(j, i - 1)) {
-              boost::add_edge(vertex_a, vertex_a - 1, graph_);
+              sets_.join(vertex_a, vertex_a - 1);
             }
             if (j > 0 && mask(j - 1, i)) {
               std::size_t vertex_b = buffer_(j - 1, i);
-              boost::add_edge(vertex_a, vertex_b - 1, graph_);
+              sets_.join(vertex_a, vertex_b - 1);
             }
             if (k_ > 0 && buffer_(j, i)) {
               std::size_t vertex_b = buffer_(j, i);
-              boost::add_edge(vertex_a, vertex_b - 1, graph_);
+              sets_.join(vertex_a, vertex_b - 1);
             }
             buffer_(j, i) = vertex_a + 1;
           } else {
@@ -234,14 +297,11 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      af::shared<int> labels(num_vertices(graph_), af::init_functor_null<int>());
-      int num = boost::connected_components(graph_, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
+      return sets_.labels();
     }
 
   private:
-    AdjacencyList graph_;
+    DisjointSets sets_;
     af::shared<vec3<int> > coords_;
     af::shared<int> values_;
     af::versa<std::size_t, af::c_grid<2> > buffer_;
@@ -301,36 +361,30 @@ namespace dials { namespace algorithms {
      * @returns The list of labels
      */
     af::shared<int> labels() const {
-      // Adjacency list type
-      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-        AdjacencyList;
-
       // Create a hash table of the points
-      AdjacencyList graph(coords_.size());
-      boost::unordered_map<vec3<int>, int, Vec3IntHash> grid(coords_.size(),
-                                                             Vec3IntHash(size_));
+      DisjointSets sets(coords_.size());
+      typedef boost::unordered_map<vec3<int>, int, Vec3IntHash> Grid;
+      Grid grid(coords_.size(), Vec3IntHash(size_));
       for (std::size_t i = 0; i < coords_.size(); ++i) {
-        DIALS_ASSERT(grid[coords_[i]] == 0);
-        grid[coords_[i]] = i + 1;
+        DIALS_ASSERT(grid.find(coords_[i]) == grid.end());
+        grid[coords_[i]] = i;
       }
 
       // For each point check the pixels to the left in all three dimensions
-      // and if they are in the list of pixels then add the edges.
+      // and if they are in the list of pixels then join them. A lookup with
+      // find, rather than operator[], avoids inserting the missing neighbours.
       for (std::size_t i = 0; i < coords_.size(); ++i) {
-        int j;
-        j = grid[vec3<int>(coords_[i][0] - 1, coords_[i][1], coords_[i][2])];
-        if (j != 0) boost::add_edge(i, j - 1, graph);
-        j = grid[vec3<int>(coords_[i][0], coords_[i][1] - 1, coords_[i][2])];
-        if (j != 0) boost::add_edge(i, j - 1, graph);
-        j = grid[vec3<int>(coords_[i][0], coords_[i][1], coords_[i][2] - 1)];
-        if (j != 0) boost::add_edge(i, j - 1, graph);
+        const vec3<int>& c = coords_[i];
+        const vec3<int> left[3] = {vec3<int>(c[0] - 1, c[1], c[2]),
+                                   vec3<int>(c[0], c[1] - 1, c[2]),
+                                   vec3<int>(c[0], c[1], c[2] - 1)};
+        for (std::size_t d = 0; d < 3; ++d) {
+          Grid::const_iterator it = grid.find(left[d]);
+          if (it != grid.end()) sets.join(i, it->second);
+        }
       }
 
-      // Do the connected components
-      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
-      int num = boost::connected_components(graph, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
+      return sets.labels();
     }
 
   private:
