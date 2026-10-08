@@ -105,13 +105,14 @@ def export_cif(scaled_data, experiment_list, params):
 
     _write_audit(block)
     _write_chemical(block, params.small_molecule.composition, space_group)
-    _write_cell(block, experiment_list, params, scaled_data, wavelength)
+    _write_cell(block, experiment_list, params, wavelength)
     _write_symmetry(block, space_group)
     _write_experiment(block, experiment_list, wavelength)
     _write_reflection_statistics(block, i_obs, scaled_data, wavelength)
     _write_absorption(block, experiment_list, params)
     # written last, so that a user-supplied value wins over a derived one
     _write_extra(block, params.cif.extra)
+    _report_missing_cell_measurement(block)
     _write_reflections(block, scaled_data, intensities, sigmas, params)
 
     options = gemmi.cif.WriteOptions()
@@ -171,7 +172,7 @@ def _constrained_angles(space_group, unit_cell):
     return flags
 
 
-def _write_cell(block, experiment_list, params, reflections, wavelength):
+def _write_cell(block, experiment_list, params, wavelength):
     uc, uc_sd = unit_cell_and_esds(experiment_list, params.mtz.best_unit_cell)
     space_group = experiment_list[0].crystal.get_space_group()
     fixed = (False, False, False) + tuple(_constrained_angles(space_group, uc))
@@ -203,16 +204,31 @@ def _write_cell(block, experiment_list, params, reflections, wavelength):
             format_float_with_standard_uncertainty(uc.volume(), volume_sd),
         )
 
-    # The cell was refined against all the reflections being exported
-    d = reflections["d"]
-    block.set_pair("_cell_measurement_reflns_used", str(reflections.size()))
-    block.set_pair(
-        "_cell_measurement_theta_min", f"{_theta_from_d(max(d), wavelength):.4f}"
-    )
-    block.set_pair(
-        "_cell_measurement_theta_max", f"{_theta_from_d(min(d), wavelength):.4f}"
-    )
+    # _cell_measurement_reflns_used and _cell_measurement_theta_min/max describe
+    # only the reflections used to determine the cell, which is not the set of
+    # reflections being exported, so they cannot be derived here. They can be
+    # supplied from a dials.two_theta_refine CIF (cif.combine) or by cif.extra.
     block.set_pair("_cell_measurement_wavelength", f"{wavelength:.5f}")
+
+
+CELL_MEASUREMENT_ITEMS = (
+    "_cell_measurement_reflns_used",
+    "_cell_measurement_theta_min",
+    "_cell_measurement_theta_max",
+)
+
+
+def _report_missing_cell_measurement(block):
+    missing = [
+        name for name in CELL_MEASUREMENT_ITEMS if block.find_value(name) is None
+    ]
+    if missing:
+        logger.info(
+            "The CIF has no %s, which describe the reflections used to determine "
+            "the cell. These are not known to dials.export. Supply them with "
+            "cif.combine=<CIF written by dials.two_theta_refine> or with cif.extra.",
+            ", ".join(missing),
+        )
 
 
 def _theta_from_d(d, wavelength):

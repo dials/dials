@@ -716,6 +716,15 @@ def test_cif(dials_data, tmp_path):
     # unlike format=shelx, intensities are not rescaled to fit a fixed width
     assert max_intensity > 9999.0
 
+    # the reflections used to determine the cell are not known to the exporter,
+    # and the exported reflections are not a substitute
+    for name in (
+        "_cell_measurement_reflns_used",
+        "_cell_measurement_theta_min",
+        "_cell_measurement_theta_max",
+    ):
+        assert block.find_value(name) is None
+
     # no composition was given
     assert block.find_value("_chemical_formula_sum") is None
     # nor a scale group code
