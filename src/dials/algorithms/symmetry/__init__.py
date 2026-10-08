@@ -187,6 +187,10 @@ class symmetry_base:
             message = "."
         logger.info(f"Normalising intensities{message}")
 
+        intensities_all = [
+            self.intensities.select(self.dataset_ids == id) for id in datasets
+        ]
+
         with (
             concurrent.futures.ProcessPoolExecutor(max_workers=self.nproc) as pool,
         ):
@@ -194,9 +198,9 @@ class symmetry_base:
                 pool.submit(
                     self._parallel_normalisation,
                     normalise,
-                    dataset_id,
-                ): dataset_id
-                for dataset_id in datasets
+                    intensities,
+                ): id
+                for intensities, id in zip(intensities_all, datasets)
             }
             for future in concurrent.futures.as_completed(normalisation_futures):
                 idx = normalisation_futures[future]
@@ -229,12 +233,8 @@ class symmetry_base:
             self.intensities.info()
         ).set_observation_type_xray_intensity()
 
-    def _parallel_normalisation(self, normalise, id):
-
-        intensities = self.intensities.select(
-            self.dataset_ids == id
-        )  # Try this before and make this a static function
-
+    @staticmethod
+    def _parallel_normalisation(normalise, intensities):
         dials_logger = logging.getLogger("dials")
 
         original_handlers = dials_logger.handlers[:]
