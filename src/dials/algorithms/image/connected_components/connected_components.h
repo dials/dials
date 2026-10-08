@@ -83,7 +83,9 @@ namespace dials { namespace algorithms {
       af::shared<int> labels(parent_.size(), af::init_functor_null<int>());
       int num = 0;
       for (std::size_t i = 0; i < labels.size(); ++i) {
-        // The parent is never after the element, so is already labelled
+        // join keeps the lower index as the root, so a parent is never after
+        // the element and has already been labelled
+        DIALS_ASSERT(parent_[i] <= i);
         labels[i] = (parent_[i] == i) ? num++ : labels[parent_[i]];
       }
       return labels;
