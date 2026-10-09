@@ -564,6 +564,58 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * For each reflection, the reference profile it is fitted against, or -1
+     * where there is none.
+     */
+    af::shared<int> fitting_cells(af::reflection_table reflections) const {
+      DIALS_ASSERT(reflections.contains("panel"));
+      DIALS_ASSERT(reflections.contains("xyzcal.px"));
+      af::const_ref<std::size_t> panel = reflections["panel"];
+      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
+      af::shared<int> result(reflections.size(), -1);
+      for (std::size_t i = 0; i < reflections.size(); ++i) {
+        try {
+          result[i] = (int)sampler_->nearest(panel[i], xyzpx[i]);
+        } catch (dials::error const&) {
+          continue;
+        }
+      }
+      return result;
+    }
+
+    /**
+     * For each reflection, whether model() could add it to any of the selected
+     * reference profiles.
+     * @param reflections The reflections
+     * @param cells A selection of the reference profiles
+     */
+    af::shared<bool> contributes_to(af::reflection_table reflections,
+                                    const af::const_ref<bool>& cells) const {
+      DIALS_ASSERT(reflections.contains("panel"));
+      DIALS_ASSERT(reflections.contains("xyzcal.px"));
+      DIALS_ASSERT(cells.size() == sampler_->size());
+      af::const_ref<std::size_t> panel = reflections["panel"];
+      af::const_ref<vec3<double> > xyzpx = reflections["xyzcal.px"];
+      af::shared<bool> result(reflections.size(), false);
+      for (std::size_t i = 0; i < reflections.size(); ++i) {
+        af::shared<std::size_t> indices;
+        try {
+          indices = sampler_->nearest_n(panel[i], xyzpx[i]);
+        } catch (dials::error const&) {
+          continue;
+        }
+        for (std::size_t j = 0; j < indices.size(); ++j) {
+          DIALS_ASSERT(indices[j] < cells.size());
+          if (cells[indices[j]]) {
+            result[i] = true;
+            break;
+          }
+        }
+      }
+      return result;
+    }
+
+    /**
      * Return a profile fitter
      * @return The profile fitter class
      */

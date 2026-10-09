@@ -749,6 +749,7 @@ def _assert_tables_identical(a, b):
             assert list(ca) == list(cb), f"column {key} differs"
 
 
+@pytest.mark.parametrize("nproc", [1, 3])
 @pytest.mark.parametrize(
     "expts,refls",
     [
@@ -756,27 +757,31 @@ def _assert_tables_identical(a, b):
         ("multi_sweep_indexed.expt", "multi_sweep_indexed.refl"),
     ],
 )
-def test_one_pass_matches_two_passes(dials_data, tmp_path, expts, refls):
+def test_one_pass_matches_two_passes(dials_data, tmp_path, expts, refls, nproc):
     """
     Modelling the profiles and integrating in one pass over the images gives
-    the same reference profiles and the same table as two passes with nproc=1
+    the same reference profiles and the same table as two passes with nproc=1,
+    with one job or several. A scan step of 0.2 degrees divides the 1.8 degree
+    scans into nine blocks of profiles, enough for three jobs of three blocks.
     """
     data = dials_data("centroid_test_data")
-    for name, extra in (("two", []), ("one", ["profile.one_pass=True"])):
+    common = ["debug.reference.output=True", "gaussian_rs.fitting.scan_step=0.2"]
+    for name, extra in (
+        ("two", ["nproc=1"]),
+        ("one", [f"nproc={nproc}", "profile.one_pass=True"]),
+    ):
         (tmp_path / name).mkdir()
         result = subprocess.run(
-            [
-                shutil.which("dials.integrate"),
-                "nproc=1",
-                data / expts,
-                data / refls,
-                "debug.reference.output=True",
-            ]
+            [shutil.which("dials.integrate"), data / expts, data / refls]
+            + common
             + extra,
             cwd=tmp_path / name,
             capture_output=True,
         )
         assert not result.returncode and not result.stderr
+    if nproc > 1:
+        log = (tmp_path / "one" / "dials.integrate.log").read_text()
+        assert f"Using multiprocessing with {nproc} parallel job(s)" in log
 
     two = flex.reflection_table.from_file(tmp_path / "two" / "integrated.refl")
     one = flex.reflection_table.from_file(tmp_path / "one" / "integrated.refl")
@@ -801,20 +806,3 @@ def test_one_pass_matches_two_passes(dials_data, tmp_path, expts, refls):
                 # normalized profiles are unchanged, but the counts are doubled
                 if expts == "indexed.expt":
                     assert p1["n_reflections"] == p2["n_reflections"]
-
-
-def test_one_pass_requires_one_process(dials_data, tmp_path):
-    data = dials_data("centroid_test_data")
-    result = subprocess.run(
-        [
-            shutil.which("dials.integrate"),
-            "nproc=2",
-            data / "indexed.expt",
-            data / "indexed.refl",
-            "profile.one_pass=True",
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert result.returncode
-    assert b"One-pass integration requires" in result.stderr

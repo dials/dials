@@ -163,6 +163,35 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Copy some profiles, with their masks and reflection counts, from another
+     * modeller of the same shape
+     * @param other The other modeller
+     * @param indices The profiles to copy
+     */
+    void copy_cells_from(std::shared_ptr<ProfileModellerIface> other,
+                         const af::const_ref<std::size_t>& indices) {
+      std::shared_ptr<EmpiricalProfileModeller> obj =
+        std::dynamic_pointer_cast<EmpiricalProfileModeller>(other);
+      DIALS_ASSERT(obj != 0);
+      DIALS_ASSERT(data_.size() == obj->data_.size());
+      DIALS_ASSERT(accessor_.all_eq(obj->accessor_));
+      for (std::size_t j = 0; j < indices.size(); ++j) {
+        std::size_t i = indices[j];
+        DIALS_ASSERT(i < data_.size());
+        n_reflections_[i] = obj->n_reflections_[i];
+        if (obj->data_[i].size() == 0) {
+          data_[i] = data_type();
+          mask_[i] = mask_type();
+        } else {
+          data_[i] = data_type(accessor_, 0);
+          mask_[i] = mask_type(accessor_, true);
+          std::copy(obj->data_[i].begin(), obj->data_[i].end(), data_[i].begin());
+          std::copy(obj->mask_[i].begin(), obj->mask_[i].end(), mask_[i].begin());
+        }
+      }
+    }
+
+    /**
      * Finalize the modeller
      */
     void finalize() {

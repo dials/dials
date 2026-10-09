@@ -7,8 +7,6 @@ import math
 import pickle
 import random
 
-import libtbx
-
 import dials.extensions
 from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
@@ -17,6 +15,7 @@ from dials.algorithms.integration.parallel_integrator import (
     ReferenceCalculatorProcessor,
 )
 from dials.algorithms.integration.processor import (
+    OnePassProcessor3D,
     Processor2D,
     Processor3D,
     ProcessorFlat3D,
@@ -53,6 +52,10 @@ from dials_algorithms_integration_integrator_ext import (
 )
 
 logger = logging.getLogger(__name__)
+
+# The column marking the reference spots a one-pass job reads only to model
+# profiles
+LEARN_ONLY = processor._OnePassManager.LEARN_ONLY
 
 # What GaussianRSProfileModeller.learning_deadlines gives a profile no reflection
 # can contribute to: the minimum int
@@ -220,8 +223,9 @@ def generate_phil_scope():
                   "profiles and again to integrate. Each reflection's shoebox is"
                   "transformed onto the reference profile grid as soon as it is"
                   "complete, and fitted once the reference profile it needs has"
-                  "been finalized. Gives the same result as two passes with"
-                  "nproc=1, and currently requires nproc=1 and integrator=3d."
+                  "been finalized. With any nproc, gives the same result as two"
+                  "passes with nproc=1. Requires integrator=3d and the"
+                  "gaussian_rs profile model fitted in reciprocal space."
           .expert_level = 3
 
         sigma_b_multiplier = 2.0
@@ -1066,6 +1070,13 @@ class OnePassIntegratorExecutor(IntegratorExecutor):
         # experiments; the profiles of the others are left to their own jobs
         self.experiments_in_job = sorted(set(reflections["id"]))
 
+        # With several jobs, a job also reads reference spots owned by others,
+        # only to model the profiles it owns
+        if LEARN_ONLY in reflections:
+            self.owned = ~reflections[LEARN_ONLY]
+        else:
+            self.owned = flex.bool(len(reflections), True)
+
         # A profile can be finalized once the last reference spot that could be
         # added to it has been processed, on the last frame of its bounding box
         candidates = reflections.get_flags(
@@ -1099,11 +1110,12 @@ class OnePassIntegratorExecutor(IntegratorExecutor):
         if reference.count(True) > 0:
             self.profile_modeller.model(reflections.select(reference))
 
-        # Transform every shoebox onto the profile grid and hold it
+        # Transform every shoebox this job owns onto the profile grid and hold it
         ids = reflections["id"]
         rows = reflections[self.ROW]
+        owned = self.owned.select(rows)
         for i, pending in enumerate(self.pending):
-            selection = ids == i
+            selection = (ids == i) & owned
             if selection.count(True) > 0:
                 pending.add(
                     self.profile_modeller[i],
@@ -1182,9 +1194,13 @@ class OnePassIntegratorExecutor(IntegratorExecutor):
 
     def data(self):
         """
-        Return data
+        Return the profile model and how many transformed shoeboxes were held
         """
-        return None
+        return {
+            "modeller": self.profile_modeller,
+            "peak_held": self.peak_held,
+            "peak_bytes": self.peak_bytes,
+        }
 
     def __getinitargs__(self):
         """
@@ -1543,24 +1559,16 @@ class Integrator:
 
     def _check_one_pass(self):
         """
-        One-pass integration gives the same result as two passes when both read
-        the images as one job, with no reflections split between jobs, one
-        profile model and one way of fitting. Refuse anything else.
+        One-pass integration gives the same result as two passes with nproc=1
+        for the gaussian_rs profile model fitted in reciprocal space, with
+        one profile model for each experiment. Refuse anything else.
         """
         params = self.params
         problems = []
         if self.ProcessorClass is not Processor3D:
             problems.append("integrator=3d")
-        mp = params.integration.mp
-        if mp.nproc is libtbx.Auto:
-            logger.info("One-pass integration: setting nproc=1")
-            mp.nproc = 1
-        if mp.nproc != 1 or mp.njobs != 1:
-            problems.append("nproc=1 and njobs=1")
-        if mp.n_subset_split:
+        if params.integration.mp.n_subset_split:
             problems.append("no mp.multiprocessing.n_subset_split")
-        if params.integration.block.force:
-            problems.append("block.force=False")
         if params.integration.debug.output or params.modelling.debug.output:
             problems.append("debug.output=False")
         if params.profile.validation.number_of_partitions != 1:
@@ -1725,16 +1733,28 @@ class Integrator:
             # some tables were split - so need to check again that all are ok
             return _iterative_table_split(split_tables, experiments, available_memory)
 
+        one_pass_jobs = []
+
         def _run_processor(reflections):
-            processor = build_processor(
+            if one_pass_modeller is not None:
+                processor_params = processor.Parameters()
+                processor_params.update(self.params.integration)
+                one_pass_processor = OnePassProcessor3D(
+                    self.experiments, reflections, processor_params, one_pass_modeller
+                )
+                one_pass_processor.executor = executor
+                reflections, data, time_info = one_pass_processor.process()
+                one_pass_jobs.append((one_pass_processor.manager.one_pass_jobs, data))
+                return reflections, time_info
+            data_processor = build_processor(
                 self.ProcessorClass,
                 self.experiments,
                 reflections,
                 self.params.integration,
             )
-            processor.executor = executor
+            data_processor.executor = executor
             # Process the reflections
-            reflections, _, time_info = processor.process()
+            reflections, _, time_info = data_processor.process()
             return reflections, time_info
 
         if self.params.integration.mp.method != "multiprocessing":
@@ -1789,19 +1809,33 @@ Splitting reflection table into %s subsets for processing
                 self.reflections = reflections
 
         if one_pass_modeller is not None:
+            # Each job modelled the profiles it owns completely; take each from its
+            # owner
+            assert len(one_pass_jobs) == 1
+            jobs, data = one_pass_jobs[0]
+            profile_model = self._one_pass_modeller()
+            peak_held = peak_bytes = 0
+            for index, job in enumerate(jobs):
+                job_data = data[index]
+                for i, cells in job.owned_cells.items():
+                    profile_model[i].copy_cells_from(job_data["modeller"][i], cells)
+                peak_held = max(peak_held, job_data["peak_held"])
+                peak_bytes = max(peak_bytes, job_data["peak_bytes"])
+            for i in range(len(profile_model)):
+                profile_model[i].set_finalized(True)
             self.profile_model_report = ProfileModelReport(
-                self.experiments, one_pass_modeller, self.reflections
+                self.experiments, profile_model, self.reflections
             )
             logger.info("")
             logger.info(self.profile_model_report.as_str(prefix=" "))
             if self.params.debug_reference_output:
-                self._dump_reference_profiles(one_pass_modeller)
+                self._dump_reference_profiles(profile_model)
             logger.info("")
             logger.info(
                 " Profile fitting in one pass held at most %d transformed shoeboxes"
-                " (%.1f MB)",
-                executor.peak_held,
-                executor.peak_bytes / 1e6,
+                " (%.1f MB) in any one job",
+                peak_held,
+                peak_bytes / 1e6,
             )
 
         # Finalize the reflections

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import bisect
 import itertools
 import logging
 import math
@@ -44,6 +45,7 @@ __all__ = [
     "Lookup",
     "MultiProcessing",
     "NullTask",
+    "OnePassProcessor3D",
     "Parameters",
     "Processor2D",
     "Processor3D",
@@ -779,9 +781,7 @@ class _Manager:
             available_limit *= self.params.block.max_memory_usage
 
         # Get the maximum shoebox memory to estimate memory use for one process
-        required_shoebox_memory = flex.max(
-            self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
-        )
+        required_shoebox_memory = self.required_shoebox_memory()
 
         # Get the current memory usage
         current_memory_usage = psutil.Process(os.getpid()).memory_info().rss
@@ -839,6 +839,14 @@ class _Manager:
           """
                 % _average_bbox_size(self.reflections)
             )
+
+    def required_shoebox_memory(self):
+        """
+        The most memory any one job needs for shoeboxes
+        """
+        return flex.max(
+            self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
+        )
 
     def summary(self):
         """
@@ -912,6 +920,307 @@ class Processor3D(_ProcessorRot):
         manager = _Manager(experiments, reflections, params)
 
         # Initialise the processor
+        super().__init__(experiments, manager)
+
+
+class _OnePassJob:
+    """
+    A job for one-pass integration: the reflections it owns, the reference
+    spots it reads only to model profiles, and the frames they span.
+    """
+
+    def __init__(self, group, expr, frames, rows, learn_only, owned_cells):
+        self.group = group
+        self.expr = expr
+        self.frames = frames
+        self.rows = rows
+        self.learn_only = learn_only
+        self.owned_cells = owned_cells
+
+
+class _OnePassManager(_Manager):
+    """
+    Book-keeping for integrating in one pass with several jobs.
+
+    The reference profiles of each imageset are divided by position in the scan
+    into contiguous groups, one for each job. A job owns the reflections fitted
+    against its profiles, and also reads every reference spot that could be
+    added to them, wherever it is owned, so that it can model them completely
+    itself: no profile is shared between jobs. A reference profile is the sum of
+    its contributions in the order the images are read, so each job's profiles
+    are exactly those of a single job reading every image. Each job reads the
+    frames its reflections span, so jobs overlap where they share reference
+    spots, and no reflection is split between jobs.
+    """
+
+    LEARN_ONLY = "one_pass.learn_only"
+
+    # A job reads the reference spots up to one block of profiles beyond those
+    # it owns on each side, so owning fewer than this many blocks would mostly
+    # add reading rather than parallelism
+    MIN_BLOCKS_PER_JOB = 3
+
+    def __init__(self, experiments, reflections, params, profile_modeller):
+        super().__init__(experiments, reflections, params)
+        self.profile_modeller = profile_modeller
+
+    def initialize(self):
+        """
+        Initialise the processing
+        """
+        start_time = time()
+        assert "bbox" in self.reflections, "Reflections have no bbox"
+        if self.params.mp.nproc is libtbx.Auto:
+            self.params.mp.nproc = CPU_COUNT
+            logger.info(f"Setting nproc={self.params.mp.nproc}")
+        self.compute_jobs()
+        # As JobList.split sets it when no reflection is split
+        self.reflections["partial_id"] = flex.size_t_range(len(self.reflections))
+        self.reflections.compute_partiality(self.experiments)
+        self.compute_processors()
+        self.finished_jobs = [False] * len(self.one_pass_jobs)
+        self.time.initialize = time() - start_time
+
+    def compute_jobs(self):
+        """
+        Divide each imageset's reference profiles between the jobs and work out
+        the reflections and frames of each.
+        """
+        reflections = self.reflections
+        flags = reflections.flags
+        processed = ~reflections.get_flags(flags.dont_integrate)
+        reference = reflections.get_flags(flags.reference_spot) & processed
+        ids = reflections["id"]
+        z = reflections["xyzcal.px"].parts()[2]
+        bbox = reflections["bbox"]
+        nblocks = self.params.mp.nproc * self.params.mp.njobs
+
+        groups = itertools.groupby(
+            range(len(self.experiments)),
+            lambda x: (id(self.experiments[x].imageset), id(self.experiments[x].scan)),
+        )
+        self.one_pass_jobs = []
+        self.fitting_cell = flex.int(len(reflections), -1)
+        for group, (_, indices) in enumerate(groups):
+            indices = list(indices)
+            i0, i1 = indices[0], indices[-1] + 1
+            array_range = self.experiments[i0].scan.get_array_range()
+
+            # The scan positions of the profiles, divided into contiguous groups
+            positions = sorted(
+                {
+                    self.profile_modeller[i].coord(c)[2]
+                    for i in indices
+                    for c in range(len(self.profile_modeller[i]))
+                }
+            )
+            n = max(1, min(nblocks, len(positions) // self.MIN_BLOCKS_PER_JOB))
+            chunks = [
+                positions[k * len(positions) // n : (k + 1) * len(positions) // n]
+                for k in range(n)
+            ]
+            chunk_of = {p: k for k, chunk in enumerate(chunks) for p in chunk}
+            boundaries = [(chunks[k][-1] + chunks[k + 1][0]) / 2 for k in range(n - 1)]
+
+            # Each reflection belongs to the job owning the profile it is fitted
+            # against; one with none, by its position in the scan
+            owner = flex.int(len(reflections), -1)
+            owned_cells = [{} for _ in range(n)]
+            contributes = [flex.bool(len(reflections), False) for _ in range(n)]
+            for i in indices:
+                modeller = self.profile_modeller[i]
+                chunk_of_cell = [
+                    chunk_of[modeller.coord(c)[2]] for c in range(len(modeller))
+                ]
+                selection = (ids == i) & processed
+                rows = selection.iselection()
+                cells = modeller.fitting_cells(reflections.select(rows))
+                self.fitting_cell.set_selected(rows, cells)
+                for row, cell in zip(rows, cells):
+                    if cell >= 0:
+                        owner[row] = chunk_of_cell[cell]
+                    else:
+                        owner[row] = bisect.bisect(boundaries, z[row])
+                reference_rows = (selection & reference).iselection()
+                reference_table = reflections.select(reference_rows)
+                for k in range(n):
+                    mask = flex.bool([c == k for c in chunk_of_cell])
+                    owned_cells[k][i] = mask.iselection()
+                    contributes[k].set_selected(
+                        reference_rows,
+                        modeller.contributes_to(reference_table, mask),
+                    )
+
+            for k in range(n):
+                owned = owner == k
+                rows = (owned | contributes[k]).iselection()
+                if len(rows) == 0:
+                    continue
+                learn_only = ~owned.select(rows)
+                b = bbox.select(rows).parts()
+                frames = (flex.min(b[4]), flex.max(b[5]))
+                assert frames[0] >= array_range[0] and frames[1] <= array_range[1]
+                self.one_pass_jobs.append(
+                    _OnePassJob(
+                        group, (i0, i1), frames, rows, learn_only, owned_cells[k]
+                    )
+                )
+        assert len(self.one_pass_jobs) > 0, "Invalid number of jobs"
+
+    def required_shoebox_memory(self):
+        """
+        The most memory any one job needs for shoeboxes, and for the transformed
+        shoeboxes it holds until their reference profiles are finalized.
+        """
+        bbox = self.reflections["bbox"]
+        flags = self.reflections.flags
+        reference = self.reflections.get_flags(flags.reference_spot)
+        required = 0
+        for job in self.one_pass_jobs:
+            frame0, frame1 = job.frames
+            nframes = frame1 - frame0
+            usage = [0] * (nframes + 1)
+            x0, x1, y0, y1, z0, z1 = (
+                a.as_numpy_array() for a in bbox.select(job.rows).parts()
+            )
+
+            # Shoeboxes, from their first frame to their last, as JobList counts
+            nbytes = (x1 - x0) * (y1 - y0) * (z1 - z0) * 12
+            for first, last, n in zip(z0 - frame0, z1 - frame0, nbytes):
+                usage[first] += int(n)
+                usage[last] -= int(n)
+
+            # Transformed shoeboxes, from their last frame until the reference
+            # profile they are fitted against is finalized
+            table = self.reflections.select(job.rows)
+            owned = ~job.learn_only
+            for i in sorted(set(table["id"])):
+                experiment = self.experiments[i]
+                grid_size = experiment.profile.params.gaussian_rs.fitting.grid_size
+                transform = (2 * grid_size + 1) ** 3 * (8 + 8 + 1)
+                candidates = table.select(
+                    (table["id"] == i) & reference.select(job.rows)
+                )
+                deadlines = self.profile_modeller[i].learning_deadlines(candidates)
+                rows = ((table["id"] == i) & owned).iselection()
+                cells = self.fitting_cell.select(job.rows.select(rows))
+                for row, cell in zip(rows, cells):
+                    if cell < 0:
+                        continue
+                    close = z1[row] - 1 - frame0
+                    fitted = max(close, deadlines[cell] - 1 - frame0)
+                    usage[close] += transform
+                    usage[fitted + 1] -= transform
+            current = peak = 0
+            for u in usage:
+                current += u
+                peak = max(peak, current)
+            required = max(required, peak)
+        return required
+
+    def task(self, index):
+        """
+        Get a task.
+        """
+        job = self.one_pass_jobs[index]
+        reflections = self.reflections.select(job.rows)
+        reflections[self.LEARN_ONLY] = job.learn_only
+        return Task(
+            index=index,
+            job=job.frames,
+            experiments=self.experiments,
+            reflections=reflections,
+            params=self.params,
+            executor=self.executor,
+        )
+
+    def accumulate(self, result):
+        """
+        Accumulate the results: the rows each job owns.
+        """
+        job = self.one_pass_jobs[result.index]
+        assert not self.finished_jobs[result.index]
+        reflections = result.reflections
+        owned = ~reflections[self.LEARN_ONLY]
+        del reflections[self.LEARN_ONLY]
+        self.reflections.set_selected(job.rows.select(owned), reflections.select(owned))
+        self.data[result.index] = result.data
+        self.finished_jobs[result.index] = True
+        self.time.read += result.read_time
+        self.time.extract += result.extract_time
+        self.time.process += result.process_time
+        self.time.total += result.total_time
+
+    def finalize(self):
+        """
+        Finalize the processing and finish.
+        """
+        start_time = time()
+        assert all(self.finished_jobs), "Manager is not finished"
+        self.time.finalize = time() - start_time
+        self.finalized = True
+
+    def result(self):
+        """
+        Return the result.
+        """
+        assert self.finalized, "Manager is not finalized"
+        return self.reflections, self.data
+
+    def finished(self):
+        return self.finalized and all(self.finished_jobs)
+
+    def __len__(self):
+        return len(self.one_pass_jobs)
+
+    def summary(self):
+        """
+        Get a summary of the processing
+        """
+        rows = [
+            [
+                "#",
+                "Group",
+                "Frame From",
+                "Frame To",
+                "Angle From",
+                "Angle To",
+                "# Reflections",
+                "# Reference only",
+            ]
+        ]
+        for i, job in enumerate(self.one_pass_jobs):
+            f0, f1 = job.frames
+            scan = self.experiments[job.expr[0]].scan
+            p0 = scan.get_angle_from_array_index(f0)
+            p1 = scan.get_angle_from_array_index(f1)
+            n_learn = job.learn_only.count(True)
+            rows.append(
+                [
+                    str(i),
+                    str(job.group),
+                    str(f0 + 1),
+                    str(f1),
+                    str(p0),
+                    str(p1),
+                    str(len(job.rows) - n_learn),
+                    str(n_learn),
+                ]
+            )
+        return (
+            "Processing reflections in one pass, in the following blocks of images:\n\n"
+            "{}\n"
+        ).format(tabulate(rows, headers="firstrow"))
+
+
+class OnePassProcessor3D(_ProcessorRot):
+    """Top level processor for 3D processing in one pass over the images."""
+
+    def __init__(self, experiments, reflections, params, profile_modeller):
+        """Initialise the manager and the processor."""
+        params.shoebox.partials = False
+        params.shoebox.flatten = False
+        manager = _OnePassManager(experiments, reflections, params, profile_modeller)
         super().__init__(experiments, manager)
 
 

@@ -150,6 +150,12 @@ namespace dials { namespace algorithms { namespace profile_model {
         .def("learning_deadlines",
              &GaussianRSProfileModeller::learning_deadlines,
              (arg("reflections")))
+        .def("fitting_cells",
+             &GaussianRSProfileModeller::fitting_cells,
+             (arg("reflections")))
+        .def("contributes_to",
+             &GaussianRSProfileModeller::contributes_to,
+             (arg("reflections"), arg("cells")))
         .def_pickle(GaussianRSProfileModellerPickleSuite());
 
       class_<PendingFits>("PendingFits")
