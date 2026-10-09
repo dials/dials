@@ -1,0 +1,1 @@
+``dials.tof_integrate``: stop ``mask=ellipse`` aborting the whole run on a shoebox with no counts in it, which is an ordinary case for weak predicted reflections.

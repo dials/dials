@@ -16,6 +16,7 @@
 #include <scitbx/vec3.h>
 #include <scitbx/constants.h>
 #include <eigen3/Eigen/Dense>
+#include <numeric>
 #include <vector>
 #include <dials/util/thread_pool.h>
 
@@ -483,6 +484,24 @@ namespace dials { namespace algorithms {
                          unit_s0,
                          sample_to_source_distance,
                          setting_rotation);
+
+        /*
+         * If there are no foreground counts in the ellipse,
+         * skip the reflection
+         */
+        double total_counts =
+          std::accumulate(shoebox_values.begin(), shoebox_values.end(), 0.0);
+        if (!(total_counts > 0.0)) {
+          for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
+            for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
+              for (std::size_t x = 0; x < shoebox.xsize(); ++x) {
+                mask(z, y, x) &= ~(Foreground | Background);
+                mask(z, y, x) |= Background;
+              }
+            }
+          }
+          continue;
+        }
 
         // Centre the ellipse around the peak value
         auto peak_val = std::max_element(shoebox_values.begin(), shoebox_values.end());
