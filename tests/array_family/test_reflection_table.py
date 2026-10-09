@@ -1212,6 +1212,51 @@ def test_to_from_h5(tmp_path):
     assert not dict(empty_table.experiment_identifiers())
 
 
+def table_with_unallocated_backgrounds():
+    # Alternate shoeboxes with and without an allocated background
+    shoeboxes = []
+    for i in range(6):
+        shoebox = gen_shoebox()
+        if i % 2:
+            shoebox = Shoebox(shoebox.panel, shoebox.bbox)
+            shoebox.data = gen_shoebox().data
+            shoebox.mask = gen_shoebox().mask
+        shoeboxes.append(shoebox)
+    table = flex.reflection_table()
+    table["shoebox"] = flex.shoebox(shoeboxes)
+    table["id"] = flex.int(table.size(), 0)
+    table.experiment_identifiers()[0] = "test"
+    return table
+
+
+@pytest.mark.parametrize("fmt", ["msgpack", "hdf5", "pickle"])
+def test_unallocated_background_round_trip(fmt, tmp_path):
+    table = table_with_unallocated_backgrounds()
+    if fmt == "msgpack":
+        table.as_msgpack_file(tmp_path / "reflections.mpack")
+        new_table = flex.reflection_table.from_msgpack_file(
+            tmp_path / "reflections.mpack"
+        )
+    elif fmt == "hdf5":
+        table.as_hdf5(tmp_path / "reflections.h5")
+        new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
+    else:
+        new_table = pickle.loads(pickle.dumps(table, protocol=pickle.HIGHEST_PROTOCOL))
+
+    assert new_table.size() == table.size()
+    for a, b in zip(new_table["shoebox"], table["shoebox"]):
+        assert a.is_consistent()
+        assert a.bbox == b.bbox
+        assert a.data.all_eq(b.data)
+        assert a.mask.all_eq(b.mask)
+        if b.is_background_allocated():
+            assert a.background.all_eq(b.background)
+        elif a.is_background_allocated():
+            # msgpack and HDF5 store an unallocated background as zeros
+            assert fmt != "pickle"
+            assert a.background.all_eq(0)
+
+
 def test_to_from_msgpack(tmp_path):
     table, columns = table_and_columns()
     c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
