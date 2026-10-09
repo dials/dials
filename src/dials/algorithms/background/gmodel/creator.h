@@ -50,6 +50,7 @@ namespace dials { namespace algorithms {
      * @returns Success True/False
      */
     void single(Shoebox<> sbox) const {
+      DIALS_ASSERT(sbox.is_background_allocated());
       compute(sbox.panel,
               sbox.bbox,
               sbox.data.const_ref(),
@@ -70,6 +71,7 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < sbox.size(); ++i) {
         try {
           DIALS_ASSERT(sbox[i].is_consistent());
+          DIALS_ASSERT(sbox[i].is_background_allocated());
           scale[i] = compute(sbox[i].panel,
                              sbox[i].bbox,
                              sbox[i].data.const_ref(),

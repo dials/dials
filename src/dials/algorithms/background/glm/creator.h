@@ -96,6 +96,7 @@ namespace dials { namespace algorithms {
      */
     void single(Shoebox<>& sbox) const {
       DIALS_ASSERT(sbox.is_consistent());
+      DIALS_ASSERT(sbox.is_background_allocated());
       compute(sbox.data.const_ref(), sbox.background.ref(), sbox.mask.ref());
     }
 

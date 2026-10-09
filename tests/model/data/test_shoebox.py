@@ -307,6 +307,77 @@ def test_flatten():
         assert shoebox.is_consistent()
 
 
+def without_background(shoebox):
+    result = Shoebox(shoebox.panel, shoebox.bbox)
+    result.data = shoebox.data
+    result.mask = shoebox.mask
+    return result
+
+
+def test_unallocated_background_is_consistent():
+    for shoebox, (XC, I) in random_shoeboxes(10):
+        shoebox = without_background(shoebox)
+        assert shoebox.is_data_allocated()
+        assert not shoebox.is_background_allocated()
+        assert shoebox.is_consistent()
+        shoebox.background = flex.real(flex.grid(1, 1, 1))
+        assert not shoebox.is_consistent()
+
+
+def test_unallocated_background_means_zero():
+    # The generated shoeboxes have an allocated background of zeros
+    for shoebox, (XC, I) in random_shoeboxes(10, mask=True):
+        assert shoebox.background.all_eq(0)
+        unallocated = without_background(shoebox)
+
+        expected = shoebox.summed_intensity()
+        intensity = unallocated.summed_intensity()
+        assert intensity.observed.value == expected.observed.value
+        assert intensity.observed.variance == expected.observed.variance
+        assert intensity.background.value == expected.background.value
+        assert intensity.background.variance == expected.background.variance
+        assert intensity.observed.success == expected.observed.success
+
+        for method in (
+            "centroid_all_minus_background",
+            "centroid_valid_minus_background",
+            "centroid_foreground_minus_background",
+        ):
+            expected = getattr(shoebox, method)()
+            centroid = getattr(unallocated, method)()
+            assert centroid.px.position == expected.px.position
+            assert centroid.px.variance == expected.px.variance
+
+        assert not unallocated.is_background_allocated()
+
+
+def test_summed_intensity_does_not_need_the_bbox():
+    # dials.sequence_to_stills sets the arrays and sums before setting the bbox
+    for shoebox, (XC, I) in random_shoeboxes(3):
+        for background in (True, False):
+            new_sb = Shoebox()
+            new_sb.data = shoebox.data
+            new_sb.mask = shoebox.mask
+            if background:
+                new_sb.background = shoebox.background
+            intensity = new_sb.summed_intensity()
+            assert intensity.observed.value == shoebox.summed_intensity().observed.value
+
+
+def test_flatten_unallocated_background():
+    for shoebox, (XC, I) in random_shoeboxes(10, mask=True):
+        unallocated = without_background(shoebox)
+        unallocated.data = shoebox.data.deep_copy()
+        unallocated.mask = shoebox.mask.deep_copy()
+        shoebox.flatten()
+        unallocated.flatten()
+        assert unallocated.flat
+        assert unallocated.is_consistent()
+        assert not unallocated.is_background_allocated()
+        assert unallocated.data.all_eq(shoebox.data)
+        assert unallocated.mask.all_eq(shoebox.mask)
+
+
 def test_all_foreground_valid():
     from .all_foreground_valid_data import data
 

@@ -1029,6 +1029,28 @@ def test_split_partials_with_shoebox():
         )
 
 
+def test_split_partials_with_shoebox_without_background():
+    r = flex.reflection_table()
+    r["bbox"] = flex.int6()
+    r["panel"] = flex.size_t()
+    r["shoebox"] = flex.shoebox()
+    bbox = (10, 15, 20, 24, 30, 33)
+    sbox = Shoebox(0, bbox)
+    sbox.allocate_data()
+    for i in range(len(sbox.data)):
+        sbox.data[i] = i
+    assert not sbox.is_background_allocated()
+    r.append({"bbox": bbox, "panel": 0, "shoebox": sbox})
+
+    r.split_partials_with_shoebox()
+    assert len(r) == 3
+    for z, s in enumerate(r["shoebox"]):
+        assert s.bbox == (10, 15, 20, 24, 30 + z, 31 + z)
+        assert s.is_consistent()
+        assert not s.is_background_allocated()
+        assert list(s.data) == list(range(20 * z, 20 * (z + 1)))
+
+
 def test_find_overlapping():
     N = 10000
     r = flex.reflection_table(N)
