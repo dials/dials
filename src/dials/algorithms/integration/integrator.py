@@ -7,6 +7,8 @@ import math
 import pickle
 import random
 
+import libtbx
+
 import dials.extensions
 from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
@@ -29,6 +31,10 @@ from dials.algorithms.integration.report import (
     ProfileValidationReport,
 )
 from dials.algorithms.integration.validation import ValidatedMultiExpProfileModeller
+from dials.algorithms.profile_model.gaussian_rs import (
+    GaussianRSProfileModeller,
+    PendingFits,
+)
 from dials.algorithms.profile_model.modeller import MultiExpProfileModeller
 from dials.algorithms.shoebox import MaskCode
 from dials.algorithms.spot_prediction.frame_orientations import FrameOrientations
@@ -47,6 +53,10 @@ from dials_algorithms_integration_integrator_ext import (
 )
 
 logger = logging.getLogger(__name__)
+
+# What GaussianRSProfileModeller.learning_deadlines gives a profile no reflection
+# can contribute to: the minimum int
+NO_DEADLINE = -(2**31)
 
 __all__ = [
     "Executor",
@@ -202,6 +212,17 @@ def generate_phil_scope():
           .help = "The minimum fraction of foreground pixels that must be valid"
                   "in order for a reflection to be integrated by profile fitting."
           .expert_level = 2
+
+        one_pass = False
+          .type = bool
+          .help = "Model the reference profiles and integrate in a single pass"
+                  "over the images, rather than reading them once to model the"
+                  "profiles and again to integrate. Each reflection's shoebox is"
+                  "transformed onto the reference profile grid as soon as it is"
+                  "complete, and fitted once the reference profile it needs has"
+                  "been finalized. Gives the same result as two passes with"
+                  "nproc=1, and currently requires nproc=1 and integrator=3d."
+          .expert_level = 3
 
         sigma_b_multiplier = 2.0
           .type = float(value_min=1.0)
@@ -376,6 +397,7 @@ class Parameters:
             self.fitting = True
             self.sigma_b_multiplier = 2.0
             self.valid_foreground_threshold = 0.75
+            self.one_pass = False
             self.validation = Parameters.Profile.Validation()
 
     def __init__(self):
@@ -459,6 +481,7 @@ class Parameters:
 
         # Set the profile fitting parameters
         result.profile.fitting = params.profile.fitting
+        result.profile.one_pass = params.profile.one_pass
         result.profile.validation.number_of_partitions = (
             params.profile.validation.number_of_partitions
         )
@@ -906,6 +929,26 @@ class IntegratorExecutor(Executor):
         :param frame: The frame to process
         :param reflections: The reflections to process
         """
+        sbox, nvalfg = self._process_until_fitting(reflections)
+        if self.profile_fitter:
+            reflections.compute_fitted_intensity(self.profile_fitter)
+        self._count_pixels(reflections, sbox, nvalfg)
+
+        # Print some info
+        fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
+        nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
+        nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
+        ntot = len(reflections)
+        logger.debug(fmt, nsum, nprf, ntot, frame + 1)
+
+    def _process_until_fitting(self, reflections):
+        """
+        Mask, background, centroid and summation: everything before profile
+        fitting.
+
+        :param reflections: The reflections to process
+        :return: The shoeboxes and the number of valid foreground pixels
+        """
         # Check if pixels are overloaded
         reflections.is_overloaded(self.experiments)
 
@@ -933,10 +976,13 @@ class IntegratorExecutor(Executor):
         reflections.compute_centroid(self.experiments)
 
         reflections.compute_summed_intensity()
-        if self.profile_fitter:
-            reflections.compute_fitted_intensity(self.profile_fitter)
+        return sbox, nvalfg
 
-        # Compute the number of background/foreground pixels
+    @staticmethod
+    def _count_pixels(reflections, sbox, nvalfg):
+        """
+        Compute the number of background/foreground pixels
+        """
         reflections["num_pixels.valid"] = sbox.count_mask_values(MaskCode.Valid)
         reflections["num_pixels.background"] = sbox.count_mask_values(
             MaskCode.Valid | MaskCode.Background
@@ -945,13 +991,6 @@ class IntegratorExecutor(Executor):
             MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
         )
         reflections["num_pixels.foreground"] = nvalfg
-
-        # Print some info
-        fmt = " Integrated % 5d (sum) + % 5d (prf) / %5d reflections on image %d"
-        nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
-        nprf = reflections.get_flags(reflections.flags.integrated_prf).count(True)
-        ntot = len(reflections)
-        logger.debug(fmt, nsum, nprf, ntot, frame + 1)
 
     def finalize(self):
         """
@@ -972,6 +1011,188 @@ class IntegratorExecutor(Executor):
         return (
             self.experiments,
             self.profile_fitter,
+            self.valid_foreground_threshold,
+        )
+
+
+class OnePassIntegratorExecutor(IntegratorExecutor):
+    """
+    Model the reference profiles and integrate in one pass over the images.
+
+    Each frame's completed reflections are processed as by IntegratorExecutor;
+    the reference spots among them are then added to the profile model, in the
+    order the modelling pass would add them, and every reflection's shoebox is
+    transformed onto the reference profile grid and held. A reference profile
+    is finalized once the last reflection that could contribute to it has been
+    processed, which is known before any image is read, and the reflections
+    waiting for it are then fitted. With one job this gives the same profiles,
+    and the same fitted intensities, as modelling and integrating in two passes.
+    """
+
+    __getstate_manages_dict__ = 1
+
+    # A temporary column, each reflection's row in the job's table
+    ROW = "one_pass.row"
+
+    def __init__(self, experiments, profile_modeller, valid_foreground_threshold=0.75):
+        """
+        Initialize the executor
+
+        :param experiments: The experiment list
+        :param profile_modeller: A MultiExpProfileModeller, not yet finalized
+        """
+        super().__init__(experiments, None, valid_foreground_threshold)
+        self.profile_modeller = profile_modeller
+        self.peak_held = 0
+        self.peak_bytes = 0
+
+    def initialize(self, frame0, frame1, reflections):
+        """
+        Initialize the processing for the job, and work out when each reference
+        profile can be finalized.
+
+        :param frame0: The first frame to process
+        :param frame1: The last frame to process
+        :param reflections: The reflections to process
+        """
+        super().initialize(frame0, frame1, reflections)
+
+        # The job's table, which the processor returns once all frames are done
+        self.table = reflections
+        reflections[self.ROW] = flex.size_t_range(len(reflections))
+        self.pending = [PendingFits() for _ in range(len(self.profile_modeller))]
+
+        # A job reads one imageset, so holds the reflections of only some of the
+        # experiments; the profiles of the others are left to their own jobs
+        self.experiments_in_job = sorted(set(reflections["id"]))
+
+        # A profile can be finalized once the last reference spot that could be
+        # added to it has been processed, on the last frame of its bounding box
+        candidates = reflections.get_flags(
+            reflections.flags.reference_spot
+        ) & ~reflections.get_flags(reflections.flags.dont_integrate)
+        schedule = collections.defaultdict(list)
+        for i in self.experiments_in_job:
+            modeller = self.profile_modeller[i]
+            selection = candidates & (reflections["id"] == i)
+            deadlines = modeller.learning_deadlines(reflections.select(selection))
+            for cell, deadline in enumerate(deadlines):
+                if deadline == NO_DEADLINE:
+                    modeller.finalize_cell(cell)
+                else:
+                    schedule[deadline - 1].append((i, cell))
+        self.schedule = sorted(schedule.items())
+        self.next_scheduled = 0
+
+    def process(self, frame, reflections):
+        """
+        Process the reflections completed on a frame
+
+        :param frame: The frame to process
+        :param reflections: The reflections to process
+        """
+        sbox, nvalfg = self._process_until_fitting(reflections)
+
+        # Add the reference spots to the profile model. Not written back: the
+        # modelling pass sets used_in_modelling only on its own copy of them
+        reference = reflections.get_flags(reflections.flags.reference_spot)
+        if reference.count(True) > 0:
+            self.profile_modeller.model(reflections.select(reference))
+
+        # Transform every shoebox onto the profile grid and hold it
+        ids = reflections["id"]
+        rows = reflections[self.ROW]
+        for i, pending in enumerate(self.pending):
+            selection = ids == i
+            if selection.count(True) > 0:
+                pending.add(
+                    self.profile_modeller[i],
+                    reflections.select(selection),
+                    rows.select(selection),
+                )
+        self.peak_held = max(self.peak_held, sum(p.held() for p in self.pending))
+        self.peak_bytes = max(
+            self.peak_bytes, sum(p.held_bytes() for p in self.pending)
+        )
+
+        # Finalize the profiles now complete, and fit what was waiting for them
+        while (
+            self.next_scheduled < len(self.schedule)
+            and self.schedule[self.next_scheduled][0] <= frame
+        ):
+            for i, cell in self.schedule[self.next_scheduled][1]:
+                self.profile_modeller[i].finalize_cell(cell)
+            self.next_scheduled += 1
+        for i, pending in enumerate(self.pending):
+            pending.fit_ready(self.profile_modeller[i])
+
+        self._count_pixels(reflections, sbox, nvalfg)
+
+        # Print some info
+        fmt = " Integrated % 5d (sum) / %5d reflections on image %d, %d held"
+        nsum = reflections.get_flags(reflections.flags.integrated_sum).count(True)
+        nheld = sum(p.held() for p in self.pending)
+        logger.debug(fmt, nsum, len(reflections), frame + 1, nheld)
+
+    def finalize(self):
+        """
+        Finalize the remaining profiles, fit the remaining reflections and write
+        every fitted intensity into the job's table.
+        """
+        for i in self.experiments_in_job:
+            self.profile_modeller[i].finalize()
+            self.pending[i].fit_ready(self.profile_modeller[i])
+        assert all(p.held() == 0 for p in self.pending), "Reflections left unfitted"
+
+        table = self.table
+        rows = flex.size_t()
+        intensity = flex.double()
+        variance = flex.double()
+        correlation = flex.double()
+        success = flex.bool()
+        for pending in self.pending:
+            rows.extend(pending.rows())
+            intensity.extend(pending.intensity())
+            variance.extend(pending.variance())
+            correlation.extend(pending.correlation())
+            success.extend(pending.success())
+        recorded = flex.bool(len(table), False)
+        recorded.set_selected(rows, True)
+        assert recorded.count(True) == len(rows), "A reflection was fitted twice"
+
+        # As compute_fitted_intensity leaves them
+        for name in (
+            "intensity.prf.value",
+            "intensity.prf.variance",
+            "profile.correlation",
+        ):
+            if name not in table:
+                table[name] = flex.double(len(table), 0)
+        table["intensity.prf.value"].set_selected(rows, intensity)
+        table["intensity.prf.variance"].set_selected(rows, variance)
+        table["profile.correlation"].set_selected(rows, correlation)
+        table.unset_flags(recorded, table.flags.integrated_prf)
+        fitted = flex.bool(len(table), False)
+        fitted.set_selected(rows.select(success), True)
+        failed = flex.bool(len(table), False)
+        failed.set_selected(rows.select(~success), True)
+        table.set_flags(fitted, table.flags.integrated_prf)
+        table.set_flags(failed, table.flags.failed_during_profile_fitting)
+        del table[self.ROW]
+
+    def data(self):
+        """
+        Return data
+        """
+        return None
+
+    def __getinitargs__(self):
+        """
+        Support for pickling
+        """
+        return (
+            self.experiments,
+            self.profile_modeller,
             self.valid_foreground_threshold,
         )
 
@@ -1235,25 +1456,7 @@ class Integrator:
 
                 # Dump reference profiles
                 if self.params.debug_reference_output:
-                    reference_debug = []
-                    for i in range(len(finalized_profile_fitter)):
-                        m = finalized_profile_fitter[i]
-                        p = []
-                        for j in range(len(m)):
-                            try:
-                                p.append(
-                                    {
-                                        "data": m.data(j),
-                                        "mask": m.mask(j),
-                                        "coord": m.coord(j),
-                                        "n_reflections": m.n_reflections(j),
-                                    }
-                                )
-                            except Exception:
-                                p.append(None)
-                        reference_debug.append(p)
-                    with open(self.params.debug_reference_filename, "wb") as outfile:
-                        pickle.dump(reference_debug, outfile)
+                    self._dump_reference_profiles(finalized_profile_fitter)
 
                 # Print profiles
                 for i in range(len(finalized_profile_fitter)):
@@ -1314,6 +1517,91 @@ class Integrator:
                 profile_fitter = finalized_profile_fitter
         return profile_fitter
 
+    def _dump_reference_profiles(self, modeller):
+        """
+        Save the finalized reference profiles, for debugging
+        """
+        reference_debug = []
+        for i in range(len(modeller)):
+            m = modeller[i]
+            p = []
+            for j in range(len(m)):
+                try:
+                    p.append(
+                        {
+                            "data": m.data(j),
+                            "mask": m.mask(j),
+                            "coord": m.coord(j),
+                            "n_reflections": m.n_reflections(j),
+                        }
+                    )
+                except Exception:
+                    p.append(None)
+            reference_debug.append(p)
+        with open(self.params.debug_reference_filename, "wb") as outfile:
+            pickle.dump(reference_debug, outfile)
+
+    def _check_one_pass(self):
+        """
+        One-pass integration gives the same result as two passes when both read
+        the images as one job, with no reflections split between jobs, one
+        profile model and one way of fitting. Refuse anything else.
+        """
+        params = self.params
+        problems = []
+        if self.ProcessorClass is not Processor3D:
+            problems.append("integrator=3d")
+        mp = params.integration.mp
+        if mp.nproc is libtbx.Auto:
+            logger.info("One-pass integration: setting nproc=1")
+            mp.nproc = 1
+        if mp.nproc != 1 or mp.njobs != 1:
+            problems.append("nproc=1 and njobs=1")
+        if mp.n_subset_split:
+            problems.append("no mp.multiprocessing.n_subset_split")
+        if params.integration.block.force:
+            problems.append("block.force=False")
+        if params.integration.debug.output or params.modelling.debug.output:
+            problems.append("debug.output=False")
+        if params.profile.validation.number_of_partitions != 1:
+            problems.append("profile.validation.number_of_partitions=1")
+        if params.frame_slice_shoeboxes:
+            problems.append("frame_slice_shoeboxes=False")
+        for experiment in self.experiments:
+            if experiment.profile.fitting_class() is None:
+                continue
+            modeller = experiment.profile.fitting_class()(experiment)
+            if (
+                not isinstance(modeller, GaussianRSProfileModeller)
+                or experiment.profile.params.gaussian_rs.fitting.fit_method
+                != "reciprocal_space"
+            ):
+                problems.append(
+                    "the gaussian_rs profile model, with fit_method=reciprocal_space"
+                )
+                break
+        if problems:
+            raise Sorry("One-pass integration requires " + ", ".join(problems))
+
+    def _one_pass_modeller(self):
+        """
+        The profile modeller to build during one-pass integration, or None if
+        there is to be no profile fitting.
+        """
+        fitting_class = [e.profile.fitting_class() for e in self.experiments]
+        if not self.params.profile.fitting or any(c is None for c in fitting_class):
+            return None
+        reference = self.reflections.get_flags(self.reflections.flags.reference_spot)
+        if reference.count(True) == 0:
+            logger.info(
+                "** Skipping profile modelling - no reference profiles given **"
+            )
+            return None
+        modeller = MultiExpProfileModeller()
+        for experiment in self.experiments:
+            modeller.add(experiment.profile.fitting_class()(experiment))
+        return modeller
+
     def integrate(self):
         """
         Integrate the data
@@ -1354,25 +1642,42 @@ class Integrator:
         # Initialize the reflections
         self.initialize_reflections(self.experiments, self.params, self.reflections)
 
-        # Check if we want to do some profile fitting
-        profile_fitter = self.fit_profiles()
+        one_pass = self.params.profile.one_pass
+        if one_pass:
+            self._check_one_pass()
+            profile_fitter = None
+            one_pass_modeller = self._one_pass_modeller()
+        else:
+            # Check if we want to do some profile fitting
+            profile_fitter = self.fit_profiles()
+            one_pass_modeller = None
 
         logger.info("=" * 80)
         logger.info("")
-        logger.info("Integrating reflections")
+        if one_pass_modeller is not None:
+            logger.info("Modelling profiles and integrating reflections in one pass")
+        else:
+            logger.info("Integrating reflections")
         logger.info("")
 
         # Create the data processor
-        ExecutorClass = (
-            FrameSlicedIntegratorExecutor
-            if self.params.frame_slice_shoeboxes
-            else self.ExecutorClass
-        )
-        executor = ExecutorClass(
-            self.experiments,
-            profile_fitter,
-            self.params.profile.valid_foreground_threshold,
-        )
+        if one_pass_modeller is not None:
+            executor = OnePassIntegratorExecutor(
+                self.experiments,
+                one_pass_modeller,
+                self.params.profile.valid_foreground_threshold,
+            )
+        else:
+            ExecutorClass = (
+                FrameSlicedIntegratorExecutor
+                if self.params.frame_slice_shoeboxes
+                else self.ExecutorClass
+            )
+            executor = ExecutorClass(
+                self.experiments,
+                profile_fitter,
+                self.params.profile.valid_foreground_threshold,
+            )
 
         # determine the max memory needed during integration
         def _determine_max_memory_needed(experiments, reflections):
@@ -1455,6 +1760,12 @@ class Integrator:
                     MEMORY_LIMIT * max_memory_usage,
                 )
 
+            if len(tables) > 1 and one_pass:
+                raise Sorry(
+                    "The reflections would be split into %d subsets to fit in memory,"
+                    " each read from the images separately, which one-pass"
+                    " integration does not support" % len(tables)
+                )
             if len(tables) == 1:
                 # will not fail a memory check in the processor, so proceed
                 self.reflections, time_info = _run_processor(self.reflections)
@@ -1476,6 +1787,22 @@ Splitting reflection table into %s subsets for processing
                     reflections.extend(processed)
                     time_info += this_time_info
                 self.reflections = reflections
+
+        if one_pass_modeller is not None:
+            self.profile_model_report = ProfileModelReport(
+                self.experiments, one_pass_modeller, self.reflections
+            )
+            logger.info("")
+            logger.info(self.profile_model_report.as_str(prefix=" "))
+            if self.params.debug_reference_output:
+                self._dump_reference_profiles(one_pass_modeller)
+            logger.info("")
+            logger.info(
+                " Profile fitting in one pass held at most %d transformed shoeboxes"
+                " (%.1f MB)",
+                executor.peak_held,
+                executor.peak_bytes / 1e6,
+            )
 
         # Finalize the reflections
         self.reflections, self.experiments = self.finalize_reflections(

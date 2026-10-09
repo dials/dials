@@ -34,6 +34,7 @@ namespace dials { namespace algorithms {
         : data_(n),
           mask_(n),
           n_reflections_(n, 0),
+          cell_finalized_(n, false),
           accessor_(af::c_grid<3>(datasize[0], datasize[1], datasize[2])),
           threshold_(threshold),
           finalized_(false) {
@@ -63,6 +64,9 @@ namespace dials { namespace algorithms {
           std::size_t index = indices[j];
           double weight = weights[j];
           DIALS_ASSERT(index < data_.size());
+          // A contribution to a profile already finalized would mean the
+          // rule deciding when it was complete was wrong
+          DIALS_ASSERT(!cell_finalized_[index]);
           if (data_[index].size() == 0) {
             data_[index] = data_type(accessor_, 0);
             mask_[index] = mask_type(accessor_, true);
@@ -89,6 +93,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(finalized_ == false);
       DIALS_ASSERT(profile.accessor().all_eq(accessor_));
       DIALS_ASSERT(index < data_.size());
+      DIALS_ASSERT(!cell_finalized_[index]);
       double sum_data = sum(profile);
       if (sum_data > 0) {
         if (data_[index].size() == 0) {
@@ -129,6 +134,11 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(data_.size() == other->data_.size());
       DIALS_ASSERT(accessor_.all_eq(other->accessor_));
 
+      // Partially finalized modellers cannot be accumulated
+      for (std::size_t i = 0; i < data_.size(); ++i) {
+        DIALS_ASSERT(!cell_finalized_[i] && !other->cell_finalized_[i]);
+      }
+
       // Loop through all the profiles. If needed, allocate them, then
       // add the pixel values from the other modeller to this
       for (std::size_t i = 0; i < data_.size(); ++i) {
@@ -158,11 +168,36 @@ namespace dials { namespace algorithms {
     void finalize() {
       DIALS_ASSERT(finalized_ == false);
       for (std::size_t i = 0; i < data_.size(); ++i) {
-        if (data_[i].size() != 0) {
-          finalize(i);
+        if (!cell_finalized_[i]) {
+          finalize_cell(i);
         }
       }
       finalized_ = true;
+    }
+
+    /**
+     * Finalize a single profile. Each profile is normalized independently of
+     * the others, so a profile to which no more reflections will be added can
+     * be finalized while others are still being modelled, with the same result
+     * as finalizing them all at the end.
+     * @param index The index of the profile
+     */
+    void finalize_cell(std::size_t index) {
+      DIALS_ASSERT(finalized_ == false);
+      DIALS_ASSERT(index < data_.size());
+      DIALS_ASSERT(!cell_finalized_[index]);
+      if (data_[index].size() != 0) {
+        finalize(index);
+      }
+      cell_finalized_[index] = true;
+    }
+
+    /**
+     * @return True/False the profile at this index is finalized
+     */
+    bool cell_finalized(std::size_t index) const {
+      DIALS_ASSERT(index < cell_finalized_.size());
+      return finalized_ || cell_finalized_[index];
     }
 
     /**
@@ -177,6 +212,14 @@ namespace dials { namespace algorithms {
      */
     void set_finalized(bool finalized) {
       finalized_ = finalized;
+    }
+
+    /**
+     * Set whether a single profile is finalized.
+     */
+    void set_cell_finalized(std::size_t index, bool finalized) {
+      DIALS_ASSERT(index < cell_finalized_.size());
+      cell_finalized_[index] = finalized;
     }
 
     /**
@@ -323,6 +366,7 @@ namespace dials { namespace algorithms {
     af::shared<data_type> data_;
     af::shared<mask_type> mask_;
     af::shared<std::size_t> n_reflections_;
+    std::vector<bool> cell_finalized_;
     af::c_grid<3> accessor_;
     double threshold_;
     bool finalized_;

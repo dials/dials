@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 import math
 import os
+import pickle
 import shutil
 import subprocess
 
+import numpy as np
 import pytest
 
 from dxtbx.serialize import load
@@ -730,3 +732,89 @@ def test_average_bbox_size():
     reflections = flex.reflection_table()
     reflections["bbox"] = flex.int6(*(flex.int(10, i) for i in range(6)))
     assert _average_bbox_size(reflections) == (1, 1, 1)
+
+
+def _assert_tables_identical(a, b):
+    """Every column of two reflection tables equal, exactly"""
+    assert len(a) == len(b)
+    assert sorted(a.keys()) == sorted(b.keys())
+    for key in a.keys():
+        ca, cb = a[key], b[key]
+        if hasattr(ca, "as_numpy_array"):
+            na, nb = ca.as_numpy_array(), cb.as_numpy_array()
+            assert np.array_equal(na, nb, equal_nan=na.dtype.kind in "fc"), (
+                f"column {key} differs"
+            )
+        else:
+            assert list(ca) == list(cb), f"column {key} differs"
+
+
+@pytest.mark.parametrize(
+    "expts,refls",
+    [
+        ("indexed.expt", "indexed.refl"),
+        ("multi_sweep_indexed.expt", "multi_sweep_indexed.refl"),
+    ],
+)
+def test_one_pass_matches_two_passes(dials_data, tmp_path, expts, refls):
+    """
+    Modelling the profiles and integrating in one pass over the images gives
+    the same reference profiles and the same table as two passes with nproc=1
+    """
+    data = dials_data("centroid_test_data")
+    for name, extra in (("two", []), ("one", ["profile.one_pass=True"])):
+        (tmp_path / name).mkdir()
+        result = subprocess.run(
+            [
+                shutil.which("dials.integrate"),
+                "nproc=1",
+                data / expts,
+                data / refls,
+                "debug.reference.output=True",
+            ]
+            + extra,
+            cwd=tmp_path / name,
+            capture_output=True,
+        )
+        assert not result.returncode and not result.stderr
+
+    two = flex.reflection_table.from_file(tmp_path / "two" / "integrated.refl")
+    one = flex.reflection_table.from_file(tmp_path / "one" / "integrated.refl")
+    assert one.get_flags(one.flags.integrated_prf).count(True) > 0
+    _assert_tables_identical(one, two)
+
+    with (tmp_path / "two" / "reference_profiles.refl").open("rb") as fh:
+        profiles_two = pickle.load(fh)
+    with (tmp_path / "one" / "reference_profiles.refl").open("rb") as fh:
+        profiles_one = pickle.load(fh)
+    assert len(profiles_one) == len(profiles_two)
+    for experiment_one, experiment_two in zip(profiles_one, profiles_two):
+        assert len(experiment_one) == len(experiment_two)
+        assert any(p is not None for p in experiment_two)
+        for p1, p2 in zip(experiment_one, experiment_two):
+            assert (p1 is None) == (p2 is None)
+            if p1 is not None:
+                assert list(p1["data"]) == list(p2["data"])
+                # With several imagesets there are several jobs, and with nproc=1
+                # two passes accumulate one modeller into itself once for each
+                # job after the first, doubling every sum: exact, so the
+                # normalized profiles are unchanged, but the counts are doubled
+                if expts == "indexed.expt":
+                    assert p1["n_reflections"] == p2["n_reflections"]
+
+
+def test_one_pass_requires_one_process(dials_data, tmp_path):
+    data = dials_data("centroid_test_data")
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            "nproc=2",
+            data / "indexed.expt",
+            data / "indexed.refl",
+            "profile.one_pass=True",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"One-pass integration requires" in result.stderr

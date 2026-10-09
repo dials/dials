@@ -147,7 +147,24 @@ namespace dials { namespace algorithms { namespace profile_model {
              &GaussianRSProfileModeller::fit_reciprocal_space,
              (arg("reflections")))
         .def("normalize_profiles", &GaussianRSProfileModeller::normalize_profiles)
+        .def("learning_deadlines",
+             &GaussianRSProfileModeller::learning_deadlines,
+             (arg("reflections")))
         .def_pickle(GaussianRSProfileModellerPickleSuite());
+
+      class_<PendingFits>("PendingFits")
+        .def(
+          "add", &PendingFits::add, (arg("modeller"), arg("reflections"), arg("rows")))
+        .def("fit_ready", &PendingFits::fit_ready, (arg("modeller")))
+        .def("held", &PendingFits::held)
+        .def("held_bytes", &PendingFits::held_bytes)
+        .def("peak_held", &PendingFits::peak_held)
+        .def("peak_bytes", &PendingFits::peak_bytes)
+        .def("rows", &PendingFits::rows)
+        .def("intensity", &PendingFits::intensity)
+        .def("variance", &PendingFits::variance)
+        .def("correlation", &PendingFits::correlation)
+        .def("success", &PendingFits::success);
 
       scope in_modeller = result;
 

@@ -24,6 +24,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("accumulate", &T::accumulate)
       //.def("finalize", &T::finalize)
       .def("finalized", &T::finalized)
+      .def("finalize_cell", &T::finalize_cell)
+      .def("cell_finalized", &T::cell_finalized)
       .def("data", &T::data)
       .def("mask", &T::mask)
       .def("size", &T::size)
