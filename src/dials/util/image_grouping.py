@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import functools
 import itertools
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from multiprocessing import Pool
@@ -642,6 +642,7 @@ class SplittingIterable:
     groupdata: GroupsForExpt
     name: str
     params: Any | None = None
+    output_name: str | None = None
 
 
 def save_subset(input_: SplittingIterable) -> tuple[str, FilePair] | None:
@@ -661,14 +662,9 @@ def save_subset(input_: SplittingIterable) -> tuple[str, FilePair] | None:
         refls = refls.select_on_experiment_identifiers(sel_identifiers)
         refls.reset_ids()
     if expts:
-        exptout = (
-            input_.working_directory
-            / f"group_{input_.groupindex}_{input_.fileindex}.expt"
-        )
-        reflout = (
-            input_.working_directory
-            / f"group_{input_.groupindex}_{input_.fileindex}.refl"
-        )
+        output_name = input_.output_name or f"group_{input_.groupindex}"
+        exptout = input_.working_directory / f"{output_name}_{input_.fileindex}.expt"
+        reflout = input_.working_directory / f"{output_name}_{input_.fileindex}.refl"
         expts.as_file(exptout)
         refls.as_file(reflout)
         return (input_.name, FilePair(exptout, reflout))
@@ -853,7 +849,13 @@ class GroupingImageTemplates:
         ] = save_subset,
         params: Any = None,
         prefix: str = "",
+        output_names: list[str] | None = None,
     ):
+        """Split the data into the groups.
+
+        If output_names is given, it must have one name per group, which is
+        used in place of group_{groupindex} for the output filenames.
+        """
         expt_file_to_groupsdata: dict[Path, GroupsForExpt] = (
             self._get_expt_file_to_groupsdata(data_file_pairs)
         )
@@ -883,6 +885,7 @@ class GroupingImageTemplates:
                             groupdata,
                             name,
                             params,
+                            output_names[groupindex] if output_names else None,
                         )
                     )
         if input_iterable:
@@ -1083,3 +1086,58 @@ grouping:
 """
     parsed_yaml = ParsedYAML(yml_str=grouping)
     return parsed_yaml
+
+
+def parse_series_repeat_names(series_repeat: list[str]) -> list[str]:
+    """Interpret a series_repeat phil option as a list of group names.
+
+    The option may be given as a single integer, the size of the repeat, in
+    which case the groups are given the generic names group_0, group_1, ...
+
+    Otherwise, it is a list of names. Phil does not split multi-word values,
+    so the names may be given as a comma-separated list
+    (series_repeat=first,second,last) or as a quoted, whitespace-separated
+    list (series_repeat='first second last').
+
+    A name may be repeated, in which case each occurrence is numbered in
+    order, padded to the digits needed for that name, e.g.
+    series_repeat=dose,dose,apo gives the names dose_1, dose_2, apo.
+    """
+    names: list[str] = []
+    for item in series_repeat:
+        names.extend(item.replace(",", " ").split())
+    if len(names) == 1 and names[0].isdigit():
+        n = int(names[0])
+        if n < 2:
+            raise ValueError(
+                f"series_repeat must be at least 2 if given as an integer, got {n}"
+            )
+        return [f"group_{i}" for i in range(n)]
+    if len(names) < 2:
+        raise ValueError(
+            "series_repeat must be an integer, or at least two names, "
+            "e.g. series_repeat=3 or series_repeat=first,second,last"
+        )
+    for name in names:
+        if name != Path(name).name or name in (".", ".."):
+            raise ValueError(
+                f"Invalid name given for series_repeat: {name}\n"
+                "Names are used as file names, so must not contain path separators"
+            )
+
+    counts = Counter(names)
+    seen: dict[str, int] = defaultdict(int)
+    numbered: list[str] = []
+    for name in names:
+        if counts[name] == 1:
+            numbered.append(name)
+        else:
+            seen[name] += 1
+            numbered.append(f"{name}_{seen[name]:0{len(str(counts[name]))}d}")
+    duplicates = [n for n, c in Counter(numbered).items() if c > 1]
+    if duplicates:
+        raise ValueError(
+            f"Names given for series_repeat are ambiguous: {names}\n"
+            f"Numbering repeated names gives duplicate names: {duplicates}"
+        )
+    return numbered
