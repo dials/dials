@@ -135,6 +135,7 @@ namespace dials { namespace algorithms { namespace background {
      */
     template <typename FloatType>
     af::tiny<FloatType, 2> operator()(Shoebox<FloatType> shoebox) const {
+      DIALS_ASSERT(shoebox.is_background_allocated());
       return this->operator()(
         shoebox.data.const_ref(), shoebox.mask.ref(), shoebox.background.ref());
     }
