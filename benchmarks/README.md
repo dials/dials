@@ -21,6 +21,12 @@ has a `Before` variant, which runs a copy of the old
 variant, which runs the current union-find (`DisjointSets`). Before and
 after are checked to give identical labels before timing.
 
+As well as time, each benchmark reports the peak heap used by one labelling
+call, in total (`peak_heap`) and per strong pixel (`heap/px`). This includes
+the 4 bytes/pixel of the returned labels. The heap is measured by replacing
+`malloc` and friends for the whole process, so these benchmarks need
+Linux/glibc.
+
 The inputs are contrived stacks of `side × side` images over a number of frames
 (the two benchmark arguments):
 

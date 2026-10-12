@@ -9,9 +9,16 @@
  * kept below in the `before` namespace. The "After" benchmarks call the
  * current DIALS headers. Both are given identical input, and the labels they
  * produce are checked to be identical before any timing is done.
+ *
+ * Besides time, each benchmark reports the peak heap memory used by one call
+ * to the labelling (peak_heap, and per pixel as heap/px). This includes the
+ * 4 bytes/pixel of the returned labels. It is measured by replacing the
+ * malloc family for the whole process, so is Linux/glibc only.
  */
 
 #include <algorithm>
+#include <atomic>
+#include <cerrno>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -19,9 +26,7 @@
 #include <string>
 #include <vector>
 
-#ifdef __GLIBC__
 #include <malloc.h>
-#endif
 
 #include <benchmark/benchmark.h>
 #include <boost/graph/adjacency_list.hpp>
@@ -30,6 +35,91 @@
 
 #include <dials/algorithms/image/connected_components/connected_components.h>
 #include <dials/model/data/pixel_list.h>
+
+// ---------------------------------------------------------------------------
+// Heap tracking. The malloc family is replaced for the whole process, so this
+// counts allocations from boost and the standard library (operator new calls
+// malloc) as well as scitbx arrays (malloc or posix_memalign).
+// ---------------------------------------------------------------------------
+extern "C" {
+void* __libc_malloc(std::size_t);
+void* __libc_calloc(std::size_t, std::size_t);
+void* __libc_realloc(void*, std::size_t);
+void* __libc_memalign(std::size_t, std::size_t);
+void __libc_free(void*);
+}
+
+namespace heap {
+
+std::atomic<std::size_t> current(0);
+std::atomic<std::size_t> peak(0);
+
+/** Bytes taken by a chunk: its usable size plus malloc's size header */
+inline std::size_t footprint(void* p) {
+  return malloc_usable_size(p) + sizeof(std::size_t);
+}
+
+inline void* track(void* p) {
+  if (p) {
+    std::size_t size = footprint(p);
+    std::size_t now = current.fetch_add(size) + size;
+    std::size_t old = peak.load();
+    while (now > old && !peak.compare_exchange_weak(old, now))
+      ;
+  }
+  return p;
+}
+
+inline void untrack(void* p) {
+  if (p) current.fetch_sub(footprint(p));
+}
+
+/** @returns The peak heap use while running f, above that at the start */
+template <typename F>
+std::size_t peak_of(F f) {
+  std::size_t base = current.load();
+  peak.store(base);
+  f();
+  return peak.load() - base;
+}
+
+}  // namespace heap
+
+extern "C" {
+void* malloc(std::size_t n) __THROW {
+  return heap::track(__libc_malloc(n));
+}
+void* calloc(std::size_t n, std::size_t size) __THROW {
+  return heap::track(__libc_calloc(n, size));
+}
+void* realloc(void* p, std::size_t n) __THROW {
+  heap::untrack(p);
+  void* result = __libc_realloc(p, n);
+  if (result) {
+    heap::track(result);
+  } else if (n != 0) {
+    // Failed, so the original is still allocated
+    heap::track(p);
+  }
+  return result;
+}
+void* memalign(std::size_t alignment, std::size_t n) __THROW {
+  return heap::track(__libc_memalign(alignment, n));
+}
+void* aligned_alloc(std::size_t alignment, std::size_t n) __THROW {
+  return heap::track(__libc_memalign(alignment, n));
+}
+int posix_memalign(void** result, std::size_t alignment, std::size_t n) __THROW {
+  void* p = __libc_memalign(alignment, n);
+  if (!p) return ENOMEM;
+  *result = heap::track(p);
+  return 0;
+}
+void free(void* p) __THROW {
+  heap::untrack(p);
+  __libc_free(p);
+}
+}
 
 using dials::algorithms::LabelPixels;
 using dials::model::PixelList;
@@ -253,14 +343,13 @@ void check_same(const af::shared<int>& a, const af::shared<int>& b) {
  * benchmarks would be charged for the check against Before.
  */
 void release_heap() {
-#ifdef __GLIBC__
   malloc_trim(0);
-#endif
 }
 
 void set_counters(benchmark::State& state,
                   std::size_t num_pixels,
-                  const af::shared<int>& labels) {
+                  const af::shared<int>& labels,
+                  std::size_t peak_heap) {
   int num_labels = 0;
   for (std::size_t i = 0; i < labels.size(); ++i) {
     num_labels = std::max(num_labels, labels[i] + 1);
@@ -268,6 +357,9 @@ void set_counters(benchmark::State& state,
   state.SetItemsProcessed(state.iterations() * num_pixels);
   state.counters["pixels"] = num_pixels;
   state.counters["spots"] = num_labels;
+  state.counters["peak_heap"] = benchmark::Counter(
+    peak_heap, benchmark::Counter::kDefaults, benchmark::Counter::kIs1024);
+  state.counters["heap/px"] = double(peak_heap) / num_pixels;
 }
 
 // -------------------------------------------------------------------------
@@ -292,13 +384,14 @@ void BM_PixelList(benchmark::State& state, Pattern p, bool threed, bool after) {
              : before::pixel_list_labels(
                  coords.const_ref(), labeller.size(), labeller.last_frame(), threed);
   };
+  std::size_t peak_heap = heap::peak_of(run);
 
   for (auto _ : state) {
     af::shared<int> labels = run();
     benchmark::DoNotOptimize(labels.begin());
     benchmark::ClobberMemory();
   }
-  set_counters(state, coords.size(), expected);
+  set_counters(state, coords.size(), expected, peak_heap);
 }
 
 // -------------------------------------------------------------------------
@@ -320,13 +413,14 @@ void BM_LabelPixels(benchmark::State& state, Pattern p, bool after) {
     return after ? label_pixels.labels()
                  : before::label_pixels_labels(coords.const_ref(), label_pixels.size());
   };
+  std::size_t peak_heap = heap::peak_of(run);
 
   for (auto _ : state) {
     af::shared<int> labels = run();
     benchmark::DoNotOptimize(labels.begin());
     benchmark::ClobberMemory();
   }
-  set_counters(state, coords.size(), expected);
+  set_counters(state, coords.size(), expected, peak_heap);
 }
 
 // Image side and number of frames. A template, since the Benchmark class
