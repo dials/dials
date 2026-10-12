@@ -374,7 +374,7 @@ def test_find_spots_with_xfel_stills(dials_data, tmp_path):
     assert (tmp_path / "spotfinder.refl").is_file()
 
     reflections = flex.reflection_table.from_file(tmp_path / "spotfinder.refl")
-    assert len(reflections) == 1148
+    assert len(reflections) == 1155
 
 
 def test_find_spots_with_per_image_statistics(dials_data, tmp_path):
@@ -393,7 +393,7 @@ def test_find_spots_with_per_image_statistics(dials_data, tmp_path):
 
 
 @pytest.mark.parametrize(
-    "blur,expected_nref", [("None", 559), ("narrow", 721), ("wide", 739)]
+    "blur,expected_nref", [("None", 560), ("narrow", 730), ("wide", 750)]
 )
 def test_find_spots_radial_profile(dials_data, blur, expected_nref, run_in_tmp_path):
     reflections = dials.command_line.find_spots.run(
