@@ -107,8 +107,8 @@ namespace dials { namespace af {
     ForegroundIncludesBadPixels = (1 << 14),
     BackgroundIncludesBadPixels = (1 << 15),
     IncludesBadPixels = ForegroundIncludesBadPixels | BackgroundIncludesBadPixels,
-    BadShoebox =
-      Overloaded | OverlappedBg | OverlappedFg | InPowderRing | IncludesBadPixels,
+    BadShoebox = Overloaded | OverlappedBg | OverlappedFg | InPowderRing
+      | IncludesBadPixels,
 
     // Bad spot
     BadSpot = BadShoebox,
@@ -137,8 +137,8 @@ namespace dials { namespace af {
     ExcludedForRefinement = (1 << 25),
     NotSuitableForRefinement =
       (1 << 27),  // For handling xds imported data when we don't have an xyzobs
-    BadForRefinement =
-      ExcludedForRefinement | CentroidOutlier | NotSuitableForRefinement,
+    BadForRefinement = ExcludedForRefinement | CentroidOutlier
+      | NotSuitableForRefinement,
 
     // Scaled flag indicates good reflections after scaling
     Scaled = (1 << 26),
