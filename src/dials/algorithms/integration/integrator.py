@@ -854,7 +854,6 @@ class IntegratorExecutor(Executor):
         :param experiments: The experiment list
         """
         self.experiments = experiments
-        self.overlaps = None
         self.profile_fitter = profile_fitter
         self.valid_foreground_threshold = valid_foreground_threshold
         super().__init__()
@@ -900,9 +899,6 @@ class IntegratorExecutor(Executor):
             logger.debug("")
             logger.debug(frame_hist(reflections["bbox"], prefix=" ", symbol="*"))
             logger.debug("")
-
-        # Find any overlaps
-        self.overlaps = reflections.find_overlaps(self.experiments)
 
     def process(self, frame, reflections):
         """
