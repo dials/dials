@@ -135,6 +135,68 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   /**
+   * Compute the peak shoebox memory needed to process the selected
+   * reflections over the frame range [frame0, frame1). This mirrors the
+   * allocation pattern in ShoeboxProcessor: the Shoebox objects and the
+   * frame lookup exist for the whole job, the data and mask are allocated on
+   * the first frame of the bounding box, the background is only allocated on
+   * the last frame, and then all three are freed.
+   */
+  inline std::size_t peak_shoebox_memory(af::const_ref<int6> bbox,
+                                         af::const_ref<std::size_t> indices,
+                                         int frame0,
+                                         int frame1,
+                                         bool flatten) {
+    DIALS_ASSERT(frame1 > frame0);
+    af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
+    af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
+    af::shared<std::size_t> memory_transient(frame1 - frame0, 0);
+    // Before allocation, each of the three arrays in a Shoebox holds a
+    // sharing_handle and a zero-size buffer on the heap, which with malloc
+    // overhead take 48 bytes more than the handle itself
+    const std::size_t shoebox_object_bytes =
+      sizeof(Shoebox<>) + 3 * (sizeof(af::sharing_handle) + 48);
+    std::size_t memory_fixed = 0;
+    for (std::size_t j = 0; j < indices.size(); ++j) {
+      DIALS_ASSERT(indices[j] < bbox.size());
+      int6 b = bbox[indices[j]];
+      DIALS_ASSERT(b[4] >= frame0);
+      DIALS_ASSERT(b[5] <= frame1);
+      DIALS_ASSERT(b[5] > b[4]);
+      DIALS_ASSERT(b[3] > b[2]);
+      DIALS_ASSERT(b[1] > b[0]);
+      std::size_t xsize = b[1] - b[0];
+      std::size_t ysize = b[3] - b[2];
+      std::size_t zsize = b[5] - b[4];
+      std::size_t size = xsize * ysize;
+      if (!flatten) {
+        size *= zsize;
+      }
+      // Data and mask persist for the lifetime of the shoebox
+      std::size_t persistent = size * (sizeof(Shoebox<>::float_type) + sizeof(uint8_t));
+      // Background only exists while the shoebox is processed
+      std::size_t transient = size * sizeof(Shoebox<>::float_type);
+      memory_to_alloc[b[4] - frame0] += persistent;
+      memory_to_free[b[5] - frame0 - 1] += persistent;
+      memory_transient[b[5] - frame0 - 1] += transient;
+      // The Shoebox object, and one frame lookup index per frame it spans
+      memory_fixed += shoebox_object_bytes + zsize * sizeof(std::size_t);
+    }
+    std::size_t max_memory_usage = 0;
+    std::size_t cur_memory_usage = 0;
+    for (int frame = frame0; frame < frame1; ++frame) {
+      std::size_t j = frame - frame0;
+      cur_memory_usage += memory_to_alloc[j];
+      DIALS_ASSERT(memory_to_free[j] <= cur_memory_usage);
+      max_memory_usage =
+        std::max(max_memory_usage, cur_memory_usage + memory_transient[j]);
+      cur_memory_usage -= memory_to_free[j];
+    }
+    DIALS_ASSERT(cur_memory_usage == 0);
+    return memory_fixed + max_memory_usage;
+  }
+
+  /**
    * Compute the memory for each job
    */
   af::shared<std::size_t> job_list_shoebox_memory(const JobList& self,
@@ -169,42 +231,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     for (std::size_t i = 0; i < result.size(); ++i) {
       int frame0 = lookup.job(i).frames()[0];
       int frame1 = lookup.job(i).frames()[1];
-      DIALS_ASSERT(frame1 > frame0);
       af::const_ref<std::size_t> indices = lookup.indices(i);
-      af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
-      af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
-      for (std::size_t j = 0; j < indices.size(); ++j) {
-        DIALS_ASSERT(indices[j] < bbox.size());
-        int6 b = bbox[indices[j]];
-        DIALS_ASSERT(b[4] >= frame0);
-        DIALS_ASSERT(b[5] <= frame1);
-        DIALS_ASSERT(b[5] > b[4]);
-        DIALS_ASSERT(b[3] > b[2]);
-        DIALS_ASSERT(b[1] > b[0]);
-        std::size_t xsize = b[1] - b[0];
-        std::size_t ysize = b[3] - b[2];
-        std::size_t zsize = b[5] - b[4];
-        std::size_t size = xsize * ysize;
-        if (!flatten) {
-          size *= zsize;
-        }
-        std::size_t nbytes = size
-                             * (sizeof(Shoebox<>::float_type)
-                                + sizeof(Shoebox<>::float_type) + sizeof(int));
-        memory_to_alloc[b[4] - frame0] += nbytes;
-        memory_to_free[b[5] - frame0 - 1] += nbytes;
-      }
-      std::size_t max_memory_usage = 0;
-      std::size_t cur_memory_usage = 0;
-      for (int frame = frame0; frame < frame1; ++frame) {
-        std::size_t j = frame - frame0;
-        cur_memory_usage += memory_to_alloc[j];
-        DIALS_ASSERT(memory_to_free[j] <= cur_memory_usage);
-        max_memory_usage = std::max(max_memory_usage, cur_memory_usage);
-        cur_memory_usage -= memory_to_free[j];
-      }
-      DIALS_ASSERT(cur_memory_usage == 0);
-      result[i] = max_memory_usage;
+      result[i] = peak_shoebox_memory(bbox, indices, frame0, frame1, flatten);
     }
 
     // Return the result
@@ -234,40 +262,11 @@ namespace dials { namespace algorithms { namespace boost_python {
       DIALS_ASSERT(bbox[i][5] > bbox[i][4]);
     }
 
-    af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
-    af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
-
-    for (std::size_t j = 0; j < data.size(); ++j) {
-      int6 b = bbox[j];
-      DIALS_ASSERT(b[4] >= frame0);
-      DIALS_ASSERT(b[5] <= frame1);
-      DIALS_ASSERT(b[5] > b[4]);
-      DIALS_ASSERT(b[3] > b[2]);
-      DIALS_ASSERT(b[1] > b[0]);
-      std::size_t xsize = b[1] - b[0];
-      std::size_t ysize = b[3] - b[2];
-      std::size_t zsize = b[5] - b[4];
-      std::size_t size = xsize * ysize;
-      if (!flatten) {
-        size *= zsize;
-      }
-      std::size_t nbytes =
-        size
-        * (sizeof(Shoebox<>::float_type) + sizeof(Shoebox<>::float_type) + sizeof(int));
-      memory_to_alloc[b[4] - frame0] += nbytes;
-      memory_to_free[b[5] - frame0 - 1] += nbytes;
+    af::shared<std::size_t> indices(data.size());
+    for (std::size_t j = 0; j < indices.size(); ++j) {
+      indices[j] = j;
     }
-    std::size_t max_memory_usage = 0;
-    std::size_t cur_memory_usage = 0;
-    for (int frame = frame0; frame < frame1; ++frame) {
-      std::size_t j = frame - frame0;
-      cur_memory_usage += memory_to_alloc[j];
-      DIALS_ASSERT(memory_to_free[j] <= cur_memory_usage);
-      max_memory_usage = std::max(max_memory_usage, cur_memory_usage);
-      cur_memory_usage -= memory_to_free[j];
-    }
-    DIALS_ASSERT(cur_memory_usage == 0);
-    return max_memory_usage;
+    return peak_shoebox_memory(bbox, indices.const_ref(), frame0, frame1, flatten);
   }
 
   /**

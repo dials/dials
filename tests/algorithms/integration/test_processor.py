@@ -32,13 +32,66 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
 
     jobs = JobList()
     jobs.add((0, 1), (0, 9), 9, 0)
+    # Every single-pixel shoebox ends on frame 0, so all 1996 of them hold
+    # data, mask and background (9 bytes per pixel) at the same time, on top
+    # of the Shoebox object and one frame lookup index (8 bytes) each
+    expected = 1996 * (9 + 8 + _shoebox_object_bytes())
     for flatten in (True, False):
         assumed_memory_usage = list(jobs.shoebox_memory(rlist, flatten))
-        assert len(assumed_memory_usage) == 1
-        assert assumed_memory_usage[0] == pytest.approx(23952, abs=3000)
+        assert assumed_memory_usage == [expected]
 
         max_mem = max_memory_needed(rlist, 0, 9, flatten)
-        assert max_mem == pytest.approx(23952, abs=3000)
+        assert max_mem == expected
+
+
+def _reflections(bboxes):
+    rlist = flex.reflection_table()
+    rlist["id"] = flex.int(len(bboxes), 0)
+    rlist["flags"] = flex.size_t(len(bboxes), 0)
+    rlist["bbox"] = flex.int6(bboxes)
+    return rlist
+
+
+def _shoebox_object_bytes():
+    """The fixed cost of an unallocated Shoebox object, which is derived
+    from sizeof() so depends on the platform"""
+    # A single pixel on a single frame costs 9 bytes of pixel data, plus one
+    # frame lookup index
+    return max_memory_needed(_reflections([(0, 1, 0, 1, 0, 1)]), 0, 1, False) - 17
+
+
+def test_shoebox_object_bytes_is_plausible():
+    # Measured as 448 bytes per unallocated shoebox on 64-bit Linux
+    assert 300 < _shoebox_object_bytes() < 600
+
+
+@pytest.mark.parametrize(
+    "flatten,expected_pixel_memory",
+    [
+        # Peak is on the last frame of A: data and mask (5 bytes per pixel) for
+        # all 4 frames of A, plus background (4 bytes per pixel). B has been freed.
+        (False, 5 * 400 + 4 * 400),
+        # Flattened shoeboxes have a single frame of 100 pixels for A
+        (True, 5 * 100 + 4 * 100),
+    ],
+)
+def test_shoebox_memory_counts_background_only_on_final_frame(
+    flatten, expected_pixel_memory
+):
+    rlist = _reflections(
+        [
+            (0, 10, 0, 10, 0, 4),  # A: 10x10 pixels on frames 0-3
+            (0, 5, 0, 5, 1, 2),  # B: 5x5 pixels on frame 1
+        ]
+    )
+    # Both Shoebox objects and the frame lookup (4 + 1 entries) exist for the
+    # whole job
+    expected = expected_pixel_memory + 2 * _shoebox_object_bytes() + 5 * 8
+
+    jobs = JobList()
+    jobs.add((0, 1), (0, 4), 4, 0)
+    assert list(jobs.shoebox_memory(rlist, flatten)) == [expected]
+    assert max_memory_needed(rlist, 0, 4, flatten) == expected
 
 
 @mock.patch("dials.algorithms.integration.processor.flex.max")
@@ -54,8 +107,11 @@ def test_runtime_error_raised_when_not_enough_memory(mock_flex_max):
     phil_mock.block.max_memory_usage = 0.5
 
     reflections = {"bbox": flex.int6(1000, (0, 1, 0, 1, 0, 1))}
+    # No detectors, so no memory is required for images
+    experiments = mock.Mock()
+    experiments.detectors.return_value = []
     manager = dials.algorithms.integration.processor._Manager(
-        None, reflections, phil_mock
+        experiments, reflections, phil_mock
     )
     manager.jobs = mock.Mock(autospec=JobList)
 

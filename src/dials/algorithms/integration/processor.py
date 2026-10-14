@@ -783,10 +783,23 @@ class _Manager:
             self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
         )
 
+        # The imageset caches the last raw frame (4-byte int) and a double copy
+        # of it, and each frame comes with a bool mask
+        detector_pixels = max(
+            (
+                sum(p.get_image_size()[0] * p.get_image_size()[1] for p in detector)
+                for detector in self.experiments.detectors()
+            ),
+            default=0,
+        )
+        required_image_memory = detector_pixels * (4 + 8 + 1)
+
         # Get the current memory usage
         current_memory_usage = psutil.Process(os.getpid()).memory_info().rss
 
-        memory_required_per_process = required_shoebox_memory + current_memory_usage
+        memory_required_per_process = (
+            required_shoebox_memory + required_image_memory + current_memory_usage
+        )
 
         # Compile a memory report
         report = ["Memory situation report:"]
@@ -798,6 +811,7 @@ class _Manager:
         _report("Maximum memory for processing", available_limit)
         _report("Current memory usage", current_memory_usage)
         _report("Memory required for shoeboxes", required_shoebox_memory)
+        _report("Memory required for images", required_image_memory)
         _report("Memory required per process", memory_required_per_process)
 
         output_level = logging.INFO
