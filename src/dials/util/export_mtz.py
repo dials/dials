@@ -15,6 +15,7 @@ import pandas as pd
 
 from cctbx import uctbx
 from dxtbx import flumpy
+from dxtbx.model import ExperimentType
 from iotbx import mtz
 from libtbx import env
 from rstbx.cftbx.coordinate_frame_helpers import align_reference_frame
@@ -220,7 +221,11 @@ def add_batch_list(
 
     i0 = image_range[0]
     for i in range(n_batches):
-        if experiment.scan and experiment.scan.get_oscillation()[1] != 0.0:
+        if (
+            experiment.scan
+            and experiment.scan.has_property("oscillation")
+            and experiment.scan.get_oscillation()[1] != 0.0
+        ):
             phi_start[i], phi_range[i] = experiment.scan.get_image_oscillation(i + i0)
 
         # Unit cell and UB matrix for the centre of the image for scan-varying model
@@ -356,8 +361,14 @@ def add_batch_list(
     return
 
 
-def write_columns(mtz, reflection_table):
-    """Write the column definitions AND data to the current dataset."""
+def write_columns(mtz, reflection_table, polychromatic=False):
+    """Write the column definitions AND data to the current dataset.
+
+    For polychromatic (Laue or time-of-flight) data there is no rotation angle,
+    so ROT is zero, and the columns written in addition are the per-reflection
+    wavelength LAMBDA, the panel number PANEL (counting from 0, as in DIALS) to
+    which XDET and YDET refer, and for time-of-flight data the calculated
+    time-of-flight TOF (in µs)."""
 
     nref = len(reflection_table["miller_index"])
     assert nref
@@ -385,6 +396,9 @@ def write_columns(mtz, reflection_table):
         "FRACTIONCALC": "R",
         "ROT": "R",
         "QE": "R",
+        "LAMBDA": "R",
+        "PANEL": "I",
+        "TOF": "R",
     }
 
     mtz_data = pd.DataFrame(
@@ -504,6 +518,26 @@ def write_columns(mtz, reflection_table):
         "ROT",
         flumpy.to_numpy(reflection_table["ROT"]).astype("float32"),
     )
+    if polychromatic:
+        mtz.add_column("PANEL", type_table["PANEL"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "PANEL",
+            flumpy.to_numpy(reflection_table["panel"]).astype("float32"),
+        )
+        mtz.add_column("LAMBDA", type_table["LAMBDA"])
+        mtz_data.insert(
+            len(mtz_data.columns),
+            "LAMBDA",
+            flumpy.to_numpy(reflection_table["wavelength_cal"]).astype("float32"),
+        )
+        if "tof_cal" in reflection_table:
+            mtz.add_column("TOF", type_table["TOF"])
+            mtz_data.insert(
+                len(mtz_data.columns),
+                "TOF",
+                flumpy.to_numpy(reflection_table["tof_cal"]).astype("float32"),
+            )
     if "lp" in reflection_table:
         mtz.add_column("LP", type_table["LP"])
         mtz_data.insert(
@@ -566,6 +600,20 @@ def export_mtz(
     reflection_table.assert_experiment_identifiers_are_consistent(experiment_list)
     expids_in_list = list(experiment_list.identifiers())
 
+    # Laue and time-of-flight data have a polychromatic beam, so each reflection
+    # has its own wavelength and there is no rotation scan to split into batches
+    polychromatic_types = {ExperimentType.LAUE, ExperimentType.TOF}
+    experiment_types = {expt.get_type() for expt in experiment_list}
+    polychromatic = bool(experiment_types & polychromatic_types)
+    if polychromatic and not experiment_types <= polychromatic_types:
+        raise ValueError(
+            "Cannot export a mixture of polychromatic and monochromatic experiments"
+        )
+    if polychromatic and "wavelength_cal" not in reflection_table:
+        raise ValueError(
+            "Polychromatic data require a wavelength_cal column in the reflection table"
+        )
+
     # Convert geometry to the Cambridge frame
     experiment_list = convert_to_cambridge(experiment_list)
 
@@ -604,11 +652,12 @@ def export_mtz(
     # And assumptions about added attributes break
     experiment_list = list(experiment_list)
 
-    wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
-    for w in wavelengths.values():
-        w.calculate_weighted_mean([reflection_table])
+    if not polychromatic:
+        wavelengths = match_wavelengths(experiment_list, wavelength_tolerance)
+        for w in wavelengths.values():
+            w.calculate_weighted_mean([reflection_table])
 
-    if len(wavelengths) > 1:
+    if not polychromatic and len(wavelengths) > 1:
         identifiers_list = [e.identifier for e in experiment_list]
         logger.info(
             "Multiple wavelengths found: \n%s",
@@ -642,31 +691,56 @@ def export_mtz(
         d_min=d_min,
     )
 
-    # get batch offsets and image ranges - even for scanless experiments
-    batch_offsets = [
-        expt.scan.get_batch_offset()
-        for expt in experiment_list
-        if expt.scan is not None
-    ]
-    unique_offsets = set(batch_offsets)
-    if not unique_offsets or len(unique_offsets) != len(batch_offsets):
-        logger.debug("Calculating new batches")
-        batch_offsets = calculate_batch_offsets(experiment_list)
-        batch_starts = [
-            e.scan.get_image_range()[0] if e.scan else 0 for e in experiment_list
-        ]
-        effective_offsets = [o + s for o, s in zip(batch_offsets, batch_starts)]
-        unique_offsets = set(effective_offsets)
-    else:
-        logger.debug("Keeping existing batches")
-    image_ranges = get_image_ranges(experiment_list)
-    if len(unique_offsets) != len(batch_offsets):
-        raise ValueError(
-            "Duplicate batch offsets detected: %s"
-            % ", ".join(
-                str(item) for item, count in Counter(batch_offsets).items() if count > 1
+    if polychromatic:
+        # A single dataset, its wavelength the mean over the reflections; the
+        # wavelength of each reflection is written to the LAMBDA column
+        lambdas = reflection_table["wavelength_cal"]
+        mean_wavelength = flex.mean(lambdas)
+        wavelengths = {
+            mean_wavelength: WavelengthGroup(
+                flex.min(lambdas), flex.max(lambdas), weighted_mean=mean_wavelength
             )
+        }
+        logger.info(
+            "Polychromatic data, wavelengths %.4f - %.4f Å (mean %.4f Å)",
+            flex.min(lambdas),
+            flex.max(lambdas),
+            mean_wavelength,
         )
+
+        # One batch per experiment: a Laue or time-of-flight experiment is a
+        # single stationary crystal orientation
+        batch_offsets = list(range(len(experiment_list)))
+        image_ranges = [(1, 1)] * len(experiment_list)
+        force_static_model = True
+    else:
+        # get batch offsets and image ranges - even for scanless experiments
+        batch_offsets = [
+            expt.scan.get_batch_offset()
+            for expt in experiment_list
+            if expt.scan is not None
+        ]
+        unique_offsets = set(batch_offsets)
+        if not unique_offsets or len(unique_offsets) != len(batch_offsets):
+            logger.debug("Calculating new batches")
+            batch_offsets = calculate_batch_offsets(experiment_list)
+            batch_starts = [
+                e.scan.get_image_range()[0] if e.scan else 0 for e in experiment_list
+            ]
+            effective_offsets = [o + s for o, s in zip(batch_offsets, batch_starts)]
+            unique_offsets = set(effective_offsets)
+        else:
+            logger.debug("Keeping existing batches")
+        image_ranges = get_image_ranges(experiment_list)
+        if len(unique_offsets) != len(batch_offsets):
+            raise ValueError(
+                "Duplicate batch offsets detected: %s"
+                % ", ".join(
+                    str(item)
+                    for item, count in Counter(batch_offsets).items()
+                    if count > 1
+                )
+            )
 
     # Create the mtz file
     mtz = gemmi.Mtz(with_base=True)
@@ -726,10 +800,15 @@ def export_mtz(
         reflections = reflection_table.select(reflection_table["id"] == id_)
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
-        reflections = assign_batches_to_reflections([reflections], [batch_offset])[0]
+        if polychromatic:
+            reflections["batch"] = flex.int(len(reflections), batch_offset + 1)
+        else:
+            (reflections,) = assign_batches_to_reflections(
+                [reflections], [batch_offset]
+            )
         experiment.data = dict(reflections)
 
-        s0n = matrix.col(experiment.beam.get_s0()).normalize().elems
+        s0n = experiment.beam.get_unit_s0()
         logger.debug("Beam vector: {:.4f} {:.4f} {:.4f}".format(*s0n))
 
         add_batch_list(
@@ -750,7 +829,10 @@ def export_mtz(
 
         # Calculate whether we have a ROT value for this experiment, and set the column
         _, _, z = experiment.data["xyzcal.px"].parts()
-        if experiment.scan:
+        if polychromatic:
+            # A stationary crystal, so no rotation, and z is not an image number
+            experiment.data["ROT"] = flex.double(len(z), 0.0)
+        elif experiment.scan:
             experiment.data["ROT"] = experiment.scan.get_angle_from_array_index(z)
         else:
             experiment.data["ROT"] = z
@@ -778,7 +860,7 @@ def export_mtz(
     )
 
     # Write all the data and columns to the mtz file
-    write_columns(mtz, combined_data)
+    write_columns(mtz, combined_data, polychromatic=polychromatic)
 
     # Switch to ASU indices and sort file in standard order
     mtz.switch_to_asu_hkl()

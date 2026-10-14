@@ -1,0 +1,1 @@
+``dials.export``: Laue and time-of-flight data can now be exported to MTZ, with one batch per experiment and the wavelength of each reflection in a ``LAMBDA`` column. The ``PANEL`` number to which ``XDET`` and ``YDET`` refer is written too, and for time-of-flight data the ``TOF`` in microseconds.
