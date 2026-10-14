@@ -708,39 +708,35 @@ def export_mtz(
             mean_wavelength,
         )
 
-        # One batch per experiment: a Laue or time-of-flight experiment is a
-        # single stationary crystal orientation
-        batch_offsets = list(range(len(experiment_list)))
-        image_ranges = [(1, 1)] * len(experiment_list)
-        force_static_model = True
-    else:
-        # get batch offsets and image ranges - even for scanless experiments
-        batch_offsets = [
-            expt.scan.get_batch_offset()
-            for expt in experiment_list
-            if expt.scan is not None
+    # get batch offsets and image ranges - even for scanless experiments. A
+    # time-of-flight scan has no oscillation and, like a still, is one batch.
+    batch_offsets = [
+        expt.scan.get_batch_offset()
+        for expt in experiment_list
+        if expt.scan is not None and expt.scan.has_property("oscillation")
+    ]
+    unique_offsets = set(batch_offsets)
+    if not unique_offsets or len(unique_offsets) != len(batch_offsets):
+        logger.debug("Calculating new batches")
+        batch_offsets = calculate_batch_offsets(experiment_list)
+        batch_starts = [
+            e.scan.get_image_range()[0]
+            if e.scan and e.scan.has_property("oscillation")
+            else 0
+            for e in experiment_list
         ]
-        unique_offsets = set(batch_offsets)
-        if not unique_offsets or len(unique_offsets) != len(batch_offsets):
-            logger.debug("Calculating new batches")
-            batch_offsets = calculate_batch_offsets(experiment_list)
-            batch_starts = [
-                e.scan.get_image_range()[0] if e.scan else 0 for e in experiment_list
-            ]
-            effective_offsets = [o + s for o, s in zip(batch_offsets, batch_starts)]
-            unique_offsets = set(effective_offsets)
-        else:
-            logger.debug("Keeping existing batches")
-        image_ranges = get_image_ranges(experiment_list)
-        if len(unique_offsets) != len(batch_offsets):
-            raise ValueError(
-                "Duplicate batch offsets detected: %s"
-                % ", ".join(
-                    str(item)
-                    for item, count in Counter(batch_offsets).items()
-                    if count > 1
-                )
+        effective_offsets = [o + s for o, s in zip(batch_offsets, batch_starts)]
+        unique_offsets = set(effective_offsets)
+    else:
+        logger.debug("Keeping existing batches")
+    image_ranges = get_image_ranges(experiment_list)
+    if len(unique_offsets) != len(batch_offsets):
+        raise ValueError(
+            "Duplicate batch offsets detected: %s"
+            % ", ".join(
+                str(item) for item, count in Counter(batch_offsets).items() if count > 1
             )
+        )
 
     # Create the mtz file
     mtz = gemmi.Mtz(with_base=True)
@@ -801,7 +797,11 @@ def export_mtz(
         batch_offset = batch_offsets[loc]
         image_range = image_ranges[loc]
         if polychromatic:
-            reflections["batch"] = flex.int(len(reflections), batch_offset + 1)
+            # z is time-of-flight, not an image number: one batch per experiment,
+            # numbered as in the header written by add_batch_list
+            reflections["batch"] = flex.int(
+                len(reflections), batch_offset + image_range[0]
+            )
         else:
             (reflections,) = assign_batches_to_reflections(
                 [reflections], [batch_offset]
