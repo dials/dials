@@ -453,6 +453,7 @@ def run_integration(params, experiments, reference=None):
     logger.info("Initialising")
 
     # Load the data
+    input_reference = reference
     if reference:
         reference, rubbish = process_reference(reference)
 
@@ -592,6 +593,14 @@ def run_integration(params, experiments, reference=None):
         if expr.profile is None:
             raise ValueError("No profile information in experiment list")
     del reference
+
+    # The reference shoeboxes were only needed for the profile model, but are
+    # often most of the memory used by the input table, which the caller still
+    # holds. Delete them, and the bad reference data unless they are output.
+    if input_reference and "shoebox" in input_reference:
+        del input_reference["shoebox"]
+    if not params.output.include_bad_reference:
+        rubbish = None
 
     # Compute the bounding box
     predicted.compute_bbox(experiments)

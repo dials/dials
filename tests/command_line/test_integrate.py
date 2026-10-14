@@ -5,12 +5,14 @@ import math
 import os
 import shutil
 import subprocess
+from unittest import mock
 
 import pytest
 
 from dxtbx.serialize import load
 from scitbx import matrix
 
+import dials.command_line.integrate
 from dials.algorithms.integration.processor import _average_bbox_size
 from dials.array_family import flex
 
@@ -730,3 +732,24 @@ def test_average_bbox_size():
     reflections = flex.reflection_table()
     reflections["bbox"] = flex.int6(*(flex.int(10, i) for i in range(6)))
     assert _average_bbox_size(reflections) == (1, 1, 1)
+
+
+def test_reference_shoeboxes_freed_after_profile_modelling(dials_data):
+    # The reference shoeboxes are only needed for the profile model. Check they
+    # are deleted from the input table before integration starts.
+    data = dials_data("centroid_test_data")
+    experiments = load.experiment_list(data / "indexed.expt", check_format=True)
+    reference = flex.reflection_table.from_file(data / "indexed.refl")
+    assert "shoebox" in reference
+    params = dials.command_line.integrate.working_phil.extract()
+
+    def fake_create_integrator(params, experiments, predicted):
+        assert "shoebox" not in reference
+        raise RuntimeError("Stop before integrating")
+
+    with mock.patch.object(
+        dials.command_line.integrate, "create_integrator", fake_create_integrator
+    ):
+        with pytest.raises(RuntimeError, match="Stop before integrating"):
+            dials.command_line.integrate.run_integration(params, experiments, reference)
+    assert "shoebox" not in reference
