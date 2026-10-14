@@ -94,6 +94,16 @@ def test_shoebox_memory_counts_background_only_on_final_frame(
     assert max_memory_needed(rlist, 0, 4, flatten) == expected
 
 
+def test_shoebox_memory_includes_bytes_per_reflection():
+    rlist = _reflections([(0, 10, 0, 10, 0, 4), (0, 5, 0, 5, 1, 2)])
+    jobs = JobList()
+    jobs.add((0, 1), (0, 4), 4, 0)
+    for flatten in (True, False):
+        base = max_memory_needed(rlist, 0, 4, flatten)
+        assert max_memory_needed(rlist, 0, 4, flatten, 100) == base + 2 * 100
+        assert list(jobs.shoebox_memory(rlist, flatten, 100)) == [base + 2 * 100]
+
+
 @mock.patch("dials.algorithms.integration.processor.flex.max")
 @mock.patch("dials.algorithms.integration.processor.MEMORY_LIMIT", 1_000_000_000)
 def test_runtime_error_raised_when_not_enough_memory(mock_flex_max):

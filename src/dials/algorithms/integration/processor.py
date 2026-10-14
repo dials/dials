@@ -778,9 +778,14 @@ class _Manager:
         if self.params.block.max_memory_usage is not None:
             available_limit *= self.params.block.max_memory_usage
 
-        # Get the maximum shoebox memory to estimate memory use for one process
+        # Get the maximum shoebox memory to estimate memory use for one process,
+        # including any columns the executor adds to the reflection table
         required_shoebox_memory = flex.max(
-            self.jobs.shoebox_memory(self.reflections, self.params.shoebox.flatten)
+            self.jobs.shoebox_memory(
+                self.reflections,
+                self.params.shoebox.flatten,
+                getattr(self.executor, "bytes_per_reflection", 0),
+            )
         )
 
         # The imageset caches the last raw frame (4-byte int) and a double copy

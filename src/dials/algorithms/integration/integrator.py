@@ -840,6 +840,11 @@ class IntegratorExecutor(Executor):
 
     __getstate_manages_dict__ = 1
 
+    # Memory added per reflection by the columns that process() creates for
+    # every reflection in the job: up to 10 double (background, intensity and
+    # profile correlation), 4 int (num_pixels) and 4 vec3_double (xyzobs)
+    bytes_per_reflection = 10 * 8 + 4 * 4 + 4 * 24
+
     def __init__(
         self, experiments, profile_fitter=None, valid_foreground_threshold=0.75
     ):
@@ -1398,7 +1403,13 @@ class Integrator:
                     frame0, frame1 = imageset.get_scan().get_array_range()
                 flatten = self.params.integration.integrator == "flat3d"
                 max_needed = max(
-                    max_memory_needed(subset, frame0, frame1, flatten),
+                    max_memory_needed(
+                        subset,
+                        frame0,
+                        frame1,
+                        flatten,
+                        getattr(executor, "bytes_per_reflection", 0),
+                    ),
                     max_needed,
                 )
             assert max_needed > 0, "Could not determine memory requirements"

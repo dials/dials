@@ -140,13 +140,16 @@ namespace dials { namespace algorithms { namespace boost_python {
    * allocation pattern in ShoeboxProcessor: the Shoebox objects and the
    * frame lookup exist for the whole job, the data and mask are allocated on
    * the first frame of the bounding box, the background is only allocated on
-   * the last frame, and then all three are freed.
+   * the last frame, and then all three are freed. The executor may also add
+   * columns to the reflection table, costing bytes_per_reflection for every
+   * reflection in the job.
    */
   inline std::size_t peak_shoebox_memory(af::const_ref<int6> bbox,
                                          af::const_ref<std::size_t> indices,
                                          int frame0,
                                          int frame1,
-                                         bool flatten) {
+                                         bool flatten,
+                                         std::size_t bytes_per_reflection) {
     DIALS_ASSERT(frame1 > frame0);
     af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
     af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
@@ -180,7 +183,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       memory_to_free[b[5] - frame0 - 1] += persistent;
       memory_transient[b[5] - frame0 - 1] += transient;
       // The Shoebox object, and one frame lookup index per frame it spans
-      memory_fixed += shoebox_object_bytes + zsize * sizeof(std::size_t);
+      memory_fixed +=
+        shoebox_object_bytes + zsize * sizeof(std::size_t) + bytes_per_reflection;
     }
     std::size_t max_memory_usage = 0;
     std::size_t cur_memory_usage = 0;
@@ -201,7 +205,8 @@ namespace dials { namespace algorithms { namespace boost_python {
    */
   af::shared<std::size_t> job_list_shoebox_memory(const JobList& self,
                                                   af::reflection_table data,
-                                                  bool flatten) {
+                                                  bool flatten,
+                                                  std::size_t bytes_per_reflection) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -232,7 +237,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       int frame0 = lookup.job(i).frames()[0];
       int frame1 = lookup.job(i).frames()[1];
       af::const_ref<std::size_t> indices = lookup.indices(i);
-      result[i] = peak_shoebox_memory(bbox, indices, frame0, frame1, flatten);
+      result[i] = peak_shoebox_memory(
+        bbox, indices, frame0, frame1, flatten, bytes_per_reflection);
     }
 
     // Return the result
@@ -243,7 +249,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   std::size_t max_memory_needed(af::reflection_table data,
                                 int frame0,
                                 int frame1,
-                                bool flatten) {
+                                bool flatten,
+                                std::size_t bytes_per_reflection) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -266,7 +273,8 @@ namespace dials { namespace algorithms { namespace boost_python {
     for (std::size_t j = 0; j < indices.size(); ++j) {
       indices[j] = j;
     }
-    return peak_shoebox_memory(bbox, indices.const_ref(), frame0, frame1, flatten);
+    return peak_shoebox_memory(
+      bbox, indices.const_ref(), frame0, frame1, flatten, bytes_per_reflection);
   }
 
   /**
@@ -304,7 +312,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("__len__", &JobList::size)
       .def("__getitem__", &JobList::operator[], return_internal_reference<>())
       .def("split", &job_list_split)
-      .def("shoebox_memory", &job_list_shoebox_memory);
+      .def("shoebox_memory",
+           &job_list_shoebox_memory,
+           (arg("data"), arg("flatten"), arg("bytes_per_reflection") = 0));
 
     class_<ReflectionManager>("ReflectionManager", no_init)
       .def(init<const JobList&, af::reflection_table>((arg("jobs"), arg("data"))))
@@ -347,7 +357,11 @@ namespace dials { namespace algorithms { namespace boost_python {
 
     def("max_memory_needed",
         &max_memory_needed,
-        (arg("reflection table"), arg("frame0"), arg("frame1"), arg("flatten")));
+        (arg("reflection table"),
+         arg("frame0"),
+         arg("frame1"),
+         arg("flatten"),
+         arg("bytes_per_reflection") = 0));
   }
 
 }}}  // namespace dials::algorithms::boost_python
