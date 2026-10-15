@@ -245,6 +245,7 @@ def test_mtz_tof(dials_data, tmp_path):
     # One batch for the single orientation, and no rotation
     assert len(m.batches) == 1
     assert m.batches[0].number == 1
+    assert m.batches[0].ints[14] == 3  # LDTYPE Laue
     assert set(m.column_with_label("BATCH").array) == {1}
     assert set(m.column_with_label("ROT").array) == {0}
 

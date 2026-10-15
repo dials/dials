@@ -324,7 +324,11 @@ def add_batch_list(
     batch.dataset_id = dataset_id
     batch.wavelength = wavelength
     batch.ints[12] = 1  # ncryst
-    batch.ints[14] = 2  # ldtype 3D
+    # ldtype 3D, or Laue for a polychromatic beam
+    if experiment.get_type() in (ExperimentType.LAUE, ExperimentType.TOF):
+        batch.ints[14] = 3
+    else:
+        batch.ints[14] = 2
     batch.ints[15] = 1  # jsaxs - goniostat scan axis number
     batch.ints[17] = 1  # ngonax - number of goniostat axes
     batch.ints[19] = 1  # ndet
