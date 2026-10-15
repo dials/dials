@@ -74,7 +74,6 @@ def test_cspad_cbf_in_memory(dials_data: Path, tmp_path, composite_output):
     tmp_path.joinpath("process_lcls.phil").write_text(cspad_cbf_in_memory_phil)
 
     params = phil_scope.fetch(parse(file_name=tmp_path / "process_lcls.phil")).extract()
-    params.output.experiments_filename = None
     params.output.composite_output = composite_output
     cwd = Path.cwd()
     try:
@@ -97,19 +96,27 @@ def test_cspad_cbf_in_memory(dials_data: Path, tmp_path, composite_output):
         )  # index/integrate the image
         if composite_output:
             processor.finalize()
-            result = "idx-memtest_integrated.refl"
+            result = "idx-memtest_integrated"
         else:
-            result = "idx-20130301060858801_integrated.refl"
+            result = "idx-20130301060858801_integrated"
     finally:
         os.chdir(cwd)
 
     n_refls = list(
         range(140, 152)
     )  # large ranges to handle platform-specific differences
-    table = flex.reflection_table.from_file(tmp_path / result)
+    table = flex.reflection_table.from_file(tmp_path / f"{result}.refl")
     assert len(table) in n_refls, len(table)
     assert "id" in table
     assert (table["id"] == 0).count(False) == 0
+    experiments = ExperimentListFactory.from_json_file(
+        tmp_path / f"{result}.expt", check_format=False
+    )
+    assert len(experiments) == 1
+    assert table.are_experiment_identifiers_consistent(experiments)
+    # strong and imported output is off by default
+    assert not (tmp_path / f"{result.replace('integrated', 'strong')}.refl").exists()
+    assert not (tmp_path / f"{result.replace('integrated', 'imported')}.expt").exists()
 
 
 @pytest.mark.parametrize(
@@ -250,6 +257,72 @@ def test_pseudo_scan(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
 
     experiments = ExperimentListFactory.from_json_file(
-        tmp_path / "idx-0000_refined.expt", check_format=False
+        tmp_path / "idx-0000_indexed.expt", check_format=False
     )
     assert len(experiments) == 2
+    # refinement is off by default, so no refined output is written
+    assert not (tmp_path / "idx-0000_refined.expt").exists()
+
+
+def test_deprecated_output_params():
+    from libtbx.utils import Sorry
+
+    from dials.command_line.stills_process import translate_deprecated_output_params
+
+    def extract(phil_str):
+        return phil_scope.fetch(parse(phil_str)).extract()
+
+    # The old defaults translate to the new defaults, and the deprecated
+    # parameters are reset so a second call is a no-op
+    params = extract(
+        """
+        output.experiments_filename = %s_imported.expt
+        output.strong_filename = %s_strong.refl
+        output.indexed_filename = %s_indexed.refl
+        output.refined_experiments_filename = %s_refined.expt
+        output.integrated_filename = %s_integrated.refl
+        output.integrated_experiments_filename = %s_integrated.expt
+        output.coset_filename = %s_coset%d.refl
+        output.coset_experiments_filename = %s_coset%d.expt
+        """
+    )
+    for _ in range(2):
+        translate_deprecated_output_params(params)
+        assert params.output.imported_suffix == "imported"
+        assert params.output.strong_suffix == "strong"
+        assert params.output.indexed_suffix == "indexed"
+        assert params.output.refined_suffix == "refined"
+        assert params.output.integrated_suffix == "integrated"
+        assert params.output.coset_suffix == "coset"
+        assert params.output.experiments_filename is None
+        assert params.output.integrated_experiments_filename is None
+        assert params.output.coset_filename is None
+
+    # Custom suffixes are carried over
+    params = extract("output.integrated_filename = %s_custom.refl")
+    translate_deprecated_output_params(params)
+    assert params.output.integrated_suffix == "custom"
+
+    # Values that cannot be expressed as a suffix are rejected
+    with pytest.raises(Sorry):
+        translate_deprecated_output_params(
+            extract("output.integrated_filename = fixed_name.refl")
+        )
+
+    # Two deprecated parameters mapping to one suffix must agree
+    with pytest.raises(Sorry):
+        translate_deprecated_output_params(
+            extract(
+                """
+                output.integrated_filename = %s_a.refl
+                output.integrated_experiments_filename = %s_b.expt
+                """
+            )
+        )
+
+    # Defaults are untouched
+    params = extract("")
+    translate_deprecated_output_params(params)
+    assert params.output.imported_suffix is None
+    assert params.output.indexed_suffix == "indexed"
+    assert params.output.refined_suffix == "refined"

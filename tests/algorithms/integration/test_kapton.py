@@ -70,13 +70,12 @@ def test_kapton(tmp_path, dials_data):
     without_kapton_phil = tmp_path / "params_without_kapton.phil"
 
     without_kapton_phil.write_text(
-        stills_process_input.as_str()
-        + "output.integrated_filename=without_kapton.mpack\noutput.integrated_experiments_filename=without_kapton.expt"
+        stills_process_input.as_str() + "output.integrated_suffix=without_kapton"
     )
     with_kapton_phil.write_text(
         stills_process_input.as_str()
         + kapton_input.as_str()
-        + "output.integrated_filename=with_kapton.mpack\noutput.integrated_experiments_filename=with_kapton.expt"
+        + "output.integrated_suffix=with_kapton"
     )
 
     command_without_kapton = (
@@ -95,15 +94,17 @@ def test_kapton(tmp_path, dials_data):
     # Now compare the 2 experimental results
     # Currently just comparing the mean values to get a sense of the effect if the kapton and whether it is being applied correctly
     expt_without_kapton = ExperimentListFactory.from_json_file(
-        tmp_path / "without_kapton.expt", check_format=False
+        tmp_path / "idx-0000_without_kapton.expt", check_format=False
     )
     refl_without_kapton = flex.reflection_table.from_file(
-        tmp_path / "without_kapton.mpack"
+        tmp_path / "idx-0000_without_kapton.refl"
     )
     expt_with_kapton = ExperimentListFactory.from_json_file(
-        tmp_path / "with_kapton.expt", check_format=False
+        tmp_path / "idx-0000_with_kapton.expt", check_format=False
     )
-    refl_with_kapton = flex.reflection_table.from_file(tmp_path / "with_kapton.mpack")
+    refl_with_kapton = flex.reflection_table.from_file(
+        tmp_path / "idx-0000_with_kapton.refl"
+    )
 
     without_kapton_means = []
     with_kapton_means = []
