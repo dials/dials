@@ -323,6 +323,12 @@ class SetupInstaller(object):
 
         # Copy dependencies
         if not conda_pack_is_available:
+            if self.base_dir == "conda_base" and sys.platform.startswith("linux"):
+                # A plain copy keeps the build prefix baked into binaries and
+                # text files, which breaks the installation once it is moved
+                sys.exit(
+                    "Error: conda-pack is required to create a relocatable linux installer"
+                )
             archive(
                 os.path.join(self.root_dir, self.base_dir),
                 os.path.join(self.dest_dir, self.base_dir),
