@@ -5,7 +5,7 @@ import subprocess
 
 
 def test_merge_cbf(dials_data, tmp_path):
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
 
     g = sorted(data_dir.glob("*.cbf"))
     assert len(g) == 9

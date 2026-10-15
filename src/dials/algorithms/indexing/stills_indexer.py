@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import math
+import warnings
 
 import libtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
@@ -70,16 +71,15 @@ def e_refine(params, experiments, reflections, graph_verbose=False):
     if outlier_algorithm == "sauter_poon":
         params.refinement.reflections.outlier.algorithm = "null"
 
+    # params is the caller's scope, shared across stills, so restore in a finally:
+    # DialsIndexRefineError used to escape leaving outlier rejection disabled.
     try:
         refiner = RefinerFactory.from_parameters_data_experiments(
             params, reflections, experiments
         )
         refiner.run()
-    except ValueError:
+    finally:
         params.refinement.reflections.outlier.algorithm = outlier_algorithm
-        raise
-
-    params.refinement.reflections.outlier.algorithm = outlier_algorithm
 
     if not graph_verbose:
         return refiner
@@ -98,6 +98,20 @@ class StillsIndexer(Indexer):
             params.refinement.reflections.outlier.algorithm = "sauter_poon"
         super().__init__(reflections, experiments, params)
         self.warn_if_setting_unused_refinement_protocol_params()
+
+        from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
+
+        from dials.algorithms.indexing import rstbx_indexing_api_phil_scope
+
+        self.hardcoded_phil = rstbx_indexing_api_phil_scope().extract()
+        # comment this in if PDF graph is desired:
+        # self.hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
+        # new code for outlier rejection inline here
+        if self.hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            self.hardcoded_phil.__inject__(
+                "writer",
+                OutlierPlotPDF(self.hardcoded_phil.indexing.outlier_detection.pdf),
+            )
 
     def index(self):
         # most of this is the same as dials.algorithms.indexing.indexer.indexer_base.index(), with some stills
@@ -494,7 +508,7 @@ class StillsIndexer(Indexer):
 
         candidates = []
 
-        params = copy.deepcopy(self.all_params)
+        params = self.all_params
 
         for icm, cm in enumerate(candidate_orientation_matrices):
             if icm >= self.params.basis_vector_combinations.max_refine:
@@ -669,8 +683,20 @@ class StillsIndexer(Indexer):
         best = candidates[flex.min_index(results)]
         logger.info(best)
 
+        if params.indexing.basis_vector_combinations.xy_rmsd_threshold is libtbx.Auto:
+            # Set default to the same as the old parameter params.indexing.stills.rmsd_min_px
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = 2.0
+        if params.indexing.stills.rmsd_min_px != 2.0:
+            warnings.warn(
+                "The parameter indexing.stills.rmsd_min_px is deprecated. Please use indexing.basis_vector_combinations.xy_rmsd_threshold instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            params.indexing.basis_vector_combinations.xy_rmsd_threshold = (
+                params.indexing.stills.rmsd_min_px
+            )
         if params.indexing.stills.refine_all_candidates:
-            if best.rmsd > params.indexing.stills.rmsd_min_px:
+            if best.rmsd > params.indexing.basis_vector_combinations.xy_rmsd_threshold:
                 raise DialsIndexError(f"RMSD too high, {best.rmsd:f}")
 
             if len(candidates) > 1:
@@ -713,34 +739,19 @@ class StillsIndexer(Indexer):
             m.miller_index = item["miller_index"]
             matches.append(m)
 
-        import iotbx.phil
-        from rstbx.phil.phil_preferences import indexing_api_defs
-
-        hardcoded_phil = iotbx.phil.parse(input_string=indexing_api_defs).extract()
-
-        from rstbx.indexing_api.outlier_procedure import OutlierPlotPDF
-
-        # comment this in if PDF graph is desired:
-        # hardcoded_phil.indexing.outlier_detection.pdf = "outlier.pdf"
-        # new code for outlier rejection inline here
-        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
-            hardcoded_phil.__inject__(
-                "writer", OutlierPlotPDF(hardcoded_phil.indexing.outlier_detection.pdf)
-            )
-
         # execute Sauter and Poon (2010) algorithm
         from rstbx.indexing_api import outlier_detection
 
         od = outlier_detection.find_outliers_from_matches(
             matches,
             verbose=self.all_params.refinement.reflections.outlier.sauter_poon.verbose,
-            horizon_phil=hardcoded_phil,
+            horizon_phil=self.hardcoded_phil,
         )
 
-        if hardcoded_phil.indexing.outlier_detection.pdf is not None:
-            od.make_graphs(canvas=hardcoded_phil.writer.R.c, left_margin=0.5)
-            hardcoded_phil.writer.R.c.showPage()
-            hardcoded_phil.writer.R.c.save()
+        if self.hardcoded_phil.indexing.outlier_detection.pdf is not None:
+            od.make_graphs(canvas=self.hardcoded_phil.writer.R.c, left_margin=0.5)
+            self.hardcoded_phil.writer.R.c.showPage()
+            self.hardcoded_phil.writer.R.c.save()
 
         return od.get_cache_status()
 

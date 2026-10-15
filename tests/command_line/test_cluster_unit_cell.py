@@ -17,22 +17,24 @@ from dials.command_line import cluster_unit_cell
 def test_dials_cluster_unit_cell_command_line(dials_data, tmp_path):
     pytest.importorskip("scipy")
 
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
     experiments = sorted(data_dir.glob("sweep_*_experiments.json"))
 
     result = subprocess.run(
-        [shutil.which("dials.cluster_unit_cell"), "plot.show=False"] + experiments,
+        [shutil.which("dials.cluster_unit_cell"), "plot.show=False", "html=tmp.html"]
+        + experiments,
         cwd=tmp_path,
         capture_output=True,
     )
     assert not result.returncode
     assert tmp_path.joinpath("cluster_unit_cell.png").is_file()
+    assert tmp_path.joinpath("tmp.html").is_file()
 
 
 def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path):
     pytest.importorskip("scipy")
 
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
     experiments = sorted(data_dir.glob("sweep_*_experiments.json"))
     reflections = sorted(data_dir.glob("sweep_*_reflections.pickle"))
 
@@ -111,7 +113,7 @@ def test_dials_cluster_unit_cell_command_line_output_files(dials_data, tmp_path)
 def test_cluster_unit_cell_api(dials_data):
     pytest.importorskip("scipy")
 
-    data_dir = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    data_dir = dials_data("polyhedra_narrow_wedges")
     experiments = ExperimentList(
         [
             ExperimentListFactory.from_json_file(expt, check_format=False)[0]

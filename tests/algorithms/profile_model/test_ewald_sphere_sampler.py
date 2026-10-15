@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_run(dials_data):
-    experiments = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    experiments = dials_data("centroid_test_data") / "experiments.json"
 
     from dxtbx.model.experiment_list import ExperimentListFactory
 

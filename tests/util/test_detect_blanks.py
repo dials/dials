@@ -10,11 +10,11 @@ from dials.util import detect_blanks
 
 def test_blank_counts_analysis(dials_data):
     expts = ExperimentList.from_file(
-        dials_data("insulin_processed", pathlib=True) / "imported.expt",
+        dials_data("insulin_processed") / "imported.expt",
         check_format=False,
     )
     refl = flex.reflection_table.from_file(
-        dials_data("insulin_processed", pathlib=True) / "strong.refl"
+        dials_data("insulin_processed") / "strong.refl"
     )
     results = detect_blanks.blank_counts_analysis(
         refl, expts[0].scan, phi_step=5, fractional_loss=0.1
@@ -56,11 +56,11 @@ def test_blank_counts_analysis(dials_data):
 
 def test_blank_integrated_analysis(dials_data):
     expts = ExperimentList.from_file(
-        dials_data("insulin_processed", pathlib=True) / "integrated.expt",
+        dials_data("insulin_processed") / "integrated.expt",
         check_format=False,
     )
     refl = flex.reflection_table.from_file(
-        dials_data("insulin_processed", pathlib=True) / "integrated.refl"
+        dials_data("insulin_processed") / "integrated.refl"
     )
     results = detect_blanks.blank_integrated_analysis(
         refl, expts[0].scan, phi_step=5, fractional_loss=0.1

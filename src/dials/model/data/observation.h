@@ -51,7 +51,7 @@ namespace dials { namespace model {
        * @param rhs The other intensity
        * @returns True/False. They are the same
        */
-      bool operator==(const IntensityData &rhs) const {
+      bool operator==(const IntensityData& rhs) const {
         const double eps = 1e-7;
         return (std::abs(value - rhs.value) < eps
                 && std::abs(variance - rhs.variance) < eps && success == rhs.success);
@@ -62,7 +62,7 @@ namespace dials { namespace model {
        * @param rhs The other intensity
        * @returns True/False. They are the same
        */
-      bool operator!=(const IntensityData &rhs) const {
+      bool operator!=(const IntensityData& rhs) const {
         return !(*this == rhs);
       }
     };
@@ -89,10 +89,10 @@ namespace dials { namespace model {
           corrected(corrected_value, corrected_variance, corrected_success) {}
 
     /** Construct with observed */
-    Intensity(const IntensityData &observed_) : observed(observed_) {}
+    Intensity(const IntensityData& observed_) : observed(observed_) {}
 
     /** Construct with observed and corrected */
-    Intensity(const IntensityData &observed_, const IntensityData &corrected_)
+    Intensity(const IntensityData& observed_, const IntensityData& corrected_)
         : observed(observed_), corrected(corrected_) {}
 
     /**
@@ -100,7 +100,7 @@ namespace dials { namespace model {
      * @param rhs The other intensity
      * @returns True/False. They are the same
      */
-    bool operator==(const Intensity &rhs) const {
+    bool operator==(const Intensity& rhs) const {
       return observed == rhs.observed && corrected == rhs.corrected;
     }
 
@@ -109,7 +109,7 @@ namespace dials { namespace model {
      * @param rhs The other intensity
      * @returns True/False. They are the same
      */
-    bool operator!=(const Intensity &rhs) const {
+    bool operator!=(const Intensity& rhs) const {
       return !(*this == rhs);
     }
   };
@@ -141,7 +141,7 @@ namespace dials { namespace model {
        * @param rhs The other centroid
        * @returns True/False. They are the same
        */
-      bool operator==(const CentroidData &rhs) const {
+      bool operator==(const CentroidData& rhs) const {
         const double eps = 1e-7;
         return ((std::abs(position[0] - rhs.position[0]) < eps)
                 && (std::abs(position[1] - rhs.position[1]) < eps)
@@ -159,7 +159,7 @@ namespace dials { namespace model {
        * @param rhs The other centroid
        * @returns True/False. They are the same
        */
-      bool operator!=(const CentroidData &rhs) const {
+      bool operator!=(const CentroidData& rhs) const {
         return !(*this == rhs);
       }
     };
@@ -187,17 +187,17 @@ namespace dials { namespace model {
           mm(mm_position, mm_variance, mm_std_err_sq) {}
 
     /** Construct with the pixel coordinate */
-    Centroid(const CentroidData &px_) : px(px_) {}
+    Centroid(const CentroidData& px_) : px(px_) {}
 
     /** Construct the with pixel and millimetre position */
-    Centroid(const CentroidData &px_, const CentroidData &mm_) : px(px_), mm(mm_) {}
+    Centroid(const CentroidData& px_, const CentroidData& mm_) : px(px_), mm(mm_) {}
 
     /**
      * Test to see if centroids contain the same data
      * @param rhs The other centroid
      * @returns True/False. They are the same
      */
-    bool operator==(const Centroid &rhs) const {
+    bool operator==(const Centroid& rhs) const {
       return px == rhs.px && mm == rhs.mm;
     }
 
@@ -206,7 +206,7 @@ namespace dials { namespace model {
      * @param rhs The other centroid
      * @returns True/False. They are the same
      */
-    bool operator!=(const Centroid &rhs) const {
+    bool operator!=(const Centroid& rhs) const {
       return !(*this == rhs);
     }
 
@@ -217,7 +217,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @param s The scan model
      */
-    void update_mm(std::size_t panel, const Detector &d, const Scan &s) {
+    void update_mm(std::size_t panel, const Detector& d, const Scan& s) {
       // Check the panel number
       DIALS_ASSERT(panel < d.size());
 
@@ -248,7 +248,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @param s The scan model
      */
-    void update_mm(const Detector &d, const Scan &s) {
+    void update_mm(const Detector& d, const Scan& s) {
       update_mm(0, d, s);
     }
 
@@ -258,7 +258,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(std::size_t panel, const BeamBase &b, const Detector &d) const {
+    double resolution(std::size_t panel, const BeamBase& b, const Detector& d) const {
       return d[panel].get_resolution_at_pixel(
         b.get_s0(), vec2<double>(px.position[0], px.position[1]));
     }
@@ -268,7 +268,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const BeamBase &b, const Detector &d) const {
+    double resolution(const BeamBase& b, const Detector& d) const {
       return resolution(0, b, d);
     }
   };
@@ -285,30 +285,30 @@ namespace dials { namespace model {
     Observation() : panel(0) {}
 
     /** Construct with position */
-    Observation(const Centroid &centroid_) : panel(0), centroid(centroid_) {}
+    Observation(const Centroid& centroid_) : panel(0), centroid(centroid_) {}
 
     /** Construct with intensity */
-    Observation(const Intensity &intensity_) : panel(0), intensity(intensity_) {}
+    Observation(const Intensity& intensity_) : panel(0), intensity(intensity_) {}
 
     /** Construct with position and intensity */
-    Observation(const Centroid &centroid_, const Intensity &intensity_)
+    Observation(const Centroid& centroid_, const Intensity& intensity_)
         : panel(0), centroid(centroid_), intensity(intensity_) {}
 
     /** Construct with panel */
     Observation(std::size_t panel_) : panel(panel_) {}
 
     /** Construct with position */
-    Observation(std::size_t panel_, const Centroid &centroid_)
+    Observation(std::size_t panel_, const Centroid& centroid_)
         : panel(panel_), centroid(centroid_) {}
 
     /** Construct with intensity */
-    Observation(std::size_t panel_, const Intensity &intensity_)
+    Observation(std::size_t panel_, const Intensity& intensity_)
         : panel(panel_), intensity(intensity_) {}
 
     /** Construct with position and intensity */
     Observation(std::size_t panel_,
-                const Centroid &centroid_,
-                const Intensity &intensity_)
+                const Centroid& centroid_,
+                const Intensity& intensity_)
         : panel(panel_), centroid(centroid_), intensity(intensity_) {}
 
     /**
@@ -317,7 +317,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @param s The scan model
      */
-    void update_centroid_mm(const Detector &d, const Scan &s) {
+    void update_centroid_mm(const Detector& d, const Scan& s) {
       centroid.update_mm(panel, d, s);
     }
 
@@ -326,7 +326,7 @@ namespace dials { namespace model {
      * @param d The detector model
      * @returns The resolution
      */
-    double resolution(const BeamBase &b, const Detector &d) const {
+    double resolution(const BeamBase& b, const Detector& d) const {
       return centroid.resolution(panel, b, d);
     }
 
@@ -335,7 +335,7 @@ namespace dials { namespace model {
      * @param rhs The other observation
      * @returns True/False. They are the same
      */
-    bool operator==(const Observation &rhs) const {
+    bool operator==(const Observation& rhs) const {
       return (panel == rhs.panel && centroid == rhs.centroid
               && intensity == rhs.intensity);
     }
@@ -345,7 +345,7 @@ namespace dials { namespace model {
      * @param rhs The other observation
      * @returns True/False. They are not the same
      */
-    bool operator!=(const Observation &rhs) const {
+    bool operator!=(const Observation& rhs) const {
       return !(*this == rhs);
     }
   };

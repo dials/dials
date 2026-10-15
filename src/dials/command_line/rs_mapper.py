@@ -135,6 +135,9 @@ class Script:
             self.map_file = params.output.map_file
 
         self.experiments = flatten_experiments(params.input.experiments)
+        if len(self.experiments) == 0:
+            self.parser.print_help()
+            return
 
         self.reverse_phi = params.rs_mapper.reverse_phi
         self.grid_size = params.rs_mapper.grid_size
@@ -153,13 +156,23 @@ class Script:
             self.nproc = CPU_COUNT
             logger.info(f"Setting nproc={self.nproc}")
 
-        for i_expt, experiment in enumerate(self.experiments):
-            logger.info(f"Calculation for experiment {i_expt}")
-            for i_panel in range(len(experiment.detector)):
-                grid, counts = self.process_imageset(experiment.imageset, i_panel)
+        if self.experiments.all_tof():
+            recviewer.process_tof_experiment_list(
+                self.experiments,
+                self.max_resolution,
+                self.grid,
+                self.counts,
+                self.nproc,
+                False,
+            )
+        else:
+            for i_expt, experiment in enumerate(self.experiments):
+                logger.info(f"Calculation for experiment {i_expt}")
+                for i_panel in range(len(experiment.detector)):
+                    grid, counts = self.process_imageset(experiment.imageset, i_panel)
 
-                self.grid += grid
-                self.counts += counts
+                    self.grid += grid
+                    self.counts += counts
 
         recviewer.normalize_voxels(self.grid, self.counts)
 

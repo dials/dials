@@ -278,11 +278,7 @@ class XrayFrame(wx.Frame):
             self.viewer.update_settings(layout=False)
 
     def OnLoadFile(self, event):
-        wildcard_str = ""
-        if wx.PlatformInfo[4] != "wxOSX-cocoa":
-            from iotbx import file_reader
-
-            wildcard_str = file_reader.get_wildcard_string("img")
+        wildcard_str = "Detector image file (*.img, *.osc, *.mccd, *.cbf, *.nxs, *.h5, *.hdf5, *.mrc)|*.img;*.osc;*.mccd;*.cbf;*.nxs;*.h5;*.hdf5;*.mrc"
         file_name = wx.FileSelector(
             "Image file",
             wildcard=wildcard_str,

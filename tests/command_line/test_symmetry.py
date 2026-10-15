@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import shutil
 import subprocess
 
@@ -34,7 +35,7 @@ from dials.util.phil import parse
 def test_symmetry_laue_only(dials_data, tmp_path):
     """Simple test to check that dials.symmetry completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -118,7 +119,7 @@ def test_symmetry_basis_changes_for_C2(tmp_path):
 def test_symmetry_with_absences(dials_data, tmp_path, option):
     """Simple test to check that dials.symmetry, with absences, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     cmd = [
         shutil.which("dials.symmetry"),
         lcyst_data / "20_integrated_experiments.json",
@@ -140,7 +141,7 @@ def test_symmetry_with_absences(dials_data, tmp_path, option):
 def test_symmetry_with_laue_group_override(dials_data, tmp_path):
     """Simple test to check that dials.symmetry, with overridden laue group, completes"""
 
-    lcyst_data = dials_data("l_cysteine_dials_output", pathlib=True)
+    lcyst_data = dials_data("l_cysteine_dials_output")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -168,7 +169,7 @@ def test_symmetry_with_laue_group_override(dials_data, tmp_path):
 @pytest.mark.parametrize("method", ["direct", "fourier"])
 def test_symmetry_absences_only(dials_data, tmp_path, method):
     """Test the command line script with real data. Proteinase K in P41"""
-    location = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    location = dials_data("vmxi_proteinase_k_sweeps")
 
     command = [
         shutil.which("dials.symmetry"),
@@ -524,7 +525,7 @@ def test_few_reflections(dials_data, run_in_tmp_path):
     params = dials_symmetry.phil_scope.fetch(source=parse("")).extract()
 
     # Use the integrated data from the first ten images of the first sweep.
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     experiments = ExperimentList.from_file(data_dir / "11_integrated.expt")
     reflections = [flex.reflection_table.from_file(data_dir / "11_integrated.refl")]
 
@@ -540,7 +541,7 @@ def test_x4wide(dials_data, tmp_path):
     Expected space group is P 43 21 2 (or its enantiomorphic equivalent, P 41 21 2)
     See also https://www.rcsb.org/structure/3QF8
     """
-    x4wide = dials_data("x4wide_processed", pathlib=True)
+    x4wide = dials_data("x4wide_processed")
     result = subprocess.run(
         [
             shutil.which("dials.symmetry"),
@@ -554,3 +555,87 @@ def test_x4wide(dials_data, tmp_path):
     assert tmp_path.joinpath("symmetrized.expt").is_file()
     exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
     assert str(exps[0].crystal.get_space_group().info()) == "P 41 21 2"
+
+
+def test_small_molecule_nidppe(dials_data, tmp_path):
+    nidppe = dials_data("nidppe_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    result = subprocess.run(
+        (
+            shutil.which("dials.symmetry"),
+            nidppe / "integrated.expt",
+            nidppe / "integrated.refl.gz",
+            "small_molecule=True",
+            "normalisation=ml_iso",  # stability
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 1 21/c 1    | ✔         |            50 |        29 |  5.081 |     330 |          0.01 |       328 |            2.48 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+Selected results in Laue group P 1 2/m 1: P 1 21/c 1
+Saving reindexed experiments to symmetrized.expt in space group P 1 21/c 1
+Saving 29680 reindexed reflections to symmetrized.refl
+""")
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
+    assert str(exps[0].crystal.get_space_group().info()) == "P 1 21/c 1"
+
+
+def test_small_molecule_quartz(dials_data, tmp_path):
+    quartz = dials_data("quartz_processed")
+
+    # Set Windows UTF-8 mode explicitly in the environment
+    env = os.environ.copy()
+    env["PYTHONUTF8"] = "1"
+    env["PYTHONIOENCODING"] = "utf-8"
+
+    result = subprocess.run(
+        (
+            shutil.which("dials.symmetry"),
+            quartz / "integrated.expt",
+            quartz / "integrated.refl",
+            "small_molecule=True",
+            "normalisation=ml_iso",  # stability
+            "laue_group=P321",  # fix laue group to avoid differences across platforms (https://github.com/dials/dials/issues/3171)
+        ),
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,  # Convert bytes to strings and normalizes line endings
+        env=env,
+        encoding="utf-8",
+    )
+    assert result.returncode == 0
+    assert result.stdout.endswith("""
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+| Space group   | Centric   |   Matches (%) |   Incons. |   Rint |   #Weak |   Weak I/σ(I) |   #Strong |   Strong I/σ(I) |
+|               |           |               |    equiv. |        |         |               |           |                 |
+|---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------|
+| P 31          |           |            50 |        64 | 15.422 |      12 |           1.1 |         6 |           16.28 |
+| P 32          |           |            50 |        64 | 15.422 |      12 |           1.1 |         6 |           16.28 |
+| P 31 2 1      |           |            50 |        48 | 16.906 |      12 |           1.1 |        13 |           19.47 |
+| P 32 2 1      |           |            50 |        48 | 16.906 |      12 |           1.1 |        13 |           19.47 |
++---------------+-----------+---------------+-----------+--------+---------+---------------+-----------+-----------------+
+Selected results in Laue group P -3 m 1: P 31 2 1, P 32 2 1
+Saving reindexed experiments to symmetrized.expt in space group P 31 2 1
+Saving 1653 reindexed reflections to symmetrized.refl
+""")
+    assert tmp_path.joinpath("symmetrized.refl").is_file()
+    assert tmp_path.joinpath("symmetrized.expt").is_file()
+    exps = load.experiment_list(tmp_path / "symmetrized.expt", check_format=False)
+    assert str(exps[0].crystal.get_space_group().info()) == "P 31 2 1"

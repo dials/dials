@@ -22,6 +22,7 @@ import boost_adaptbx.boost.python
 import cctbx.array_family.flex
 import cctbx.miller
 import libtbx.smart_open
+from dxtbx import flumpy
 from dxtbx.model import ExperimentType
 from scitbx import matrix
 
@@ -57,11 +58,11 @@ class _:
     # the modified algorithms. If these are modified on the instance level, then
     # only the instance will have the modified algorithms and new instances will
     # have the defaults
-    background_algorithm = functools.partial(
-        dials.extensions.glm_background_ext.GLMBackgroundExt, None
+    background_algorithm = staticmethod(
+        functools.partial(dials.extensions.glm_background_ext.GLMBackgroundExt, None)
     )
-    centroid_algorithm = functools.partial(
-        dials.extensions.simple_centroid_ext.SimpleCentroidExt, None
+    centroid_algorithm = staticmethod(
+        functools.partial(dials.extensions.simple_centroid_ext.SimpleCentroidExt, None)
     )
 
     @staticmethod
@@ -237,10 +238,10 @@ class _:
         """
         if os.getenv("DIALS_USE_PICKLE"):
             self.as_pickle(filename)
-        elif os.getenv("DIALS_USE_H5"):
-            self.as_hdf5(filename)
-        else:
+        elif os.getenv("DIALS_USE_MSGPACK"):
             self.as_msgpack_file(filename)
+        else:
+            self.as_hdf5(filename)
 
     @staticmethod
     def from_file(filename):
@@ -248,13 +249,13 @@ class _:
         Read the reflection table from either pickle or msgpack
         """
         try:
-            return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
-                filename
-            )
-        except RuntimeError:
+            return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
+        except OSError:
             try:
-                return dials_array_family_flex_ext.reflection_table.from_hdf5(filename)
-            except OSError:
+                return dials_array_family_flex_ext.reflection_table.from_msgpack_file(
+                    filename
+                )
+            except RuntimeError:
                 return dials_array_family_flex_ext.reflection_table.from_pickle(
                     filename
                 )
@@ -433,6 +434,64 @@ class _:
             cctbx.miller.array_info(source="DIALS", source_type="reflection_tables")
         )
         return i_obs
+
+    def as_pandas_dataframe(self, columns=None):
+        """
+        Return the reflection table as a pandas DataFrame.
+
+        Columns holding a single value per reflection map to a single
+        DataFrame column of the same name. Columns holding several values per
+        reflection (e.g. miller_index, xyzobs.px.value, bbox) are unpacked
+        into one DataFrame column per element, named by appending an index to
+        the reflection table column name, so miller_index becomes
+        miller_index_0, miller_index_1 and miller_index_2.
+
+        Columns which have no array representation, in practice shoebox, are
+        omitted.
+
+        :param columns: An optional list of reflection table column names to
+                        convert; the default is to convert every column.
+        :return: A pandas DataFrame of the requested columns
+        """
+
+        if columns is None:
+            columns = list(self.keys())
+        else:
+            missing = [c for c in columns if c not in self]
+            if missing:
+                raise KeyError(f"Reflection table has no column(s) {missing}")
+
+        data = {}
+        omitted = []
+
+        for key in columns:
+            column = self[key]
+            try:
+                array = flumpy.to_numpy(column)
+            except (TypeError, ValueError):
+                # types flumpy does not know about, e.g. int6 (bbox), which
+                # can still be split into their elements; and shoebox, which
+                # cannot
+                if hasattr(column, "parts"):
+                    for j, part in enumerate(column.parts()):
+                        data[f"{key}_{j}"] = flumpy.to_numpy(part)
+                else:
+                    omitted.append(key)
+                continue
+            if array.ndim == 1:
+                data[key] = array
+            else:
+                array = array.reshape(array.shape[0], -1)
+                for j in range(array.shape[1]):
+                    data[f"{key}_{j}"] = array[:, j]
+
+        if omitted:
+            logger.debug(
+                "Columns omitted from DataFrame (no array representation): %s",
+                ", ".join(omitted),
+            )
+
+        return pd.DataFrame(data)
 
     def copy(self):
         """
@@ -1537,6 +1596,8 @@ class reflection_table_selector:
         elif isinstance(data, dials_array_family_flex_ext.int6):
             raise RuntimeError("Comparison not implemented")
         elif isinstance(data, dials_array_family_flex_ext.shoebox):
+            raise RuntimeError("Comparison not implemented")
+        elif isinstance(data, dials_array_family_flex_ext.frame_sliced_shoebox):
             raise RuntimeError("Comparison not implemented")
         else:
             raise RuntimeError("Unknown column type")

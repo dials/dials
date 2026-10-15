@@ -102,7 +102,7 @@ def test_index_after_search(dials_data, run_in_tmp_path):
     unit cell is obtained and that the RMSDs are smaller than or equal to some
     expected values."""
 
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
 
     # load the original experiment and perturb
     # the beam centre by a small offset
@@ -159,7 +159,7 @@ def test_search_single(dials_data, run_in_tmp_path):
     in detector origin.
     """
 
-    insulin = dials_data("insulin_processed", pathlib=True)
+    insulin = dials_data("insulin_processed")
     refl_path = insulin / "strong.refl"
     experiments_path = insulin / "imported.expt"
 
@@ -190,7 +190,7 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
     in detector origin.
     """
 
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("l_cysteine_dials_output")
     experiments_path = data / "imported.expt"
     refl_path = data / "strong.refl"
 
@@ -216,7 +216,7 @@ def test_search_small_molecule(dials_data, run_in_tmp_path):
 
 
 def test_multi_sweep_fixed_rotation(dials_data, run_in_tmp_path):
-    data = dials_data("l_cysteine_dials_output", pathlib=True)
+    data = dials_data("l_cysteine_dials_output")
     experiments_path = data / "imported.expt"
     refl_path = data / "strong.refl"
 

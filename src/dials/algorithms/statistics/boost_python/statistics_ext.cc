@@ -42,7 +42,7 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename RealType>
   boost::python::tuple kolmogorov_smirnov_test_standard_normal(
-    const af::const_ref<RealType> &data,
+    const af::const_ref<RealType>& data,
     std::string type) {
     // Get the enumeration
     KSType etype = TwoSided;
@@ -78,9 +78,9 @@ namespace dials { namespace algorithms { namespace boost_python {
     def("pearson_correlation_coefficient", &pearson_correlation_coefficient<double>);
 
     class_<BinnedGMMSingle1DFixedMean>("BinnedGMMSingle1DFixedMean", no_init)
-      .def(init<const af::const_ref<double> &,
-                const af::const_ref<double> &,
-                const af::const_ref<double> &,
+      .def(init<const af::const_ref<double>&,
+                const af::const_ref<double>&,
+                const af::const_ref<double>&,
                 double,
                 double,
                 double,
@@ -92,9 +92,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("sigma", &BinnedGMMSingle1DFixedMean::sigma);
 
     class_<BinnedGMMSingle1D>("BinnedGMMSingle1D", no_init)
-      .def(init<const af::const_ref<double> &,
-                const af::const_ref<double> &,
-                const af::const_ref<double> &,
+      .def(init<const af::const_ref<double>&,
+                const af::const_ref<double>&,
+                const af::const_ref<double>&,
                 double,
                 double,
                 double,
@@ -106,8 +106,8 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("sigma", &BinnedGMMSingle1D::sigma);
 
     class_<BinnedStatistics>("BinnedStatistics", no_init)
-      .def(init<const af::const_ref<double> &,
-                const af::const_ref<std::size_t> &,
+      .def(init<const af::const_ref<double>&,
+                const af::const_ref<std::size_t>&,
                 std::size_t>())
       .def("bin_is_empty", &BinnedStatistics::bin_is_empty)
       .def("bin_is_sorted", &BinnedStatistics::bin_is_sorted)

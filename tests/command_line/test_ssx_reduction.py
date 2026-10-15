@@ -16,8 +16,8 @@ def test_ssx_reduction(dials_data, tmp_path):
     successfully on ssx data.
     Also test a few smaller analysis programs.
     """
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    ssx_data = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    ssx_data = dials_data("cunir_serial")
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 

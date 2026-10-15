@@ -11,7 +11,7 @@ namespace dials { namespace af {
   /**
    * Copy the indices to std::size_t
    */
-  af::shared<std::size_t> int_to_size_t(const const_ref<int> &x) {
+  af::shared<std::size_t> int_to_size_t(const const_ref<int>& x) {
     typedef af::shared<std::size_t>::iterator iterator;
     af::shared<std::size_t> result(x.size());
     iterator end =

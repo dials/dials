@@ -113,7 +113,7 @@ class FfbIndexer(Strategy):
 
         if ffbidx is None:
             raise DialsIndexError(
-                "ffbidx requires the fast feedback indexer package. See (https://github.com/paulscherrerinstitute/fast-feedback-indexer)"
+                "ffbidx requires the fast feedback indexer package (https://github.com/paulscherrerinstitute/fast-feedback-indexer). Please run `mamba install ffbidx`."
             )
 
         self._target_symmetry_primitive = target_symmetry_primitive

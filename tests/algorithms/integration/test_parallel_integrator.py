@@ -17,7 +17,7 @@ from dials.array_family import flex
 
 @pytest.fixture(scope="module")
 def data(dials_data):  # read experiments and reflections
-    directory = dials_data("integration_test_data", pathlib=True)
+    directory = dials_data("integration_test_data")
     experiments_path = directory / "thaumatin_i04-integrated.expt"
     reflections_path = directory / "thaumatin_i04-shoeboxes.refl.bz2"
     reference_path = directory / "thaumatin_i04-reference_profiles.pickle.bz2"

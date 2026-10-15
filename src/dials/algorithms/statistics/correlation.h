@@ -22,8 +22,8 @@ namespace dials { namespace algorithms {
     // Struct to help sort
     template <typename T>
     struct sort_by_index {
-      const af::const_ref<T> &d;
-      sort_by_index(const af::const_ref<T> &d_) : d(d_) {}
+      const af::const_ref<T>& d;
+      sort_by_index(const af::const_ref<T>& d_) : d(d_) {}
       bool operator()(std::size_t a, std::size_t b) const {
         return d[a] < d[b];
       }
@@ -76,8 +76,8 @@ namespace dials { namespace algorithms {
    * @return The rank correlation coefficient
    */
   template <typename T>
-  T spearman_correlation_coefficient(const af::const_ref<T> &a,
-                                     const af::const_ref<T> &b) {
+  T spearman_correlation_coefficient(const af::const_ref<T>& a,
+                                     const af::const_ref<T>& b) {
     DIALS_ASSERT(a.size() == b.size());
 
     // Rank the two datasets
@@ -107,8 +107,8 @@ namespace dials { namespace algorithms {
    * @return The correlation coefficient
    */
   template <typename T>
-  T pearson_correlation_coefficient(const af::const_ref<T> &x,
-                                    const af::const_ref<T> &y) {
+  T pearson_correlation_coefficient(const af::const_ref<T>& x,
+                                    const af::const_ref<T>& y) {
     DIALS_ASSERT(x.size() == y.size());
     DIALS_ASSERT(x.size() > 0);
     T mx = 0.0;

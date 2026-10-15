@@ -88,11 +88,13 @@ install(
         dials_algorithms_spot_finding_ext
         dials_algorithms_spot_prediction_ext
         dials_algorithms_statistics_ext
+        dials_algorithms_symmetry_refstat_ext
         dials_array_family_flex_ext
         dials_model_data_ext
         dials_pychef_ext
         dials_refinement_helpers_ext
         dials_scaling_ext
+        dials_cosym_ext
         dials_tof_scaling_ext
         dials_util_ext
         dials_util_streambuf_test_ext

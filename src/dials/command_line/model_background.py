@@ -213,7 +213,6 @@ class Script:
         """Execute the script."""
         from dials.algorithms.background.modeller import BackgroundModeller
         from dials.array_family import flex
-        from dials.util.command_line import heading
         from dials.util.options import flatten_experiments
 
         # Parse the command line
@@ -260,7 +259,7 @@ class Script:
         logger.info("")
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Predicting reflections"))
+        logger.info("Predicting reflections")
         logger.info("")
         predicted = flex.reflection_table.from_predictions_multi(
             experiments,

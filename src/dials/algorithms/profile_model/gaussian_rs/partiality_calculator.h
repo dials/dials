@@ -54,9 +54,9 @@ namespace dials { namespace algorithms { namespace profile_model {
 
       virtual double single(vec3<double> s1, double frame, int6 bbox) const = 0;
 
-      virtual af::shared<double> array(const af::const_ref<vec3<double> > &s1,
-                                       const af::const_ref<double> &frame,
-                                       const af::const_ref<int6> &bbox) const = 0;
+      virtual af::shared<double> array(const af::const_ref<vec3<double> >& s1,
+                                       const af::const_ref<double>& frame,
+                                       const af::const_ref<int6>& bbox) const = 0;
     };
 
     /** Calculate the partiality for each reflection */
@@ -69,9 +69,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param scan The scan parameters
        * @param sigma_mosaicity The xds sigma_mosaicity parameter
        */
-      PartialityCalculator3D(const BeamBase &beam,
-                             const Goniometer &gonio,
-                             const Scan &scan,
+      PartialityCalculator3D(const BeamBase& beam,
+                             const Goniometer& gonio,
+                             const Scan& scan,
                              double sigma_m)
           : s0_(beam.get_s0()),
             m2_(gonio.get_rotation_axis()),
@@ -87,10 +87,10 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param scan The scan parameters
        * @param sigma_mosaicity The xds sigma_mosaicity parameter
        */
-      PartialityCalculator3D(const BeamBase &beam,
-                             const Goniometer &gonio,
-                             const Scan &scan,
-                             const af::const_ref<double> &sigma_m)
+      PartialityCalculator3D(const BeamBase& beam,
+                             const Goniometer& gonio,
+                             const Scan& scan,
+                             const af::const_ref<double>& sigma_m)
           : s0_(beam.get_s0()),
             m2_(gonio.get_rotation_axis()),
             scan_(scan),
@@ -148,9 +148,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The array of frame numbers.
        * @param bbox The array of bboxes
        */
-      virtual af::shared<double> array(const af::const_ref<vec3<double> > &s1,
-                                       const af::const_ref<double> &frame,
-                                       const af::const_ref<int6> &bbox) const {
+      virtual af::shared<double> array(const af::const_ref<vec3<double> >& s1,
+                                       const af::const_ref<double>& frame,
+                                       const af::const_ref<int6>& bbox) const {
         DIALS_ASSERT(s1.size() == frame.size());
         DIALS_ASSERT(s1.size() == bbox.size());
         af::shared<double> result(s1.size(), af::init_functor_null<double>());
@@ -175,7 +175,7 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param beam The beam parameters
        * @param sigma_mosaicity The xds sigma_mosaicity parameter
        */
-      PartialityCalculator2D(const BeamBase &beam, double sigma_m)
+      PartialityCalculator2D(const BeamBase& beam, double sigma_m)
           : s0_(beam.get_s0()) {}
 
       /**
@@ -203,9 +203,9 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The array of frame numbers.
        * @param bbox The array of bboxes
        */
-      virtual af::shared<double> array(const af::const_ref<vec3<double> > &s1,
-                                       const af::const_ref<double> &frame,
-                                       const af::const_ref<int6> &bbox) const {
+      virtual af::shared<double> array(const af::const_ref<vec3<double> >& s1,
+                                       const af::const_ref<double>& frame,
+                                       const af::const_ref<int6>& bbox) const {
         DIALS_ASSERT(s1.size() == frame.size());
         DIALS_ASSERT(s1.size() == bbox.size());
         af::shared<double> result(s1.size(), af::init_functor_null<double>());
@@ -248,10 +248,10 @@ namespace dials { namespace algorithms { namespace profile_model {
        * @param frame The array of frame numbers.
        * @param bbox The array of bounding boxes
        */
-      af::shared<double> operator()(const af::const_ref<std::size_t> &id,
-                                    const af::const_ref<vec3<double> > &s1,
-                                    const af::const_ref<double> &frame,
-                                    const af::const_ref<int6> &bbox) const {
+      af::shared<double> operator()(const af::const_ref<std::size_t>& id,
+                                    const af::const_ref<vec3<double> >& s1,
+                                    const af::const_ref<double>& frame,
+                                    const af::const_ref<int6>& bbox) const {
         DIALS_ASSERT(s1.size() == id.size());
         DIALS_ASSERT(s1.size() == frame.size());
         DIALS_ASSERT(s1.size() == bbox.size());

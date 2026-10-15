@@ -20,7 +20,7 @@ from dials.util.slice import slice_reflections
     ["automatic", "single", "multiple", "hierarchical"],
 )
 def test_multi_panel_parameterisations(dials_data, detector_parameterisation_choice):
-    data_dir = dials_data("iterative_cspad_refinement", pathlib=True)
+    data_dir = dials_data("iterative_cspad_refinement")
     exp_file = data_dir / "cspad_refined_experiments_step6_level2_300.json"
     ref_file = data_dir / "cspad_reflections_step7_300.pickle"
 
@@ -50,7 +50,7 @@ def test_multi_panel_parameterisations(dials_data, detector_parameterisation_cho
 
 def test_trim_scans_to_observations(dials_data):
     # Use 4 scan data for this test
-    data_dir = dials_data("l_cysteine_dials_output", pathlib=True)
+    data_dir = dials_data("l_cysteine_dials_output")
     experiments = ExperimentListFactory.from_json_file(
         data_dir / "indexed.expt", check_format=False
     )

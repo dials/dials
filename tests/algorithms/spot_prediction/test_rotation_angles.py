@@ -15,10 +15,8 @@ def test(dials_data, tmp_path):
     from dials.algorithms.spot_prediction import RotationAngles
 
     # The XDS files to read from
-    integrate_filename = (
-        dials_data("misc_regression", pathlib=True) / "sim_mx-INTEGRATE.HKL"
-    )
-    gxparm_filename = dials_data("misc_regression", pathlib=True) / "sim_mx-GXPARM.XDS"
+    integrate_filename = dials_data("misc_regression") / "sim_mx-INTEGRATE.HKL"
+    gxparm_filename = dials_data("misc_regression") / "sim_mx-GXPARM.XDS"
 
     # Read the XDS files
     integrate_handle = integrate_hkl.reader()

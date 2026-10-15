@@ -1,0 +1,1 @@
+Cleanup for ``IntegratorExecutor`` to make sure ``__init__`` args and ``__getinitargs__`` match

@@ -190,7 +190,7 @@ def test_refinement(dials_data):
 
     # Get a beam and detector from a experiments. This one has a CS-PAD, but that
     # is irrelevant
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "cspad-single-image.expt"
 
     # load models

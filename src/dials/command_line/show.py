@@ -93,7 +93,7 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
     s = str(beam)
 
     # time of flight experiments have no scan points
-    if experiment_type == ExperimentType.TOF:
+    if experiment_type in [ExperimentType.TOF, ExperimentType.LAUE]:
         return s
 
     # report whether the beam is scan-varying
@@ -253,7 +253,7 @@ def show_experiments(experiments, show_scan_varying=False):
         except AttributeError:
             pass
         text.append(str(expt.detector))
-        if expt.get_type() == ExperimentType.TOF:
+        if expt.get_type() in [ExperimentType.TOF, ExperimentType.LAUE]:
             min_wavelength = min(expt.beam.get_wavelength_range())
             s0 = tuple([i / min_wavelength for i in expt.beam.get_unit_s0()])
         else:

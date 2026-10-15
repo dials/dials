@@ -116,6 +116,7 @@ class XrayFrame(XFBaseClass):
         self._uc_frame = None
         self._score_frame = None
         self._line_frame = None
+        self._ellipse_frame = None
         self._plugins_frame = dict.fromkeys(self.plugins)
         self.zoom_frame = None
         self.plot_frame = None
@@ -145,6 +146,7 @@ class XrayFrame(XFBaseClass):
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIUC, id=self._id_uc)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIScore, id=self._id_score)
         self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUILine, id=self._id_line)
+        self.Bind(wx.EVT_UPDATE_UI, self.OnUpdateUIEllipse, id=self._id_ellipse)
         for p in self.plugins:
             self.Bind(
                 wx.EVT_UPDATE_UI,
@@ -314,6 +316,11 @@ class XrayFrame(XFBaseClass):
         self._id_line = wx.NewId()
         item = self._actions_menu.Append(self._id_line, " ")
         self.Bind(wx.EVT_MENU, self.OnLine, source=item)
+
+        # XXX Placement
+        self._id_ellipse = wx.NewId()
+        item = self._actions_menu.Append(self._id_ellipse, " ")
+        self.Bind(wx.EVT_MENU, self.OnEllipse, source=item)
 
         self._id_plugins = {}
         for p in self.plugins:
@@ -602,6 +609,21 @@ class XrayFrame(XFBaseClass):
         else:
             self._line_frame.Destroy()
 
+    def OnEllipse(self, event):
+        from .ellipse_frame import EllipseSettingsFrame
+
+        if not self._ellipse_frame:
+            self._ellipse_frame = EllipseSettingsFrame(
+                self,
+                wx.ID_ANY,
+                "Ellipse tool",
+                style=wx.CAPTION | wx.CLOSE_BOX | wx.RESIZE_BORDER,
+            )
+            self._ellipse_frame.Show()
+            self._ellipse_frame.Raise()
+        else:
+            self._ellipse_frame.Destroy()
+
     def OnPluginWrapper(self, p):
         def OnPlugin(event):
             if not self._plugins_frame[p]:
@@ -679,6 +701,14 @@ class XrayFrame(XFBaseClass):
             event.SetText("Hide line tool")
         else:
             event.SetText("Show line tool")
+
+    def OnUpdateUIEllipse(self, event):
+        # Toggle the menu item text depending on the state of the tool.
+
+        if self._line_frame:
+            event.SetText("Hide ellipse tool")
+        else:
+            event.SetText("Show ellipse tool")
 
     def OnUpdateUIPluginWrapper(self, p):
         def OnUpdateUIPlugin(event):

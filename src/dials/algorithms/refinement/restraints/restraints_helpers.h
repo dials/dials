@@ -38,8 +38,8 @@ namespace dials { namespace refinement {
    */
   class CalculateCellGradients {
   public:
-    CalculateCellGradients(const mat3<double> &B,
-                           const af::const_ref<mat3<double> > &dB_dp) {
+    CalculateCellGradients(const mat3<double>& B,
+                           const af::const_ref<mat3<double> >& dB_dp) {
       // calculate the real space orthogonalisation matrix and its derivatives
       Omat_ = (B.transpose()).inverse();
       for (std::size_t i = 0; i < dB_dp.size(); ++i) {

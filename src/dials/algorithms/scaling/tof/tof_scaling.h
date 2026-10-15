@@ -393,9 +393,9 @@ scitbx::af::shared<double> savitzky_golay(scitbx::af::shared<double> signal,
  * optionally for the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -491,10 +491,10 @@ void tof_extract_shoeboxes_to_reflection_table(
  * an incident run, an empty run, and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
-  TOFIncidentSpectrumParams &incident_params,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
+  TOFIncidentSpectrumParams& incident_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();
@@ -667,11 +667,11 @@ void tof_extract_shoeboxes_to_reflection_table(
  * and optionally the Lorentz correction
  */
 void tof_extract_shoeboxes_to_reflection_table(
-  dials::af::reflection_table &reflection_table,
-  Experiment &experiment,
-  ImageSequence &data,
-  TOFIncidentSpectrumParams &incident_params,
-  TOFAbsorptionParams &absorption_params,
+  dials::af::reflection_table& reflection_table,
+  Experiment& experiment,
+  ImageSequence& data,
+  TOFIncidentSpectrumParams& incident_params,
+  TOFAbsorptionParams& absorption_params,
   bool apply_lorentz_correction) {
   Detector detector = *experiment.get_detector();
   Scan scan = *experiment.get_scan();

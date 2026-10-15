@@ -391,14 +391,12 @@ def test_update_imageset_ids(dials_data):
     for i in [1, 2, 3, 4, 5, 7, 8, 10]:
         refls.append(
             flex.reflection_table.from_file(
-                dials_data("multi_crystal_proteinase_k", pathlib=True)
-                / f"reflections_{i}.pickle"
+                dials_data("multi_crystal_proteinase_k") / f"reflections_{i}.pickle"
             )
         )
         expts.extend(
             load.experiment_list(
-                dials_data("multi_crystal_proteinase_k", pathlib=True)
-                / f"experiments_{i}.json",
+                dials_data("multi_crystal_proteinase_k") / f"experiments_{i}.json",
                 check_format=False,
             )
         )

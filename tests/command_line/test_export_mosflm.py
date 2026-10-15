@@ -5,7 +5,7 @@ import subprocess
 
 
 def test_export_mosflm(dials_data, tmp_path):
-    data_dir = dials_data("i04_weak_data", pathlib=True)
+    data_dir = dials_data("i04_weak_data")
     experiments = data_dir / "experiments.json"
     result = subprocess.run(
         [shutil.which("dials.export"), "format=mosflm", experiments],

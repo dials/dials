@@ -17,11 +17,11 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   template <typename FloatType>
-  void mean_and_variance_filter_wrapper(const char *name) {
+  void mean_and_variance_filter_wrapper(const char* name) {
     typedef MeanAndVarianceFilter<FloatType> MeanAndVarianceFilterType;
 
     class_<MeanAndVarianceFilterType>(name, no_init)
-      .def(init<const af::const_ref<FloatType, af::c_grid<2> > &, int2>(
+      .def(init<const af::const_ref<FloatType, af::c_grid<2> >&, int2>(
         (arg("image"), arg("size"))))
       .def("mean", &MeanAndVarianceFilterType::mean)
       .def("variance", &MeanAndVarianceFilterType::variance)
@@ -29,12 +29,12 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   template <typename FloatType>
-  void mean_and_variance_filter_masked_wrapper(const char *name) {
+  void mean_and_variance_filter_masked_wrapper(const char* name) {
     typedef MeanAndVarianceFilterMasked<FloatType> MeanAndVarianceFilterType;
 
     class_<MeanAndVarianceFilterType>(name, no_init)
-      .def(init<const af::const_ref<FloatType, af::c_grid<2> > &,
-                const af::const_ref<int, af::c_grid<2> > &,
+      .def(init<const af::const_ref<FloatType, af::c_grid<2> >&,
+                const af::const_ref<int, af::c_grid<2> >&,
                 int2,
                 int>((arg("image"), arg("mask"), arg("size"), arg("min_size"))))
       .def("mean", &MeanAndVarianceFilterType::mean)
@@ -46,15 +46,15 @@ namespace dials { namespace algorithms { namespace boost_python {
 
   template <typename FloatType>
   MeanAndVarianceFilter<FloatType> make_mean_and_variance_filter(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
     int2 size) {
     return MeanAndVarianceFilter<FloatType>(image, size);
   }
 
   template <typename FloatType>
   MeanAndVarianceFilterMasked<FloatType> make_mean_and_variance_filter_masked(
-    const af::const_ref<FloatType, af::c_grid<2> > &image,
-    const af::const_ref<int, af::c_grid<2> > &mask,
+    const af::const_ref<FloatType, af::c_grid<2> >& image,
+    const af::const_ref<int, af::c_grid<2> >& mask,
     int2 size,
     int min_size) {
     return MeanAndVarianceFilterMasked<FloatType>(image, mask, size, min_size);

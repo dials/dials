@@ -27,7 +27,7 @@ from dials.command_line.refine import _find_disjoint_sets
 
 
 def test_i04_weak_data(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
     pickle_path = data_dir / "i04-weak.pickle"
 
@@ -67,7 +67,7 @@ def test_i04_weak_data(dials_data, tmp_path):
 def test_scan_varying_refinement_rmsds(dials_data, tmp_path):
     """Run scan-varying refinement, comparing RMSD table with expected values."""
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-all.pickle"
 
@@ -141,7 +141,7 @@ def test_scan_varying_with_automated_outlier_rejection_block_width_interval_widt
     """Strict check for scan-varying refinement using automated outlier rejection
     block width and interval width setting"""
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "from-xds.json"
     pickle_path = data_dir / "from-xds-all.pickle"
 
@@ -166,12 +166,12 @@ def test_scan_varying_with_automated_outlier_rejection_block_width_interval_widt
     history = Journal.from_json_file(tmp_path / "history.json")
 
     expected_rmsds = [
-        [0.619507829, 0.351326044, 0.006955399],
-        [0.174024575, 0.113486044, 0.004704006],
-        [0.098351363, 0.084052519, 0.002660408],
-        [0.069202909, 0.072796782, 0.001451734],
-        [0.064305277, 0.071560831, 0.001165639],
-        [0.062955462, 0.071315612, 0.001074453],
+        [0.6198424, 0.3534224, 0.0069824],
+        [0.1729424, 0.1140850, 0.0047478],
+        [0.0984923, 0.0844989, 0.0026512],
+        [0.0696712, 0.0733906, 0.0014370],
+        [0.0647380, 0.0721140, 0.0011680],
+        [0.0633892, 0.0719455, 0.0010771],
     ]
     for a, b in zip(history["rmsd"], expected_rmsds):
         assert a == pytest.approx(b, abs=1e-6)
@@ -201,7 +201,7 @@ def test_scan_varying_with_automated_outlier_rejection_block_width_interval_widt
 
 @pytest.mark.parametrize("fix", ["cell", "orientation"])
 def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
-    location = dials_data("multi_crystal_proteinase_k", pathlib=True)
+    location = dials_data("multi_crystal_proteinase_k")
     refls = location / "reflections_1.pickle"
     expts = location / "experiments_1.json"
 
@@ -215,7 +215,7 @@ def test_scan_varying_with_fixed_crystal(fix, dials_data, tmp_path):
 
 def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
     # https://github.com/dials/dials/issues/1053
-    location = dials_data("i19_1_pdteet_index", pathlib=True)
+    location = dials_data("i19_1_pdteet_index")
     refls = location / "indexed.refl"
     expts = location / "indexed.expt"
 
@@ -257,7 +257,7 @@ def test_scan_varying_missing_segments_multi_crystal(dials_data, tmp_path):
 @pytest.mark.parametrize("gcb", ["None", "3000"])
 def test_scan_varying_multi_scan_one_crystal(gcb, dials_data, tmp_path):
     # https://github.com/dials/dials/issues/994
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     refls = location / "indexed.refl"
     expts = location / "indexed.expt"
 
@@ -375,7 +375,7 @@ def test_find_disjoint_sets():
 
 def test_refinement_of_disjoint_sets(dials_data, tmp_path):
     # Take 22 input experiments that are in 7 disjoint groups
-    location = dials_data("polyhedra_narrow_wedges", pathlib=True)
+    location = dials_data("polyhedra_narrow_wedges")
     expts = [
         location / f"sweep_00{i}_experiments.json"
         for i in ["2", "3", "4", "5", "6", "7", "9"]

@@ -75,9 +75,9 @@ namespace dials { namespace algorithms {
                              sbox[i].data.const_ref(),
                              sbox[i].background.ref(),
                              sbox[i].mask.ref());
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -111,7 +111,7 @@ namespace dials { namespace algorithms {
         // Extract from image volume
         af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
         af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-        af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+        af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
 
         // Compute the background
         try {
@@ -119,9 +119,9 @@ namespace dials { namespace algorithms {
 
           // Need to set the background in volume
           v.set_background(b, bgrd.const_ref());
-        } catch (scitbx::error const &) {
+        } catch (scitbx::error const&) {
           success[i] = false;
-        } catch (dials::error const &) {
+        } catch (dials::error const&) {
           success[i] = false;
         }
       }
@@ -136,9 +136,9 @@ namespace dials { namespace algorithms {
     template <typename T>
     double compute(std::size_t panel,
                    int6 bbox,
-                   const af::const_ref<T, af::c_grid<3> > &data,
+                   const af::const_ref<T, af::c_grid<3> >& data,
                    af::ref<T, af::c_grid<3> > background,
-                   af::ref<int, af::c_grid<3> > mask) const {
+                   af::ref<uint8_t, af::c_grid<3> > mask) const {
       if (robust_) {
         return compute_robust(panel, bbox, data, background, mask);
       } else {
@@ -153,14 +153,14 @@ namespace dials { namespace algorithms {
     template <typename T>
     double compute_non_robust(std::size_t panel,
                               int6 bbox,
-                              const af::const_ref<T, af::c_grid<3> > &data,
+                              const af::const_ref<T, af::c_grid<3> >& data,
                               af::ref<T, af::c_grid<3> > background,
-                              af::ref<int, af::c_grid<3> > mask) const {
+                              af::ref<uint8_t, af::c_grid<3> > mask) const {
       af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
       double sum1 = 0;
       double sum2 = 0;
       double count = 0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           sum1 += data[i];
@@ -188,15 +188,15 @@ namespace dials { namespace algorithms {
     template <typename T>
     double compute_robust(std::size_t panel,
                           int6 bbox,
-                          const af::const_ref<T, af::c_grid<3> > &data,
+                          const af::const_ref<T, af::c_grid<3> >& data,
                           af::ref<T, af::c_grid<3> > background,
-                          af::ref<int, af::c_grid<3> > mask) const {
+                          af::ref<uint8_t, af::c_grid<3> > mask) const {
       af::versa<double, af::c_grid<3> > model = model_->extract(panel, bbox);
 
       // Compute number of background pixels
       std::size_t num_background = 0;
       double sum_model = 0.0;
-      int mask_code = Valid | Background;
+      uint8_t mask_code = Valid | Background;
       for (std::size_t i = 0; i < data.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code) {
           num_background++;
@@ -240,8 +240,8 @@ namespace dials { namespace algorithms {
       return scale;
     }
 
-    void estimate_pixel_weights(const af::const_ref<double> &X,
-                                const af::const_ref<double> &Y,
+    void estimate_pixel_weights(const af::const_ref<double>& X,
+                                const af::const_ref<double>& Y,
                                 af::ref<double> W) const {
       af::shared<double> tX(X.size());
       af::shared<double> tY(X.size());
@@ -269,9 +269,9 @@ namespace dials { namespace algorithms {
       }
     }
 
-    double estimate_scale_parameter(const af::const_ref<double> &X,
-                                    const af::const_ref<double> &Y,
-                                    const af::const_ref<double> &W) const {
+    double estimate_scale_parameter(const af::const_ref<double>& X,
+                                    const af::const_ref<double>& Y,
+                                    const af::const_ref<double>& W) const {
       double XWX = 0.0;
       double XWY = 0.0;
       for (std::size_t i = 0; i < X.size(); ++i) {

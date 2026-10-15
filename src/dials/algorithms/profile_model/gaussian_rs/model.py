@@ -546,8 +546,7 @@ class Model(ProfileModelExt):
         """
         from dials.algorithms.profile_model.gaussian_rs import MaskCalculator
 
-        # Compute the size in reciprocal space. Add a sigma_b multiplier to enlarge
-        # the region of background in the shoebox
+        # Compute the size of the peak region in reciprocal space.
         delta_b = self._n_sigma * self._sigma_b
         delta_m = self._n_sigma * self._sigma_m
 

@@ -9,7 +9,7 @@ import pytest
 
 
 def test_basic(dials_data, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     # Call dials.create_profile_model
     result = subprocess.run(
         [
@@ -36,7 +36,7 @@ def test_basic(dials_data, tmp_path):
 
 
 def test_extended(dials_data: Path, tmp_path):
-    data_dir = dials_data("insulin_processed", pathlib=True)
+    data_dir = dials_data("insulin_processed")
     # Call dials.create_profile_model
     result = subprocess.run(
         [

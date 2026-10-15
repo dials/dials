@@ -54,6 +54,7 @@ from dials.report.plots import (
 from dials.util import tabulate
 from dials.util.batch_handling import batch_manager, get_image_ranges
 from dials.util.exclude_images import get_valid_image_ranges
+from dials.util.plotly_utils import round_for_json
 from dials.util.resolution_analysis import resolution_cc_half
 
 logger = logging.getLogger("dials")
@@ -238,7 +239,7 @@ def _make_scaling_html(scaling_script):
     if json_file:
         logger.info("Writing html report data to %s", json_file)
         with open(json_file, "w", encoding="utf-8") as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, indent=2)
 
 
 def make_scaling_model_plots(experiments, reflection_tables):
@@ -307,9 +308,9 @@ def make_outlier_plots(reflection_tables, experiments):
         else:
             zrange = [0, 0]
         data[j] = {
-            "x": list(x),
-            "y": list(y),
-            "z": list(z),
+            "x": round_for_json(x, ndigits=2),
+            "y": round_for_json(y, ndigits=2),
+            "z": round_for_json(z, ndigits=2),
             "image_size": expt.detector[0].get_image_size(),
             "z_range": zrange,
         }

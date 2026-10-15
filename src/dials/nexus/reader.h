@@ -194,7 +194,7 @@ namespace dials { namespace nexus {
     Object root_;
 
   public:
-    Reader(const char *filename) : root_(H5::File(filename, H5F_ACC_RDONLY)) {}
+    Reader(const char* filename) : root_(H5::File(filename, H5F_ACC_RDONLY)) {}
 
     Object root() const {
       return root_;

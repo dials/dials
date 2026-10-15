@@ -285,7 +285,6 @@ class BackgroundModeller:
         Integrate the data
         """
         from dials.algorithms.integration.image_integrator import ProcessorImage
-        from dials.util.command_line import heading
 
         # Init the report
         self.profile_model_report = None
@@ -319,7 +318,7 @@ class BackgroundModeller:
         # Print a heading
         logger.info("=" * 80)
         logger.info("")
-        logger.info(heading("Modelling background"))
+        logger.info("Modelling background")
         logger.info("")
 
         # Expand n_sigma

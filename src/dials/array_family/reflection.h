@@ -40,7 +40,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns The proxy object to access the value
      */
-    const mapped_type &operator[](const key_type &key) const {
+    const mapped_type& operator[](const key_type& key) const {
       const_iterator it = find(key);
       DIALS_ASSERT(it != end());
       return it->second;
@@ -51,7 +51,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns The proxy object to access the value
      */
-    mapped_type &operator[](const key_type &key) {
+    mapped_type& operator[](const key_type& key) {
       return data_[key];
     }
 
@@ -61,7 +61,7 @@ namespace dials { namespace af {
      * @returns The value.
      */
     template <typename T>
-    T &get(const key_type &key) {
+    T& get(const key_type& key) {
       iterator it = find(key);
       DIALS_ASSERT(it != end());
       return boost::get<T>(it->second);
@@ -73,7 +73,7 @@ namespace dials { namespace af {
      * @returns The value.
      */
     template <typename T>
-    const T &get(const key_type &key) const {
+    const T& get(const key_type& key) const {
       const_iterator it = find(key);
       DIALS_ASSERT(it != end());
       return boost::get<T>(it->second);
@@ -110,7 +110,7 @@ namespace dials { namespace af {
     }
 
     /** @returns The number of columns matching the key (0 or 1) */
-    size_type count(const key_type &key) const {
+    size_type count(const key_type& key) const {
       return data_.count(key);
     }
 
@@ -119,7 +119,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns An iterator to the column
      */
-    iterator find(const key_type &key) {
+    iterator find(const key_type& key) {
       return data_.find(key);
     }
 
@@ -128,7 +128,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns A const iterator to the column
      */
-    const_iterator find(const key_type &key) const {
+    const_iterator find(const key_type& key) const {
       return data_.find(key);
     }
 
@@ -137,7 +137,7 @@ namespace dials { namespace af {
      * @param key The column name
      * @returns The number of columns removed
      */
-    size_type erase(const key_type &key) {
+    size_type erase(const key_type& key) {
       return data_.erase(key);
     }
 
@@ -147,7 +147,7 @@ namespace dials { namespace af {
     }
 
     /** @returns Does the table contain the key. */
-    bool contains(const key_type &key) const {
+    bool contains(const key_type& key) const {
       const_iterator it = find(key);
       return it != end();
     }
@@ -166,7 +166,7 @@ namespace dials { namespace af {
       std::size_t n_;
       row_to_reflection_visitor(std::size_t n) : n_(n) {}
       template <typename T>
-      Reflection::data_type operator()(T &col) {
+      Reflection::data_type operator()(T& col) {
         DIALS_ASSERT(n_ < col.size());
         return Reflection::data_type(col[n_]);
       }
@@ -184,7 +184,7 @@ namespace dials { namespace af {
                                 Reflection::key_type key)
           : table_(table), n_(n), key_(key) {}
       template <typename T>
-      void operator()(const T &item) {
+      void operator()(const T& item) {
         af::ref<T> col = table_[key_];
         DIALS_ASSERT(n_ < col.size());
         col[n_] = item;

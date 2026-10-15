@@ -11,7 +11,7 @@ from dials.array_family import flex
 
 
 def test_slice_sequence_and_compare_with_expected_results(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
     pickle_path = data_dir / "i04-weak.pickle"
 
@@ -45,7 +45,7 @@ def test_slice_sequence_with_first_images_missing(dials_data, tmp_path):
     """Test slicing where scan image range does not start at 1, exercising
     a case that exposed a bug"""
 
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
 
     # first slice
@@ -78,8 +78,8 @@ def test_slice_sequence_with_first_images_missing(dials_data, tmp_path):
 
 def test_slice_sequence_to_degree_blocks(dials_data, tmp_path):
     """Slice data into 10 degree blocks i.e. 17 datasets"""
-    expt = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.expt"
-    refl = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.refl"
+    expt = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt"
+    refl = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.refl"
     subprocess.run(
         [
             shutil.which("dials.slice_sequence"),
@@ -103,7 +103,7 @@ def test_slice_sequence_to_degree_blocks(dials_data, tmp_path):
 def test_slice_sequence_with_scan_varying_crystal(dials_data, tmp_path):
     """test slicing keeps a scan-varying crystal"""
 
-    expt = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True) / "scaled_30.expt"
+    expt = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_30.expt"
     subprocess.run(
         [
             shutil.which("dials.slice_sequence"),
@@ -133,7 +133,7 @@ def test_slice_sequence_with_scan_varying_crystal(dials_data, tmp_path):
 
 
 def test_slice_sequence_exclude_images_multiple(dials_data, tmp_path):
-    data_dir = dials_data("refinement_test_data", pathlib=True)
+    data_dir = dials_data("refinement_test_data")
     experiments_path = data_dir / "i04-weak.json"
     pickle_path = data_dir / "i04-weak.pickle"
 

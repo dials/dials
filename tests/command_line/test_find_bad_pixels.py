@@ -31,7 +31,7 @@ def return_locations():
 
 
 def test_find_bad_pixels(dials_data, tmp_path):
-    image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))
+    image_files = sorted(dials_data("x4wide").glob("*.cbf"))
     image_files = image_files[:10] + image_files[-10:]
     result = subprocess.run(
         [
@@ -70,7 +70,7 @@ def test_find_bad_pixels(dials_data, tmp_path):
         assert mask[idx] is False
 
     # check that this mask can be used in import
-    image_files = sorted(dials_data("x4wide", pathlib=True).glob("*.cbf"))[:3]
+    image_files = sorted(dials_data("x4wide").glob("*.cbf"))[:3]
     result = subprocess.run(
         [
             shutil.which("dials.import"),

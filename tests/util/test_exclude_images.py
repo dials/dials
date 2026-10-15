@@ -9,7 +9,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from dxtbx.model import Experiment, ExperimentList, Scan
+from dxtbx.model import Experiment, ExperimentList, Goniometer, Scan
 
 from dials.array_family import flex
 from dials.util.exclude_images import (
@@ -25,7 +25,9 @@ from dials.util.exclude_images import (
 
 def make_scan_experiment(image_range=(1, 100), expid="0"):
     """Make an experiment with a scan"""
-    return Experiment(scan=Scan(image_range, (0.0, 1.0)), identifier=expid)
+    return Experiment(
+        scan=Scan(image_range, (0.0, 1.0)), identifier=expid, goniometer=Goniometer()
+    )
 
 
 def make_scanless_experiment(expid="1"):
@@ -63,6 +65,47 @@ def test_parse_exclude_images_commands():
         _ = _parse_exclude_images_commands([["1:101-200"]], [mock_exp], tables)
     with pytest.raises(ValueError):
         _ = _parse_exclude_images_commands([["1:101:a"]], [], tables)
+
+
+def test_parse_exclude_images_commands_wildcard():
+    """Test that * expands to every dataset"""
+    experiments = ExperimentList(
+        [
+            make_scan_experiment(expid="0"),
+            make_scan_experiment(expid="1"),
+            make_scan_experiment(expid="2"),
+        ]
+    )
+    r0 = flex.reflection_table()
+    r0.experiment_identifiers()[0] = "0"
+    r1 = flex.reflection_table()
+    r1.experiment_identifiers()[1] = "1"
+    r2 = flex.reflection_table()
+    r2.experiment_identifiers()[2] = "2"
+    ranges = _parse_exclude_images_commands([["*:21:100"]], experiments, [r0, r1, r2])
+    assert ranges == [("0", (21, 100)), ("1", (21, 100)), ("2", (21, 100))]
+
+    # mixing a wildcard with an explicit dataset is allowed
+    ranges = _parse_exclude_images_commands(
+        [["*:21:100,1:1:5"]], experiments, [r0, r1, r2]
+    )
+    assert ranges == [
+        ("0", (21, 100)),
+        ("1", (21, 100)),
+        ("2", (21, 100)),
+        ("1", (1, 5)),
+    ]
+
+
+def test_exclude_image_ranges_wildcard():
+    """Test that a wildcard exclusion is applied to every scan"""
+    experiments = ExperimentList(
+        [make_scan_experiment(expid="0"), make_scan_experiment(expid="1")]
+    )
+    experiments = exclude_image_ranges_from_scans(None, experiments, [["*:21:100"]])
+    ranges = get_valid_image_ranges(experiments)
+    assert list(ranges[0]) == [(1, 20)]
+    assert list(ranges[1]) == [(1, 20)]
 
 
 def test_expand_exclude_multiples():

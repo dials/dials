@@ -22,7 +22,7 @@ from dials.array_family import flex
 
 @pytest.fixture
 def test_data(dials_data):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refl = location / "scaled_20_25.refl"
     expt = location / "scaled_20_25.expt"
 

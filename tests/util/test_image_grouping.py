@@ -26,6 +26,7 @@ from dials.util.image_grouping import (
     _determine_groupings,
     example_yaml,
     get_grouping_handler,
+    parse_series_repeat_names,
     simple_template_example,
 )
 
@@ -287,7 +288,7 @@ grouping:
 
     parsed = ParsedYAML(tmp_path / "real_example.yaml")
     handler = get_grouping_handler(parsed, "group_by")
-    dtbp = dials_data("dtpb_serial_processed", pathlib=True)
+    dtbp = dials_data("dtpb_serial_processed")
 
     fps = [
         FilePair(
@@ -403,7 +404,7 @@ def test_real_cbf_example(tmp_path, dials_data):
     Finally, the single value definition is tested.
     """
 
-    ssx = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial")
     fpath = str(os.fspath(ssx / "merlin0047_#####.cbf"))
     real_example = f"""
 ---
@@ -570,3 +571,27 @@ grouping:
     assert len(filelist_1) == 1
     expts1 = load.experiment_list(filelist_1[0].expt)
     assert len(expts1) == 5
+
+
+@pytest.mark.parametrize(
+    ("series_repeat", "expected"),
+    [
+        (["3"], ["group_0", "group_1", "group_2"]),
+        (["first,second,last"], ["first", "second", "last"]),
+        (["first second last"], ["first", "second", "last"]),
+        (["dose,dose,apo"], ["dose_1", "dose_2", "apo"]),
+        (["apo,dose,dose"], ["apo", "dose_1", "dose_2"]),
+        ([",".join(["dose"] * 12)], [f"dose_{i:02d}" for i in range(1, 13)]),
+    ],
+)
+def test_parse_series_repeat_names(series_repeat, expected):
+    assert parse_series_repeat_names(series_repeat) == expected
+
+
+@pytest.mark.parametrize(
+    "series_repeat",
+    [["1"], ["0"], ["first"], ["a/b,c"], ["..,a"], ["dose,dose,dose_1"]],
+)
+def test_parse_series_repeat_names_invalid(series_repeat):
+    with pytest.raises(ValueError):
+        parse_series_repeat_names(series_repeat)

@@ -9,6 +9,7 @@ import subprocess
 import pytest
 
 from dxtbx.serialize import load
+from scitbx import matrix
 
 from dials.algorithms.integration.processor import _average_bbox_size
 from dials.array_family import flex
@@ -17,9 +18,7 @@ from dials.array_family import flex
 def test_basic_integrate(dials_data, tmp_path):
     # Call dials.integrate
 
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -54,18 +53,14 @@ def test_basic_integrate(dials_data, tmp_path):
 
     (tmp_path / "integrated.refl").unlink()
     for i in range(1, 10):
-        source = dials_data("centroid_test_data", pathlib=True) / f"centroid_000{i}.cbf"
+        source = dials_data("centroid_test_data") / f"centroid_000{i}.cbf"
         destination = tmp_path / f"centroid_001{i}.cbf"
         try:
             destination.symlink_to(source)
         except OSError:
             shutil.copyfile(source, destination)
 
-    with (
-        dials_data("centroid_test_data", pathlib=True)
-        .joinpath("experiments.json")
-        .open("r") as fh
-    ):
+    with dials_data("centroid_test_data").joinpath("experiments.json").open("r") as fh:
         j = json.load(fh)
     assert j["scan"][0]["image_range"] == [1, 9]
     j["scan"][0]["image_range"] = [11, 19]
@@ -127,9 +122,7 @@ def test_basic_integrate(dials_data, tmp_path):
     [(None, None), (1, "degrees"), (2, "frames"), (1, "frames")],
 )
 def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -147,8 +140,8 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
 def test_basic_threaded_integrate(dials_data, tmp_path):
     """Test the threaded integrator on single imageset data."""
 
-    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
-    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
 
     result = subprocess.run(
         [
@@ -175,9 +168,7 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
 
 
 def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "bar"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -211,9 +202,7 @@ def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
 
 
 def test_integration_with_sampling(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -243,9 +232,7 @@ def test_integration_with_sampling(dials_data, tmp_path):
 
 
 def test_integration_with_sample_size(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -272,9 +259,7 @@ def test_integration_with_sample_size(dials_data, tmp_path):
 
 
 def test_integration_with_image_exclusions(dials_data, tmp_path):
-    exp = load.experiment_list(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
-    )
+    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"
     exp.as_json(tmp_path / "modified_input.json")
 
@@ -310,8 +295,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
     """Test that imageset ids are correctly output for multi-sweep integration."""
     # Just integrate 15 images for each sweep
 
-    images1 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_01_000*.cbf"
-    images2 = dials_data("l_cysteine_dials_output", pathlib=True) / "l-cyst_02_000*.cbf"
+    images1 = dials_data("l_cysteine_dials_output") / "l-cyst_01_000*.cbf"
+    images2 = dials_data("l_cysteine_dials_output") / "l-cyst_02_000*.cbf"
 
     result = subprocess.run(
         [shutil.which("dials.import"), images1, images2],
@@ -330,6 +315,7 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
             shutil.which("dials.index"),
             tmp_path / "imported.expt",
             tmp_path / "strong.refl",
+            "joint_indexing=True",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -384,8 +370,8 @@ def test_imageset_id_output_with_multi_sweep(dials_data, tmp_path):
 
 
 def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
-    expts = dials_data("centroid_test_data", pathlib=True) / "indexed.expt"
-    refls = dials_data("centroid_test_data", pathlib=True) / "indexed.refl"
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
@@ -411,13 +397,119 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
+def test_frame_slice_shoeboxes(dials_data, tmp_path):
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            # More than one process, so the tables are passed back by pickling
+            "nproc=2",
+            expts,
+            refls,
+            "frame_slice_shoeboxes=True",
+            "prediction.padding=0",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert "frame_sliced_shoebox" in table
+
+    # Every reflection should have been sliced over the frames of its bounding box
+    sliced = table["frame_sliced_shoebox"]
+    zsize = flex.size_t(bbox[5] - bbox[4] for bbox in table["bbox"])
+    assert (sliced.num_frames() == zsize).all_eq(True)
+
+    # The rotation angle of each frame should be the scan angle at its centre.
+    # A one-based image number f covers array indices f - 1 to f
+    expt = load.experiment_list(tmp_path / "integrated.expt")[0]
+    scan = expt.scan
+    for i in (0, len(table) // 2, len(table) - 1):
+        expected = [
+            scan.get_angle_from_array_index(f - 0.5, deg=False)
+            for f in sliced[i].frames
+        ]
+        assert list(sliced[i].phi) == pytest.approx(expected)
+
+    # The excitation error of each frame should be the distance of the rotated
+    # reciprocal lattice point from the surface of the Ewald sphere, measured
+    # along the beam. Here the crystal, the beam and the goniometer are all
+    # stationary over the scan
+    gonio = expt.goniometer
+    axis = matrix.col(gonio.get_rotation_axis_datum())
+    S = matrix.sqr(gonio.get_setting_rotation())
+    F = matrix.sqr(gonio.get_fixed_rotation())
+    A = matrix.sqr(expt.crystal.get_A())
+    s0 = matrix.col(expt.beam.get_s0())
+    beam = s0.normalize()
+    for i in range(len(table)):
+        h = matrix.col(table["miller_index"][i])
+        expected = []
+        for phi in sliced[i].phi:
+            R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
+            r = S * R * F * A * h
+            along = r.dot(beam)
+            across_sq = r.length_sq() - along**2
+            expected.append(math.sqrt(s0.length_sq() - across_sq) - s0.length() - along)
+        assert list(sliced[i].excitation_error) == pytest.approx(expected)
+
+    # The per-frame partialities partition the rocking curve of the reflection
+    # over its frames, so they should sum to the partiality of the whole
+    # reflection, as calculated independently by PartialityCalculator3D
+    summed_partiality = flex.double(
+        sum(sliced[i].partiality) for i in range(len(table))
+    )
+    assert list(summed_partiality) == pytest.approx(list(table["partiality"]))
+
+    # Summing the per-frame summation intensities should recover the summation
+    # intensity of the whole reflection
+    integrated = table.get_flags(table.flags.integrated_sum)
+    summed = flex.double(sum(sliced[i].summation_intensity) for i in range(len(table)))
+    difference = flex.abs(summed - table["intensity.sum.value"]).select(integrated)
+    # The shoebox data are single precision, so scale the tolerance accordingly
+    tolerance = 1e-6 * flex.max(flex.abs(table["intensity.sum.value"]))
+    assert (difference < tolerance).all_eq(True)
+
+    # So should summing the per-frame variances. Where the intensity of the
+    # whole reflection is negative though, the variance of the whole reflection
+    # takes its absolute value, which adds twice that intensity to a total that
+    # the frames, which make no such adjustment, cannot reproduce
+    intensity = table["intensity.sum.value"]
+    negative = intensity < 0.0
+    expected = table["intensity.sum.variance"].deep_copy()
+    expected.set_selected(
+        negative, expected.select(negative) + 2.0 * intensity.select(negative)
+    )
+    summed = flex.double(
+        sum(sliced[i].summation_intensity_variance) for i in range(len(table))
+    )
+    difference = flex.abs(summed - expected).select(integrated)
+    tolerance = 1e-6 * flex.max(flex.abs(expected))
+    assert (difference < tolerance).all_eq(True)
+
+
+def test_frame_slice_shoeboxes_not_available_for_flat3d(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            "nproc=1",
+            dials_data("centroid_test_data") / "indexed.expt",
+            dials_data("centroid_test_data") / "indexed.refl",
+            "frame_slice_shoeboxes=True",
+            "integrator=flat3d",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"cannot be used with integrator=flat3d" in result.stderr
+
+
 def test_multi_sweep(dials_data, tmp_path):
-    expts = str(
-        dials_data("centroid_test_data", pathlib=True) / "multi_sweep_indexed.expt"
-    )
-    refls = str(
-        dials_data("centroid_test_data", pathlib=True) / "multi_sweep_indexed.refl"
-    )
+    expts = str(dials_data("centroid_test_data") / "multi_sweep_indexed.expt")
+    refls = str(dials_data("centroid_test_data") / "multi_sweep_indexed.refl")
     result = subprocess.run(
         [
             shutil.which("dials.integrate"),
@@ -461,8 +553,8 @@ def test_multi_sweep(dials_data, tmp_path):
 
 
 def test_multi_lattice(dials_data, tmp_path):
-    expt = str(dials_data("trypsin_multi_lattice", pathlib=True) / "refined.expt")
-    refl = str(dials_data("trypsin_multi_lattice", pathlib=True) / "refined.refl")
+    expt = str(dials_data("trypsin_multi_lattice") / "refined.expt")
+    refl = str(dials_data("trypsin_multi_lattice") / "refined.refl")
 
     result = subprocess.run(
         [
@@ -514,9 +606,8 @@ def test_output_rubbish(dials_data, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.index"),
-            dials_data("centroid_test_data", pathlib=True)
-            / "imported_experiments.json",
-            dials_data("centroid_test_data", pathlib=True) / "strong.pickle",
+            dials_data("centroid_test_data") / "imported_experiments.json",
+            dials_data("centroid_test_data") / "strong.pickle",
         ],
         cwd=tmp_path,
         capture_output=True,
@@ -551,7 +642,7 @@ def test_output_rubbish(dials_data, tmp_path):
 
 
 def test_integrate_with_kapton(dials_data, tmp_path):
-    data_dir = dials_data("integration_test_data", pathlib=True)
+    data_dir = dials_data("integration_test_data")
     refl_path = str(data_dir / "kapton-idx-20161021225550223_indexed.refl")
     expt_path = str(data_dir / "kapton-idx-20161021225550223_refined.expt")
     image_path = str(data_dir / "kapton-20161021225550223.pickle")

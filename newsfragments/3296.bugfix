@@ -1,0 +1,1 @@
+``dials.image_viewer`` and other GUI tools: Fix crash when opening a file dialog on systems with older GTK installed (e.g. RHEL8).

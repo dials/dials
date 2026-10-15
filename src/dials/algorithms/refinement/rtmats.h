@@ -33,7 +33,7 @@ namespace dials { namespace refinement {
    * Here the rotation is taken to be in a right-handed sense around the axis
    * whereas RTMATS uses a left-handed rotation.
    */
-  inline mat3<double> dR_from_axis_and_angle(const vec3<double> &axis,
+  inline mat3<double> dR_from_axis_and_angle(const vec3<double>& axis,
                                              double angle,
                                              bool deg = false) {
     if (deg) angle = DEG2RAD(angle);

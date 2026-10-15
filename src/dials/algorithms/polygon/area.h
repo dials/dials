@@ -21,7 +21,7 @@ namespace dials { namespace algorithms { namespace polygon {
    * @returns The area of the polygon
    */
   template <typename PolygonType>
-  double simple_area(const PolygonType &poly) {
+  double simple_area(const PolygonType& poly) {
     typedef typename PolygonType::value_type vertex_type;
     double a = 0.0;
     vertex_type v0 = poly[poly.size() - 1];

@@ -28,7 +28,7 @@ namespace dials { namespace algorithms {
 
   /** Calculate the square of the value */
   template <typename T>
-  T sqr(T &a) {
+  T sqr(T& a) {
     return a * a;
   }
 
