@@ -1381,21 +1381,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         for i in range(len(bbox)):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
-        if self.params.output.strong_suffix and observed:
-            if self.params.output.composite_output:
-                # Cache the results
-                self.all_strong_experiments, self.all_strong_reflections = (
-                    self.concat_results(
-                        experiments,
-                        observed,
-                        self.all_strong_experiments,
-                        self.all_strong_reflections,
-                    )
-                )
-            else:
-                # Save the results to a file
-                experiments.as_file(self.strong_experiments_filename)
-                self.save_reflections(observed, self.strong_reflections_filename)
+        self.store_results("strong", experiments, observed)
 
         logger.info("\n" + "-" * 80)
         logger.info("")
@@ -1630,21 +1616,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 expt.identifier = ts + "_" + expt.identifier
                 identifiers[expt_id] = expt.identifier
 
-        if self.params.output.indexed_suffix and indexed:
-            if self.params.output.composite_output:
-                # Cache the results
-                self.all_indexed_experiments, self.all_indexed_reflections = (
-                    self.concat_results(
-                        experiments,
-                        indexed,
-                        self.all_indexed_experiments,
-                        self.all_indexed_reflections,
-                    )
-                )
-            else:
-                # Save the results to a file
-                experiments.as_file(self.indexed_experiments_filename)
-                self.save_reflections(indexed, self.indexed_reflections_filename)
+        self.store_results("indexed", experiments, indexed)
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
@@ -1685,21 +1657,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             acceptance_flags_nv = nv.nv_acceptance_flags
             centroids = centroids.select(acceptance_flags_nv)
 
-            if self.params.output.refined_suffix and centroids:
-                if self.params.output.composite_output:
-                    # Cache the results
-                    self.all_refined_experiments, self.all_refined_reflections = (
-                        self.concat_results(
-                            experiments,
-                            centroids,
-                            self.all_refined_experiments,
-                            self.all_refined_reflections,
-                        )
-                    )
-                else:
-                    # Save the results to a file
-                    experiments.as_file(self.refined_experiments_filename)
-                    self.save_reflections(centroids, self.refined_reflections_filename)
+            self.store_results("refined", experiments, centroids)
 
             logger.info("")
             logger.info("Time Taken = %f seconds", time.time() - st)
@@ -1837,21 +1795,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
             del integrated["shoebox"]
 
-        if self.params.output.integrated_suffix and integrated:
-            if self.params.output.composite_output:
-                # Cache the results
-                self.all_integrated_experiments, self.all_integrated_reflections = (
-                    self.concat_results(
-                        experiments,
-                        integrated,
-                        self.all_integrated_experiments,
-                        self.all_integrated_reflections,
-                    )
-                )
-            else:
-                # Save the results to a file
-                experiments.as_file(self.integrated_experiments_filename)
-                self.save_reflections(integrated, self.integrated_reflections_filename)
+        self.store_results("integrated", experiments, integrated)
 
         self.write_integration_pickles(integrated, experiments)
         from dials.algorithms.indexing.stills_indexer import (
@@ -2015,6 +1959,47 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         all_reflections = flex.reflection_table.concat([all_reflections] + subsets)
         return all_experiments, all_reflections
 
+    def store_results(self, stage, experiments, reflections):
+        """Cache or write the experiments and reflections of a processing stage.
+
+        stage is one of strong, indexed, refined, integrated or coset. Nothing
+        is done if the stage's output suffix is unset or there are no
+        reflections. With composite output the results are appended to the
+        all_<stage>_experiments and all_<stage>_reflections caches, otherwise
+        they are written to the <stage>_experiments_filename and
+        <stage>_reflections_filename set by setup_filenames.
+        """
+        if not getattr(self.params.output, f"{stage}_suffix") or not reflections:
+            return
+        if self.params.output.composite_output:
+            all_experiments, all_reflections = self.concat_results(
+                experiments,
+                reflections,
+                getattr(self, f"all_{stage}_experiments"),
+                getattr(self, f"all_{stage}_reflections"),
+            )
+            setattr(self, f"all_{stage}_experiments", all_experiments)
+            setattr(self, f"all_{stage}_reflections", all_reflections)
+        else:
+            experiments.as_file(getattr(self, f"{stage}_experiments_filename"))
+            self.save_reflections(
+                reflections, getattr(self, f"{stage}_reflections_filename")
+            )
+
+    def write_composite_results(self, stage):
+        """Write the cached composite experiments and reflections of a stage,
+        if its output suffix is set and anything was cached."""
+        if not getattr(self.params.output, f"{stage}_suffix"):
+            return
+        experiments = getattr(self, f"all_{stage}_experiments")
+        reflections = getattr(self, f"all_{stage}_reflections")
+        if not experiments or not reflections:
+            return
+        experiments.as_file(getattr(self, f"{stage}_experiments_filename"))
+        self.save_reflections(
+            reflections, getattr(self, f"{stage}_reflections_filename")
+        )
+
     def save_reflections(self, reflections, filename):
         """Save the reflections to file."""
         st = time.time()
@@ -2145,56 +2130,10 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             if self.all_imported_experiments and self.imported_filename:
                 self.all_imported_experiments.as_file(self.imported_filename)
 
-            if (
-                self.params.output.strong_suffix
-                and self.all_strong_experiments
-                and self.all_strong_reflections
-            ):
-                self.all_strong_experiments.as_file(self.strong_experiments_filename)
-                self.save_reflections(
-                    self.all_strong_reflections, self.strong_reflections_filename
-                )
-            if (
-                self.params.output.indexed_suffix
-                and self.all_indexed_experiments
-                and self.all_indexed_reflections
-            ):
-                self.all_indexed_experiments.as_file(self.indexed_experiments_filename)
-                self.save_reflections(
-                    self.all_indexed_reflections, self.indexed_reflections_filename
-                )
-            if (
-                self.params.output.refined_suffix
-                and self.all_refined_experiments
-                and self.all_refined_reflections
-            ):
-                self.all_refined_experiments.as_file(self.refined_experiments_filename)
-                self.save_reflections(
-                    self.all_refined_reflections, self.refined_reflections_filename
-                )
-            if (
-                self.params.output.integrated_suffix
-                and self.all_integrated_experiments
-                and self.all_integrated_reflections
-            ):
-                self.all_integrated_experiments.as_file(
-                    self.integrated_experiments_filename
-                )
-                self.save_reflections(
-                    self.all_integrated_reflections,
-                    self.integrated_reflections_filename,
-                )
-
-            if (
-                self.params.dispatch.coset
-                and self.params.output.coset_suffix
-                and self.all_coset_experiments
-                and self.all_coset_reflections
-            ):
-                self.all_coset_experiments.as_file(self.coset_experiments_filename)
-                self.save_reflections(
-                    self.all_coset_reflections, self.coset_reflections_filename
-                )
+            for stage in ("strong", "indexed", "refined", "integrated"):
+                self.write_composite_results(stage)
+            if self.params.dispatch.coset:
+                self.write_composite_results("coset")
 
             # Create a tar archive of the integration dictionary pickles
             if len(self.all_int_pickles) > 0 and self.params.output.integration_pickle:

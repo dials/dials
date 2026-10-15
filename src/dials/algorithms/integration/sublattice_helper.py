@@ -115,21 +115,7 @@ def integrate_coset(self, experiments, indexed):
     if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
         del integrated["shoebox"]
 
-    if self.params.output.coset_suffix and integrated:
-        if self.params.output.composite_output:
-            # Cache the results
-            self.all_coset_experiments, self.all_coset_reflections = (
-                self.concat_results(
-                    experiments_local,
-                    integrated,
-                    self.all_coset_experiments,
-                    self.all_coset_reflections,
-                )
-            )
-        else:
-            # Save the results to a file
-            experiments_local.as_file(self.coset_experiments_filename)
-            self.save_reflections(integrated, self.coset_reflections_filename)
+    self.store_results("coset", experiments_local, integrated)
 
     rmsd_indexed, _ = calc_2D_rmsd_and_displacements(indexed)
     log_str = "coset RMSD indexed (px): %f\n" % (rmsd_indexed)
