@@ -115,7 +115,7 @@ def integrate_coset(self, experiments, indexed):
     if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
         del integrated["shoebox"]
 
-    if self.params.output.coset_suffix:
+    if self.params.output.coset_suffix and integrated:
         if self.params.output.composite_output:
             # Cache the results
             self.all_coset_experiments, self.all_coset_reflections = (

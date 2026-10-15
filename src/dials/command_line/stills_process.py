@@ -7,6 +7,7 @@ import glob
 import logging
 import os
 import pickle
+import re
 import sys
 import tarfile
 import time
@@ -140,15 +141,58 @@ def _control_phil_str():
     indexed_suffix = indexed
       .type = str
       .help = The suffix for indexed experiments and reflections.
-    refined_suffix = None
+    refined_suffix = refined
       .type = str
-      .help = The filename for saving refined experiments and reflections. For example, refined
+      .help = The suffix for refined experiments and reflections. Only used if \
+              dispatch.refine=True
     integrated_suffix = integrated
       .type = str
       .help = The suffix for final integrated data.
     coset_suffix = coset
       .type = str
-      .help = The filename for final coset data.
+      .help = The suffix for final coset experiments and reflections. Only used if \
+              dispatch.coset=True. The coset transformation number is appended, \
+              e.g. coset6
+    experiments_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use imported_suffix. A value of the form %s_<suffix>.expt \
+              is translated automatically.
+    strong_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use strong_suffix. A value of the form %s_<suffix>.refl \
+              is translated automatically.
+    indexed_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use indexed_suffix. A value of the form %s_<suffix>.refl \
+              is translated automatically.
+    refined_experiments_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use refined_suffix. A value of the form %s_<suffix>.expt \
+              is translated automatically.
+    integrated_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use integrated_suffix. A value of the form %s_<suffix>.refl \
+              is translated automatically.
+    integrated_experiments_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use integrated_suffix. A value of the form %s_<suffix>.expt \
+              is translated automatically.
+    coset_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use coset_suffix. A value of the form %s_<suffix>%d.refl \
+              is translated automatically.
+    coset_experiments_filename = None
+      .type = str
+      .expert_level = 3
+      .help = Deprecated, use coset_suffix. A value of the form %s_<suffix>%d.expt \
+              is translated automatically.
     profile_filename = None
       .type = str
       .help = The filename for output reflection profile parameters
@@ -409,6 +453,66 @@ def sync_geometry(src, dest):
             sync_geometry(src_child, dest_child)
 
 
+# Deprecated output.XXX_filename parameters and the output.XXX_suffix
+# parameters that replaced them.
+_DEPRECATED_OUTPUT_PARAMS = {
+    "experiments_filename": "imported_suffix",
+    "strong_filename": "strong_suffix",
+    "indexed_filename": "indexed_suffix",
+    "refined_experiments_filename": "refined_suffix",
+    "integrated_filename": "integrated_suffix",
+    "integrated_experiments_filename": "integrated_suffix",
+    "coset_filename": "coset_suffix",
+    "coset_experiments_filename": "coset_suffix",
+}
+_DEPRECATED_OUTPUT_RE = re.compile(r"^%s_(?P<suffix>[^\s%]+?)(?:%d)?\.[A-Za-z0-9]+$")
+
+
+def translate_deprecated_output_params(params):
+    """Translate the deprecated output.XXX_filename parameters to their
+    output.XXX_suffix replacements, in place.
+
+    Filenames of the form %s_<suffix>.<ext> (or %s_<suffix>%d.<ext> for the
+    coset outputs) are converted to <suffix>. Anything else cannot be
+    expressed with the new parameters and raises Sorry. The deprecated
+    parameters are reset to None afterwards so this function is idempotent.
+
+    Returns a list of warning messages, one per translated parameter, for
+    the caller to log once logging is configured.
+    """
+    translated = {}
+    warnings = []
+    for old_name, new_name in _DEPRECATED_OUTPUT_PARAMS.items():
+        value = getattr(params.output, old_name)
+        if value is None:
+            continue
+        match = _DEPRECATED_OUTPUT_RE.match(value)
+        if not match:
+            raise Sorry(
+                f"output.{old_name}={value} is deprecated and cannot be translated "
+                f"automatically. Output file names are now %s_<suffix>.expt and "
+                f"%s_<suffix>.refl, where %s is idx-<image tag>. Use "
+                f"output.{new_name}=<suffix> instead, or output.{new_name}=None "
+                f"to disable this output."
+            )
+        suffix = match.group("suffix")
+        if new_name in translated and translated[new_name][1] != suffix:
+            prev_name, prev_suffix = translated[new_name]
+            raise Sorry(
+                f"output.{old_name}={value} and output.{prev_name} give different "
+                f"suffixes ({suffix} and {prev_suffix}). Both are deprecated and "
+                f"are replaced by the single parameter output.{new_name}"
+            )
+        translated[new_name] = (old_name, suffix)
+        warnings.append(
+            f"output.{old_name}={value} is deprecated, "
+            f"using output.{new_name}={suffix} instead"
+        )
+        setattr(params.output, new_name, suffix)
+        setattr(params.output, old_name, None)
+    return warnings
+
+
 class Script:
     """A class for running the script."""
 
@@ -463,11 +567,13 @@ class Script:
             rank = comm.Get_rank()  # each process in MPI has a unique id, 0-indexed
             size = comm.Get_size()  # size: number of processes running in this job
 
+        deprecation_warnings = []
         if rank == 0:
             # Parse the command line
             params, options, all_paths = self.parser.parse_args(
                 args, show_diff_phil=False, return_unhandled=True, quick_parse=True
             )
+            deprecation_warnings = translate_deprecated_output_params(params)
 
             if params.input.glob:
                 all_paths.extend(params.input.glob)
@@ -596,6 +702,8 @@ class Script:
         if diff_phil != "":
             logger.info("The following parameters have been modified:\n")
             logger.info(diff_phil)
+        for warning in deprecation_warnings:
+            logger.warning(warning)
 
         for abs_params in self.params.integration.absorption_correction:
             if abs_params.apply:
@@ -904,6 +1012,8 @@ class Script:
 
 class Processor:
     def __init__(self, params, composite_tag=None, rank=0):
+        for warning in translate_deprecated_output_params(params):
+            logger.warning(warning)
         self.params = params
         self.composite_tag = composite_tag
 
@@ -1136,7 +1246,7 @@ class Processor:
             if self.params.output.composite_output:
                 self.all_imported_experiments.extend(experiments)
             else:
-                experiments.as_file(self.params.output.imported_filename)
+                experiments.as_file(self.imported_filename)
 
         # Do the processing
         try:
@@ -1271,7 +1381,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         for i in range(len(bbox)):
             bbox[i] = (bbox[i][0], bbox[i][1], bbox[i][2], bbox[i][3], 0, 1)
 
-        if self.params.output.strong_suffix:
+        if self.params.output.strong_suffix and observed:
             if self.params.output.composite_output:
                 # Cache the results
                 self.all_strong_experiments, self.all_strong_reflections = (
@@ -1520,7 +1630,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 expt.identifier = ts + "_" + expt.identifier
                 identifiers[expt_id] = expt.identifier
 
-        if self.params.output.indexed_suffix:
+        if self.params.output.indexed_suffix and indexed:
             if self.params.output.composite_output:
                 # Cache the results
                 self.all_indexed_experiments, self.all_indexed_reflections = (
@@ -1575,7 +1685,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             acceptance_flags_nv = nv.nv_acceptance_flags
             centroids = centroids.select(acceptance_flags_nv)
 
-            if self.params.output.refined_suffix:
+            if self.params.output.refined_suffix and centroids:
                 if self.params.output.composite_output:
                     # Cache the results
                     self.all_refined_experiments, self.all_refined_reflections = (
@@ -1727,7 +1837,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         if self.params.integration.debug.delete_shoeboxes and "shoebox" in integrated:
             del integrated["shoebox"]
 
-        if self.params.output.integrated_suffix:
+        if self.params.output.integrated_suffix and integrated:
             if self.params.output.composite_output:
                 # Cache the results
                 self.all_integrated_experiments, self.all_integrated_reflections = (
@@ -1887,19 +1997,22 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
     def concat_results(
         self, experiments, reflections, all_experiments, all_reflections
     ):
-        """Concatenate individual results to the cached results"""
-        if reflections:
-            subsets = []
-            for experiment, indices in reflections.iterate_experiments_and_indices(
-                experiments
-            ):
-                subset = reflections.select(indices)
-                if subset:
-                    all_experiments.append(experiment)
-                    subsets.append(subset)
-            all_reflections = flex.reflection_table.concat([all_reflections] + subsets)
-        else:
-            all_experiments.extend(experiments)
+        """Concatenate individual results to the cached results.
+
+        Only experiments with at least one reflection are kept, so the
+        cached experiments and reflections always match.
+        """
+        if not reflections:
+            return all_experiments, all_reflections
+        subsets = []
+        for experiment, indices in reflections.iterate_experiments_and_indices(
+            experiments
+        ):
+            subset = reflections.select(indices)
+            if subset:
+                all_experiments.append(experiment)
+                subsets.append(subset)
+        all_reflections = flex.reflection_table.concat([all_reflections] + subsets)
         return all_experiments, all_reflections
 
     def save_reflections(self, reflections, filename):
@@ -1945,12 +2058,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                         ) = comm.recv(source=MPI.ANY_SOURCE)
                         logger.info("Rank %d received data from rank %d", rank, sender)
 
-                        self.all_imported_experiments = self.concat_results(
-                            imported_experiments,
-                            None,
-                            self.all_imported_experiments,
-                            None,
-                        )
+                        self.all_imported_experiments.extend(imported_experiments)
                         self.all_strong_experiments, self.all_strong_reflections = (
                             self.concat_results(
                                 strong_experiments,
@@ -1965,6 +2073,14 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                                 indexed_reflections,
                                 self.all_indexed_experiments,
                                 self.all_indexed_reflections,
+                            )
+                        )
+                        self.all_refined_experiments, self.all_refined_reflections = (
+                            self.concat_results(
+                                refined_experiments,
+                                refined_reflections,
+                                self.all_refined_experiments,
+                                self.all_refined_reflections,
                             )
                         )
                         (
@@ -2075,7 +2191,7 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 and self.all_coset_experiments
                 and self.all_coset_reflections
             ):
-                self.all_integrated_experiments.as_file(self.coset_experiment_filename)
+                self.all_coset_experiments.as_file(self.coset_experiments_filename)
                 self.save_reflections(
                     self.all_coset_reflections, self.coset_reflections_filename
                 )
