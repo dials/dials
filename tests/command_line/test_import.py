@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import shutil
@@ -12,6 +13,7 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 from dxtbx.serialize import load
 
 from dials.command_line.dials_import import ManualGeometryUpdater
+from dials.util import Sorry
 from dials.util.options import geometry_phil_scope
 
 
@@ -948,3 +950,89 @@ def test_import_stills(dials_data, tmp_path):
         in result.stdout.decode()
     )
     assert result.stdout.count(b"template:") == 1
+
+
+def _import_centroid_data(dials_data, tmp_path, monkeypatch, extra_args=()):
+    """Run dials.import in-process, so that a monkeypatched format class is seen."""
+    from dials.command_line.dials_import import do_import, phil_scope
+
+    image_files = sorted(dials_data("centroid_test_data").glob("centroid*.cbf"))
+    monkeypatch.chdir(tmp_path)
+    return do_import([str(f) for f in image_files] + list(extra_args), phil=phil_scope)
+
+
+def test_missing_metadata_requires_an_override(dials_data, tmp_path, monkeypatch):
+    """A format declaring missing metadata must not import without the override."""
+    from dxtbx.format.FormatCBFMini import FormatCBFMini
+
+    monkeypatch.setattr(FormatCBFMini, "missing_metadata", ("beam.wavelength",))
+
+    with pytest.raises(Sorry) as excinfo:
+        _import_centroid_data(dials_data, tmp_path, monkeypatch)
+    message = str(excinfo.value)
+    assert "geometry.beam.wavelength=<value>" in message
+    assert "cannot determine" in message
+    assert not (tmp_path / "imported.expt").is_file()
+
+
+def test_missing_metadata_filled_from_override(dials_data, tmp_path, monkeypatch):
+    from dxtbx.format.FormatCBFMini import FormatCBFMini
+
+    monkeypatch.setattr(FormatCBFMini, "missing_metadata", ("beam.wavelength",))
+
+    experiments = _import_centroid_data(
+        dials_data, tmp_path, monkeypatch, ["geometry.beam.wavelength=0.5"]
+    )
+    assert experiments[0].beam.get_wavelength() == pytest.approx(0.5)
+    assert (tmp_path / "imported.expt").is_file()
+
+    # The overrides must be recorded in the imageset params, so that reloading
+    # the experiment list with check_format=True can rebuild the Format objects
+    with (tmp_path / "imported.expt").open() as fh:
+        params = json.load(fh)["imageset"][0]["params"]
+    assert set(params) == {"dynamic_shadowing", "multi_panel", "geometry_overrides"}
+    assert "wavelength = 0.5" in params["geometry_overrides"]
+
+    reloaded = ExperimentListFactory.from_json_file(
+        str(tmp_path / "imported.expt"), check_format=True
+    )
+    assert reloaded[0].beam.get_wavelength() == pytest.approx(0.5)
+
+
+def test_missing_metadata_is_unaffected_by_undeclared_overrides(
+    dials_data, tmp_path, monkeypatch
+):
+    """Only the declared paths are taken at format-construction time; everything
+    else still goes through ManualGeometryUpdater as before."""
+    from dxtbx.format.FormatCBFMini import FormatCBFMini
+
+    monkeypatch.setattr(FormatCBFMini, "missing_metadata", ("beam.wavelength",))
+
+    experiments = _import_centroid_data(
+        dials_data,
+        tmp_path,
+        monkeypatch,
+        ["geometry.beam.wavelength=0.5", "geometry.detector.distance=200"],
+    )
+    assert experiments[0].beam.get_wavelength() == pytest.approx(0.5)
+    assert experiments[0].detector[0].get_distance() == pytest.approx(200)
+
+
+def test_format_kwargs_unchanged_without_overrides(dials_data, tmp_path, monkeypatch):
+    """A run that overrides nothing must produce the same imageset params as before."""
+    _import_centroid_data(dials_data, tmp_path, monkeypatch)
+    with (tmp_path / "imported.expt").open() as fh:
+        params = json.load(fh)["imageset"][0]["params"]
+    assert set(params) == {"dynamic_shadowing", "multi_panel"}
+
+
+def test_ignore_missing_metadata(dials_data, tmp_path, monkeypatch):
+    """The escape hatch, for when the values are known to be corrected later."""
+    from dxtbx.format.FormatCBFMini import FormatCBFMini
+
+    monkeypatch.setattr(FormatCBFMini, "missing_metadata", ("beam.wavelength",))
+
+    experiments = _import_centroid_data(
+        dials_data, tmp_path, monkeypatch, ["format.ignore_missing_metadata=True"]
+    )
+    assert experiments[0].beam.get_wavelength() == pytest.approx(0.9795)
