@@ -137,11 +137,11 @@ namespace dials { namespace af { namespace boost_python {
       // Copy the spot size
       std::copy(num_pixels.begin(), num_pixels.end(), spot_size_.begin());
 
-      // Allocate all the arrays
+      // Allocate the data and mask arrays. The background is left
+      // unallocated, which means zero, as spot finding does not model it.
       for (std::size_t i = 0; i < result_.size(); ++i) {
         if (min_pixels <= num_pixels[i] && num_pixels[i] <= max_pixels) {
           result_[i].allocate_data();
-          result_[i].allocate_background();
         }
       }
 

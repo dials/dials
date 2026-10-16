@@ -1,0 +1,1 @@
+``dials.find_spots``: reduce memory use by not allocating a background array, which was never used, for each strong spot shoebox.

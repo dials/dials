@@ -111,10 +111,10 @@ namespace dials { namespace algorithms {
         }
       }
 
-      // Allocate all the arrays
+      // Allocate the data and mask arrays. The background is left
+      // unallocated, which means zero, as spot finding does not model it.
       for (std::size_t i = 0; i < result.size(); ++i) {
         result[i].allocate_data();
-        result[i].allocate_background();
       }
 
       // Set all the mask and data points
