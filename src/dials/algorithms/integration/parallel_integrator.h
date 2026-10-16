@@ -816,7 +816,7 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(offset_[z + 1] >= offset_[z]);
       std::size_t i = offset_[z];
       std::size_t n = offset_[z + 1] - i;
-      return af::const_ref<std::size_t>(&indices_[i], n);
+      return af::const_ref<std::size_t>(indices_.data() + i, n);
     }
 
   private:
