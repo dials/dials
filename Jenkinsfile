@@ -95,7 +95,7 @@ pipeline {
                     steps {
                         sh '''
                         export PATH="${WORKSPACE}/conda_base/bin:$PATH"
-                        conda_base/bin/pytest -v -rsxX -n auto --durations=0 --junit-xml=output.xml ${WORKSPACE}/modules/dials
+                        conda_base/bin/pytest -v -rsxX -n auto --durations=0 --regression --junit-xml=output.xml ${WORKSPACE}/modules/dials
                         '''
                     }
                 }
