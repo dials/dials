@@ -22,7 +22,10 @@ downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
 scaled.expt file and a scaled.refl file, in which case the intensity=scale
-flag will be set implicitly.
+flag will be set implicitly. Polychromatic (Laue or time-of-flight) data are
+exported with one batch per experiment and the wavelength of each reflection
+in a LAMBDA column, along with the PANEL number to which XDET and YDET refer
+and, for time-of-flight data, the TOF in microseconds.
 
 NXS format exports the files as an NXmx file. The required input is an
 integrated.expt file and an integrated.refl file.
@@ -407,12 +410,6 @@ def export_mtz(params, experiments, reflections):
 
     from dials.util.export_mtz import export_mtz
 
-    # Temporary guard to provide a more useful error to the user for time-of-flight data
-    if experiments.all_tof():
-        raise NotImplementedError(
-            "Time-of-flight Laue data cannot be exported as .mtz. Run with format=shelx to export as .hkl"
-        )
-
     # Handle case where user has passed data before integration
     if (
         "intensity.sum.value" not in reflections[0]
@@ -710,6 +707,18 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+
+    # Laue and time-of-flight data have no single wavelength, which only the
+    # mtz and shelx exporters understand
+    if (
+        experiments
+        and (experiments.all_laue() or experiments.all_tof())
+        and params.format not in ("mtz", "shelx")
+    ):
+        sys.exit(
+            f"Polychromatic (Laue or time-of-flight) data cannot be exported as "
+            f"{params.format}. Use format=mtz or format=shelx instead."
+        )
 
     try:
         template_list = {
