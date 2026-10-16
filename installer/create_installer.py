@@ -27,6 +27,10 @@ from optparse import OptionParser
 import libtbx.auto_build.rpath
 import libtbx
 
+# Run the conda-pack installed in this environment, rather than `conda pack`:
+# conda >= 26.9 no longer dispatches to external conda-* executables
+CONDA_PACK = [os.path.join(sys.prefix, "bin", "conda-pack")]
+
 # XXX HACK
 libtbx_path = os.path.dirname(libtbx.__file__)
 if libtbx_path not in sys.path:
@@ -283,7 +287,7 @@ class SetupInstaller(object):
             env["PATH"] = os.getenv("PATH")
             try:
                 subprocess.check_output(
-                    ["conda", "pack", "-h"], stderr=subprocess.STDOUT, env=env
+                    CONDA_PACK + ["-h"], stderr=subprocess.STDOUT, env=env
                 )
                 conda_pack_is_available = True
             except Exception as e:
@@ -297,9 +301,8 @@ class SetupInstaller(object):
                 try:
                     filename = "conda_base.tar"
                     subprocess.check_output(
-                        [
-                            "conda",
-                            "pack",
+                        CONDA_PACK
+                        + [
                             "--force",
                             "-p",
                             os.path.abspath("conda_base"),
