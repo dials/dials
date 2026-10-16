@@ -734,6 +734,12 @@ def run(args=None, phil=working_phil):
     reference, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    # Drop the input data from params. Every sub-extract (such as params.profile,
+    # which the profile model keeps) refers back to the whole params tree, so
+    # otherwise the input reflection table is pickled into every task sent to a
+    # spawned worker process.
+    params.input.reflections = []
+    params.input.experiments = []
 
     if not reference and not experiments:
         parser.print_help()

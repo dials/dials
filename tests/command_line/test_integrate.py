@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
+import pickle
 import shutil
 import subprocess
 from unittest import mock
@@ -753,3 +754,28 @@ def test_reference_shoeboxes_freed_after_profile_modelling(dials_data):
         with pytest.raises(RuntimeError, match="Stop before integrating"):
             dials.command_line.integrate.run_integration(params, experiments, reference)
     assert "shoebox" not in reference
+
+
+def test_input_data_not_pickled_with_params(dials_data, tmp_path, monkeypatch):
+    # The profile model keeps params.profile, and each sub-extract refers back to
+    # the whole params tree. Check the input data are not part of it, otherwise
+    # they are pickled into every task sent to a spawned worker process.
+    monkeypatch.chdir(tmp_path)
+    data = dials_data("centroid_test_data")
+    sizes = {}
+
+    def fake_run_integration(params, experiments, reference):
+        sizes["profile"] = len(pickle.dumps(params.profile))
+        sizes["integration"] = len(pickle.dumps(params.integration))
+        raise RuntimeError("Stop before integrating")
+
+    with mock.patch.object(
+        dials.command_line.integrate, "run_integration", fake_run_integration
+    ):
+        with pytest.raises(SystemExit):
+            dials.command_line.integrate.run(
+                [str(data / "indexed.expt"), str(data / "indexed.refl")]
+            )
+    # About 4 kB without the input data, and 337 kB with them
+    assert sizes["profile"] < 50_000
+    assert sizes["integration"] < 50_000
