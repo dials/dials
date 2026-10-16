@@ -60,7 +60,10 @@ solution in programs such as Olex2. Unlike SHELX format, the intensities are
 not rescaled to fit a fixed-width field. For electron diffraction the relevant
 items of the electron diffraction extension to the core dictionary are written
 too, and metadata that a data reduction cannot know can be added with
-cif.extra.
+cif.extra. The items describing the reflections used to determine the unit cell
+(_cell_measurement_reflns_used and _cell_measurement_theta_min/max) are not
+known to dials.export. Run dials.two_theta_refine with output.cif= after
+integration or scaling and pass the CIF to cif.combine to include them.
 
 Examples::
 
@@ -92,6 +95,9 @@ Examples::
   dials.export scaled.expt scaled.refl format=cif
   dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
   dials.export scaled.expt scaled.refl format=cif composition=C3H7NO2S
+  dials.two_theta_refine scaled.expt scaled.refl output.cif=cell.cif
+  dials.export refined_cell.expt scaled.refl format=cif cif.combine=cell.cif
+
   dials.export scaled.expt scaled.refl format=cif \\
       "cif.extra=_diffrn_source_type=LaB6 gun" \\
       cif.extra=_diffrn_precession_semi_angle=1.0
@@ -315,6 +321,13 @@ phil_scope = parse(
     datablock = dials
       .type = str
       .help = "The name of the CIF data block"
+    combine = None
+      .type = path
+      .help = "A CIF written by dials.two_theta_refine (output.cif=) from which"
+              "to take _cell_measurement_reflns_used, _cell_measurement_theta_min"
+              "and _cell_measurement_theta_max. These describe the reflections"
+              "used to determine the unit cell, which dials.export does not"
+              "know, so they are otherwise omitted. cif.extra takes precedence."
     extra = None
       .type = str
       .multiple = True
