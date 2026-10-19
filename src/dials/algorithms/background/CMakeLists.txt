@@ -7,7 +7,7 @@ Python_add_library(
 target_link_libraries( dials_algorithms_background_ext PUBLIC CCTBX::cctbx Boost::python )
 
 Python_add_library( dials_algorithms_background_modeller_ext MODULE boost_python/modeller_ext.cc )
-target_link_libraries( dials_algorithms_background_modeller_ext PUBLIC CCTBX::cctbx Boost::python Boost::numpy )
+target_link_libraries( dials_algorithms_background_modeller_ext PUBLIC CCTBX::cctbx Boost::python )
 
 Python_add_library(
     dials_algorithms_background_simple_ext
