@@ -2,11 +2,20 @@ from __future__ import annotations
 
 import numpy as np
 
+from dials.util.plotly_utils import round_for_json
 
-def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
-    coord_x = coords[:, dim1]
-    coord_y = coords[:, dim2]
+
+def plot_coords(coords, labels=None, key="cosym_coordinates", pcs=None):
+    coord_x = coords[:, 0]
+    coord_y = coords[:, 1]
     assert coord_x.size == coord_y.size, (coord_x.size, coord_y.size)
+
+    if not pcs:
+        x_label = "Axis 0"
+        y_label = "Axis 1"
+    else:
+        x_label = pcs["0"]
+        y_label = pcs["1"]
 
     if labels is None:
         labels = np.full(coord_x.shape[0], -1, dtype=int)
@@ -32,8 +41,8 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         isel = np.where(labels == k)[0]
         data.append(
             {
-                "x": coord_x[isel].tolist(),
-                "y": coord_y[isel].tolist(),
+                "x": round_for_json(coord_x[isel].tolist()),
+                "y": round_for_json(coord_y[isel].tolist()),
                 "mode": "markers",
                 "type": "scatter",
                 "marker": {
@@ -48,22 +57,22 @@ def plot_coords(coords, labels=None, key="cosym_coordinates", dim1=0, dim2=1):
         key: {
             "data": data,
             "layout": {
-                "title": "Cosym coordinates",
+                "title": "Cosym Coordinates Rotated by Principal Components",
                 "xaxis": {
-                    "title": f"Axis {dim1}",
+                    "title": x_label,
                     "range": [-1, 1],
                     "constrain": "domain",
                 },
                 "yaxis": {
-                    "title": f"Axis {dim2}",
+                    "title": y_label,
                     "range": [-1, 1],
                     "scaleanchor": "x",
                     "constrain": "domain",
                 },
             },
             "help": """\
-The outcome of the dials.cosym multi-dimensional scaling procedure projected on to two
-dimensions. Each point corresponds to an individual data set, or symmetry copy of a data
+The outcome of the dials.cosym multi-dimensional analysis rotated by the components identified using
+Principal Component Analysis and projected in 2D. Each point corresponds to an individual data set, or symmetry copy of a data
 set. The lengths of the vectors are inversely related to the amount of random error in
 each data set, and can be interpreted as an estimate of the CC* values. The angular
 separation between any pair, or groups, of vectors is a measure of the systematic
@@ -77,7 +86,7 @@ additional representations are given.
     return d
 
 
-def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
+def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram", min_x=-1, bins=100):
     """Plot a histogram of the rij values.
 
     Args:
@@ -86,8 +95,8 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
     """
     hist, bin_edges = np.histogram(
         rij_matrix[rij_matrix != 0],
-        bins=100,
-        range=(min(-1, rij_matrix.min()), max(1, rij_matrix.max())),
+        bins=bins,
+        range=(min(min_x, rij_matrix.min()), max(1, rij_matrix.max())),
     )
     bin_centers = bin_edges[:-1] + np.diff(bin_edges) / 2
 
@@ -95,7 +104,7 @@ def plot_rij_histogram(rij_matrix, key="cosym_rij_histogram"):
         key: {
             "data": [
                 {
-                    "x": bin_centers.tolist(),
+                    "x": round_for_json(bin_centers.tolist()),
                     "y": hist.tolist(),
                     "type": "bar",
                     "name": "Rij histogram",

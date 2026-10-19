@@ -14,6 +14,7 @@ from dxtbx import flumpy
 from scitbx import math as scitbxmath
 
 from dials.array_family import flex
+from dials.util.plotly_utils import round_for_json
 from dials_scaling_ext import calc_lookup_index, calc_theta_phi
 
 
@@ -100,7 +101,7 @@ def plot_relative_Bs(relative_Bs):
             "data": [
                 {
                     "x": list(range(0, len(relative_Bs))),
-                    "y": relative_Bs,
+                    "y": round_for_json(relative_Bs),
                     "type": "scatter",
                     "name": "Relative B-factor per dataset",
                     "mode": "markers",
@@ -171,8 +172,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
 
     data.append(
         {
-            "x": list(sample_values),
-            "y": list(sample_scales),
+            "x": round_for_json(sample_values),
+            "y": round_for_json(sample_scales),
             "type": "line",
             "name": "smoothly-varying <br>scale correction",
             "xaxis": "x",
@@ -181,8 +182,8 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
     )
     data.append(
         {
-            "x": list(smoother_phis),
-            "y": list(parameters),
+            "x": round_for_json(smoother_phis),
+            "y": round_for_json(parameters),
             "type": "scatter",
             "mode": "markers",
             "name": "smoothly-varying <br>scale parameters",
@@ -191,7 +192,10 @@ def _add_smooth_scales_to_data(physical_model, data, yaxis="y2"):
         }
     )
     if parameter_esds:
-        data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+        data[-1]["error_y"] = {
+            "type": "data",
+            "array": round_for_json(list(parameter_esds)),
+        }
     return data
 
 
@@ -227,8 +231,8 @@ def _add_decay_model_scales_to_data(model, data, yaxis="y", resolution=3.0):
         s = decay_SF.calculate_scales()
     data.append(
         {
-            "x": list(sample_values),
-            "y": list(s),
+            "x": round_for_json(sample_values),
+            "y": round_for_json(s, ndigits=4),
             "type": "line",
             "name": f"Decay scale factor <br>at {resolution} Angstrom",
             "xaxis": "x",
@@ -286,8 +290,8 @@ def plot_smooth_scales(physical_model):
 
         data.append(
             {
-                "x": list(sample_values),
-                "y": list(np.log(sample_scales) * 2.0),
+                "x": round_for_json(sample_values),
+                "y": round_for_json(np.log(sample_scales) * 2.0),
                 "type": "line",
                 "name": "smoothly-varying <br>B-factor correction",
                 "xaxis": "x",
@@ -296,8 +300,8 @@ def plot_smooth_scales(physical_model):
         )
         data.append(
             {
-                "x": list(smoother_phis),
-                "y": list(parameters),
+                "x": round_for_json(smoother_phis),
+                "y": round_for_json(parameters),
                 "type": "scatter",
                 "mode": "markers",
                 "name": "smoothly-varying <br>B-factor parameters",
@@ -306,7 +310,10 @@ def plot_smooth_scales(physical_model):
             }
         )
         if parameter_esds:
-            data[-1]["error_y"] = {"type": "data", "array": list(parameter_esds)}
+            data[-1]["error_y"] = {
+                "type": "data",
+                "array": round_for_json(list(parameter_esds)),
+            }
 
         data = _add_decay_model_scales_to_data(
             physical_model, data, yaxis="y", resolution=3.0
@@ -345,7 +352,7 @@ def plot_absorption_parameters(physical_model):
             "data": [
                 {
                     "x": [i + 0.5 for i in range(len(params))],
-                    "y": list(params),
+                    "y": round_for_json(params),
                     "type": "scatter",
                     "name": "absorption parameters",
                     "xaxis": "x",
@@ -364,7 +371,7 @@ def plot_absorption_parameters(physical_model):
     if param_esds:
         d["absorption_parameters"]["data"][-1]["error_y"] = {
             "type": "data",
-            "array": list(param_esds),
+            "array": round_for_json(list(param_esds)),
         }
 
     light_grey = "#d3d3d3"
@@ -469,9 +476,9 @@ def plot_absorption_plots(physical_model, reflection_table=None):
             counter += 1
     d["absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": [round_for_json(e, ndigits=5) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -507,9 +514,9 @@ corresponds to the laboratory x-axis.
 
     d["undiffracted_absorption_surface"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(undiffracted_intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": [round_for_json(e, ndigits=5) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "colorbar": {"title": "inverse <br>scale factor"},
@@ -577,9 +584,9 @@ x-axis.""",
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": [round_for_json(e, ndigits=5) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
@@ -608,9 +615,9 @@ x-axis.""",
 
     d["vector_directions"]["data"].append(
         {
-            "x": list(azimuth_ * 180.0 / np.pi),
-            "y": list(polar_ * 180.0 / np.pi),
-            "z": list(Intensity.T.tolist()),
+            "x": round_for_json(azimuth_ * 180.0 / np.pi),
+            "y": round_for_json(polar_ * 180.0 / np.pi),
+            "z": [round_for_json(e, ndigits=5) for e in Intensity.T.tolist()],
             "type": "heatmap",
             "colorscale": "Viridis",
             "showscale": False,
@@ -627,7 +634,7 @@ x-axis.""",
     d["absorption_corrections"] = {
         "data": [
             {
-                "x": list(hist.slot_centers()),
+                "x": round_for_json(hist.slot_centers(), ndigits=5),
                 "y": list(hist.slots()),
                 "type": "bar",
                 "name": "Applied absorption corrections",
@@ -657,8 +664,8 @@ def plot_outliers(data):
         "outlier_xy_positions": {
             "data": [
                 {
-                    "x": data["x"],
-                    "y": data["y"],
+                    "x": round_for_json(data["x"], ndigits=2),
+                    "y": round_for_json(data["y"], ndigits=2),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -682,8 +689,8 @@ def plot_outliers(data):
         "outliers_vs_z": {
             "data": [
                 {
-                    "x": list(hist.slot_centers()),
-                    "y": list(hist.slots()),
+                    "x": round_for_json(list(hist.slot_centers()), ndigits=4),
+                    "y": round_for_json(list(hist.slots()), ndigits=4),
                     "type": "bar",
                     "name": "outliers vs rotation",
                 }
@@ -721,7 +728,7 @@ def error_model_variance_plot(data, label=None):
             "data": [
                 {
                     "x": x,
-                    "y": list(initial_variances)[::-1],
+                    "y": round_for_json(initial_variances[::-1]),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -730,7 +737,7 @@ def error_model_variance_plot(data, label=None):
                 },
                 {
                     "x": x,
-                    "y": list(bin_variances)[::-1],
+                    "y": round_for_json(bin_variances[::-1]),
                     "type": "scatter",
                     "mode": "markers",
                     "xaxis": "x",
@@ -778,15 +785,15 @@ def error_regression_plot(data, label=None):
         key: {
             "data": [
                 {
-                    "x": list(x),
-                    "y": list(y),
+                    "x": round_for_json(x),
+                    "y": round_for_json(y),
                     "type": "scatter",
                     "mode": "markers",
                     "name": "expected vs observed",
                 },
                 {
-                    "x": list(x),
-                    "y": list(fit),
+                    "x": round_for_json(x),
+                    "y": round_for_json(fit),
                     "type": "scatter",
                     "name": "best least-squares fit",
                 },
@@ -848,9 +855,9 @@ def normal_probability_plot(data, label=None):
         key: {
             "data": [
                 {
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z.transpose().tolist(),
+                    "x": round_for_json(xedges.tolist()),
+                    "y": round_for_json(yedges.tolist()),
+                    "z": [round_for_json(e) for e in z.transpose().tolist()],
                     "type": "heatmap",
                     "name": "normalised deviations",
                     "colorbar": {
@@ -886,14 +893,14 @@ the line due to wide tails of the distribution.
         key_hist: {
             "data": [
                 {
-                    "x": list(histy.slot_centers()),
+                    "x": round_for_json(histy.slot_centers()),
                     "y": list(histy.slots()),
                     "type": "bar",
                     "name": "dataset normalised deviations",
                 },
                 {
-                    "x": list(histy.slot_centers()),
-                    "y": gaussian,
+                    "x": round_for_json(histy.slot_centers()),
+                    "y": round_for_json(gaussian),
                     "type": "scatter",
                     "name": "Ideal normal distribution",
                 },
@@ -946,9 +953,9 @@ def plot_array_modulation_plot(array_model):
         "array_modulation_plot": {
             "data": [
                 {
-                    "x": list(x_vals),
-                    "y": list(y_vals),
-                    "z": list(z),
+                    "x": round_for_json(x_vals, ndigits=4),
+                    "y": round_for_json(y_vals, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }
@@ -1026,9 +1033,9 @@ def plot_array_absorption_plot(array_model):
         "array_absorption_plot": {
             "data": [
                 {
-                    "x": list(xs),
-                    "y": list(ys),
-                    "z": list(z),
+                    "x": round_for_json(xs, ndigits=4),
+                    "y": round_for_json(ys, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }
@@ -1090,9 +1097,9 @@ def plot_array_decay_plot(array_model):
         "array_decay_plot": {
             "data": [
                 {
-                    "x": list(x),
-                    "y": list(y),
-                    "z": list(z),
+                    "x": round_for_json(x, ndigits=4),
+                    "y": round_for_json(y, ndigits=4),
+                    "z": round_for_json(z, ndigits=4),
                     "type": "heatmap",
                     "colorscale": "Viridis",
                 }

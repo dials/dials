@@ -18,7 +18,7 @@ namespace dials { namespace model { namespace boost_python {
 
   using namespace boost::python;
   using scitbx::af::flex;
-  using scitbx::af::flex_int;
+  using scitbx::af::flex_uint8_t;
 
   /** Set the data array as a flex array */
   template <typename FloatType>
@@ -30,10 +30,10 @@ namespace dials { namespace model { namespace boost_python {
 
   /** Set the mask array as a flex array */
   template <typename FloatType>
-  void set_mask(Shoebox<FloatType>& obj, flex_int& mask) {
+  void set_mask(Shoebox<FloatType>& obj, flex_uint8_t& mask) {
     DIALS_ASSERT(mask.accessor().all().size() == 3);
     obj.mask =
-      af::versa<int, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
+      af::versa<uint8_t, af::c_grid<3> >(mask.handle(), af::c_grid<3>(mask.accessor()));
   }
 
   /** Set the bgrd array as a flex array */
@@ -185,8 +185,9 @@ namespace dials { namespace model { namespace boost_python {
         make_setter(&shoebox_type::bbox, return_value_policy<return_by_value>()))
       .def_readwrite("panel", &shoebox_type::panel)
       .def_readwrite("flat", &shoebox_type::flat)
-      .def("allocate", &shoebox_type::allocate)
-      .def("allocate", &shoebox_type::allocate_with_value)
+      .def("allocate_data", &shoebox_type::allocate_data)
+      .def("allocate_data_with_value", &shoebox_type::allocate_data_with_value)
+      .def("allocate_background", &shoebox_type::allocate_background)
       .def("deallocate", &shoebox_type::deallocate)
       .def("xoffset", &shoebox_type::xoffset)
       .def("yoffset", &shoebox_type::yoffset)
@@ -198,7 +199,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("size", &shoebox_type::size)
       .def("size_flat", &shoebox_type::size_flat)
       .def("is_consistent", &shoebox_type::is_consistent)
-      .def("is_allocated", &shoebox_type::is_allocated)
+      .def("is_data_allocated", &shoebox_type::is_data_allocated)
+      .def("is_background_allocated", &shoebox_type::is_background_allocated)
       .def("is_bbox_within_image_volume",
            &shoebox_type::is_bbox_within_image_volume,
            (arg("image_size"), arg("scan_range")))
@@ -237,8 +239,53 @@ namespace dials { namespace model { namespace boost_python {
     return shoebox;
   }
 
+  template <typename FloatType>
+  class_<FrameSlicedShoebox<FloatType> > frame_sliced_shoebox_wrapper(
+    const char* name) {
+    typedef Shoebox<FloatType> shoebox_type;
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    // The per-frame arrays are read-only, so only getters are exposed
+    class_<frame_sliced_shoebox_type> frame_sliced_shoebox(name);
+    frame_sliced_shoebox.def(init<const frame_sliced_shoebox_type&>())
+      .def(init<const shoebox_type&,
+                const cctbx::miller::index<>&,
+                double,
+                double,
+                const af::const_ref<double>&,
+                const af::const_ref<double>&,
+                const af::const_ref<mat3<double> >&,
+                const af::const_ref<vec3<double> >&,
+                int>((arg("shoebox"),
+                      arg("miller_index"),
+                      arg("phi_cal"),
+                      arg("sigma_phi"),
+                      arg("phi"),
+                      arg("phi_scan_points"),
+                      arg("UB"),
+                      arg("s0"),
+                      arg("first_frame"))))
+      .add_property("frames", &frame_sliced_shoebox_type::frames)
+      .add_property("phi", &frame_sliced_shoebox_type::phi)
+      .add_property("excitation_error", &frame_sliced_shoebox_type::excitation_error)
+      .add_property("partiality", &frame_sliced_shoebox_type::partiality)
+      .add_property("summation_intensity",
+                    &frame_sliced_shoebox_type::summation_intensity)
+      .add_property("summation_intensity_variance",
+                    &frame_sliced_shoebox_type::summation_intensity_variance)
+      .add_property("summation_intensity_valid",
+                    &frame_sliced_shoebox_type::summation_intensity_valid)
+      .def("size", &frame_sliced_shoebox_type::size)
+      .def("__len__", &frame_sliced_shoebox_type::size)
+      .def("__eq__", &frame_sliced_shoebox_type::operator==)
+      .def("__ne__", &frame_sliced_shoebox_type::operator!=);
+
+    return frame_sliced_shoebox;
+  }
+
   void export_shoebox() {
     shoebox_wrapper<ProfileFloatType>("Shoebox");
+    frame_sliced_shoebox_wrapper<ProfileFloatType>("FrameSlicedShoebox");
   }
 
 }}}  // namespace dials::model::boost_python

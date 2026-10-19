@@ -742,7 +742,7 @@ class MetaDataUpdater:
                     assert s == d.all(), "Incompatible size"
         if params.lookup.dy is not None:
             dy_filename = params.lookup.dy
-            with open(dx_filename, "rb") as fh:
+            with open(dy_filename, "rb") as fh:
                 dy = _pickle_load(fh)
             if not isinstance(dy, tuple):
                 dy = (dy,)

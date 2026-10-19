@@ -8,6 +8,8 @@ import shutil
 import subprocess
 from copy import deepcopy
 
+import pytest
+
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx.test_utils import approx_equal
 from scitbx import sparse
@@ -104,8 +106,8 @@ def test_contraints_manager_simple_test():
 
     # check constrained values are equal to sums of relevant elements in the
     # original gradient vector
-    assert constr_dL_dp[5] == dL_dp[1] + dL_dp[3]
-    assert constr_dL_dp[6] == dL_dp[5] + dL_dp[6] + dL_dp[7]
+    assert constr_dL_dp[5] == pytest.approx(dL_dp[1] + dL_dp[3], abs=1e-12)
+    assert constr_dL_dp[6] == pytest.approx(dL_dp[5] + dL_dp[6] + dL_dp[7], abs=1e-12)
 
 
 def test_constrained_refinement(dials_data, tmp_path):

@@ -39,12 +39,12 @@ namespace dials { namespace algorithms {
       DIALS_ASSERT(volume.is_consistent());
       typedef ImageVolume<>::float_type FloatType;
       af::const_ref<FloatType, af::c_grid<3> > data = volume.data().const_ref();
-      af::const_ref<int, af::c_grid<3> > mask = volume.mask().const_ref();
+      af::const_ref<uint8_t, af::c_grid<3> > mask = volume.mask().const_ref();
       for (std::size_t j = 0; j < accessor_[0]; ++j) {
         for (std::size_t i = 0; i < accessor_[1]; ++i) {
           for (std::size_t k = 0; k < data.accessor()[0]; ++k) {
             double d = data(k, j, i);
-            int m = mask(k, j, i);
+            uint8_t m = mask(k, j, i);
             if ((m & Valid) && !(m & Foreground)) {
               sum_(j, i) += d;
               sum_sq_(j, i) += d * d;

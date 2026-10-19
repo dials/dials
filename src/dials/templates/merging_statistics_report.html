@@ -1,0 +1,31 @@
+{% extends "report_base.html" %}
+{% block content %}
+
+{% macro indiv_wl_report(item, id) -%}
+{% set indiv_id = id | replace(".", "_")%}
+{{macros.merging_statistics(item['scaling_tables'], item['xtriage_output'], indiv_id)}}
+<div>
+    <h2>Analysis plots</h2>
+    <div class="panel-group">
+        {{ macros.panel('Merging statistics by resolution', 'resolution_plots_'+ indiv_id, item['resolution_plots']) }}
+    </div>
+</div>
+
+{%- endmacro %}
+
+
+<div class="container-fluid">
+
+    <div class="page-header">
+        <h1>{{ page_title }}</h1>
+    </div>
+
+    <div id="home">
+        {% for wl, item in individual_reports.items() %} {# note just one item in the dict #}
+        {{indiv_wl_report(item, wl)}}
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}

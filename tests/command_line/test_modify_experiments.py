@@ -107,3 +107,26 @@ def test_update(dials_data):
 
     new_beam = new_expt.beams()[0]
     assert new_beam.get_wavelength() == pytest.approx(0.05)
+
+
+def test_reference(dials_data, tmp_path):
+    orig_expt = dials_data("aluminium_standard") / "imported.expt"
+    assert orig_expt.is_file()
+    orig_expt = load.experiment_list(orig_expt, check_format=False)
+    orig_beam = orig_expt.beams()[0]
+    assert orig_beam.get_wavelength() == pytest.approx(0.02508235604)
+    orig_beam.set_wavelength(0.03)
+    assert orig_expt.beams()[0].get_wavelength() == 0.03
+    orig_expt.as_file(tmp_path / "reference.expt")
+    result = subprocess.run(
+        [
+            shutil.which("dials.modify_experiments"),
+            dials_data("aluminium_standard") / "imported.expt",
+            "reference_geometry=reference.expt",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    mod_expt = load.experiment_list(tmp_path / "modified.expt", check_format=False)
+    assert mod_expt.beams()[0].get_wavelength() == 0.03

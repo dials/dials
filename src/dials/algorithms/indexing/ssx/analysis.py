@@ -16,6 +16,7 @@ from dials.algorithms.clustering.unit_cell import (
     cluster_unit_cells,
 )
 from dials.util import tabulate
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger("dials.algorithms.indexing.ssx.analysis")
 
@@ -189,14 +190,14 @@ def generate_plots(summary_data: dict) -> dict:
     rmsd_data = [
         {
             "x": images[rmsd_x_arrays[0] > 0].tolist(),
-            "y": rmsd_x_arrays[0][rmsd_x_arrays[0] > 0].tolist(),
+            "y": round_for_json(rmsd_x_arrays[0][rmsd_x_arrays[0] > 0].tolist()),
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD X",
         },
         {
             "x": images[rmsd_y_arrays[0] > 0].tolist(),
-            "y": rmsd_y_arrays[0][rmsd_y_arrays[0] > 0].tolist(),
+            "y": round_for_json(rmsd_y_arrays[0][rmsd_y_arrays[0] > 0].tolist()),
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD Y",
@@ -205,7 +206,7 @@ def generate_plots(summary_data: dict) -> dict:
     rmsdz_data = [
         {
             "x": images[rmsd_z_arrays[0] > 0].tolist(),
-            "y": rmsd_z_arrays[0][rmsd_z_arrays[0] > 0].tolist(),
+            "y": round_for_json(rmsd_z_arrays[0][rmsd_z_arrays[0] > 0].tolist()),
             "type": "scatter",
             "mode": "markers",
             "name": "RMSD dPsi",
@@ -240,7 +241,7 @@ def generate_plots(summary_data: dict) -> dict:
             rmsd_data.append(
                 {
                     "x": sub_images.tolist(),
-                    "y": sub_data_x.tolist(),
+                    "y": round_for_json(sub_data_x.tolist()),
                     "type": "scatter",
                     "mode": "markers",
                     "name": f"RMSD X (lattice {i + 2})",
@@ -249,7 +250,7 @@ def generate_plots(summary_data: dict) -> dict:
             rmsd_data.append(
                 {
                     "x": sub_images.tolist(),
-                    "y": sub_data_y.tolist(),
+                    "y": round_for_json(sub_data_y.tolist()),
                     "type": "scatter",
                     "mode": "markers",
                     "name": f"RMSD Y (lattice {i + 2})",
@@ -262,7 +263,7 @@ def generate_plots(summary_data: dict) -> dict:
                 rmsdz_data.append(
                     {
                         "x": sub_images.tolist(),
-                        "y": sub_data.tolist(),
+                        "y": round_for_json(sub_data.tolist()),
                         "type": "scatter",
                         "mode": "markers",
                         "name": f"RMSD dPsi (lattice {i + 2})",
@@ -327,7 +328,7 @@ def generate_plots(summary_data: dict) -> dict:
             "data": [
                 {
                     "x": images,
-                    "y": percent_indexed.tolist(),
+                    "y": round_for_json(percent_indexed.tolist()),
                     "type": "scatter",
                     "mode": "markers",
                     "name": "Percentage of strong spots indexed",
@@ -342,7 +343,7 @@ def generate_plots(summary_data: dict) -> dict:
         "percent_indexed_hist": {
             "data": [
                 {
-                    "x": percent_bins.tolist(),
+                    "x": round_for_json(percent_bins.tolist()),
                     "y": percent_hist.tolist(),
                     "type": "bar",
                 }
@@ -377,14 +378,14 @@ def generate_plots(summary_data: dict) -> dict:
         "rmsdxy_hist": {
             "data": [
                 {
-                    "x": bin_centers_x.tolist(),
+                    "x": round_for_json(bin_centers_x.tolist()),
                     "y": hist_x.tolist(),
                     "type": "bar",
                     "name": "RMSD X",
                     "opacity": 0.6,
                 },
                 {
-                    "x": bin_centers_y.tolist(),
+                    "x": round_for_json(bin_centers_y.tolist()),
                     "y": hist_y.tolist(),
                     "type": "bar",
                     "name": "RMSD Y",
@@ -403,7 +404,7 @@ def generate_plots(summary_data: dict) -> dict:
             {
                 "data": [
                     {
-                        "x": bin_centers_z.tolist(),
+                        "x": round_for_json(bin_centers_z.tolist(), ndigits=4),
                         "y": hist_z.tolist(),
                         "type": "bar",
                         "name": "RMSD dPsi",

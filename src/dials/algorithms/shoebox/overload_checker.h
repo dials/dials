@@ -45,7 +45,7 @@ namespace dials { namespace algorithms { namespace shoebox {
        */
       bool operator()(std::size_t panel,
                       const af::const_ref<float_type, af::c_grid<3> >& data,
-                      af::ref<int, af::c_grid<3> > mask) const {
+                      af::ref<uint8_t, af::c_grid<3> > mask) const {
         DIALS_ASSERT(panel < max_trusted_value_.size());
         DIALS_ASSERT(data.accessor().all_eq(mask.accessor()));
         DIALS_ASSERT(data.size() == mask.size());

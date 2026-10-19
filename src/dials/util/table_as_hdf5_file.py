@@ -34,6 +34,17 @@ dials_to_nx_names = {
     "profile.rmsd": "prf_rmsd",
 }
 
+frame_sliced_shoebox_names = [
+    "num_frames",
+    "frames",
+    "phi",
+    "excitation_error",
+    "partiality",
+    "summation_intensity",
+    "summation_intensity_variance",
+    "summation_intensity_valid",
+]
+
 dials_to_nx_names_split = {
     "miller_index": ["h", "k", "l"],
     "xyzcal.px": ["predicted_px_x", "predicted_px_y", "predicted_frame"],
@@ -49,40 +60,66 @@ dials_to_nx_names_split = {
 }
 
 
-def validate_format(handle):
-    # this is to validate that a h5 file contains the relevant spec to be successfully read
-    # expected hierarchy /dials/{process name}/{data group id}/{data arrays}
-    # with each {data group id} having identifiers and experiment_ids as attributes plus data arrays
-    if "dials" not in handle:
+def validate_format_return_groups(handle):
+    """
+    Validate that a h5 file contains the relevant spec to be successfully read
+    For version 1, expected hierarchy /dials/{process name}/{data group id}/{data arrays}
+    with each {data group id} having identifiers and experiment_ids as attributes plus data arrays
+    i.e. multi-sweep data can be stored as separate groups.
+
+    This function returns the groups (i.e. reflection tables), so that they can be iterated over and
+    optionally combined into a single table in memory.
+    """
+    if (
+        "file_type" not in handle.attrs
+        or handle.attrs["file_type"] != "dials_processed_data"
+        or "file_version" not in handle.attrs
+    ):
         raise ValueError(
-            "Unable to understand h5 file as dials data format (no /dials at the top level)"
+            "h5 file not recognised as DIALS processed data format (requires file_type attribute == dials_processed_data) and file_version attribute."
         )
-    group = handle["dials"]
-    if not isinstance(group, h5py.Group):
-        raise ValueError(f"Expecting a HDF5 Group at {group.name}")
-    if not len(group):
-        raise ValueError("No data groups found in the file under /dials")
-    for d in group.values():
-        if not isinstance(d, h5py.Group):
+    if handle.attrs["file_version"] == 1:
+        if "dials" not in handle:
             raise ValueError(
-                f"Expecting a HDF5 Group at {d.name} (second level of file)"
+                "Unable to understand h5 file as dials data format (no /dials at the top level)"
             )
-        if not len(d):
-            raise ValueError(f"No data groups found in the file under {d}")
-        for g in d.values():
-            if not isinstance(g, h5py.Group):
+        group = handle["dials"]
+        if not isinstance(group, h5py.Group):
+            raise ValueError(f"Expecting a HDF5 Group at {group.name}")
+        if not len(group):
+            raise ValueError("No data groups found in the file under /dials")
+        for d in group.values():
+            if not isinstance(d, h5py.Group):
                 raise ValueError(
-                    f"Expecting a HDF5 Group at {g.name} (third level of file)"
+                    f"Expecting a HDF5 Group at {d.name} (second level of file)"
                 )
-            # Note we allow empty tables to be stored, so no check on len(g) here
-            if "identifiers" not in g.attrs:  # Note this list is allowed to be empty
-                raise ValueError(
-                    f"No 'identifiers' attribute found in the group {g.name}"
-                )
-            if "experiment_ids" not in g.attrs:  # Note this list is allowed to be empty
-                raise ValueError(
-                    f"No 'experiment_ids' attribute found in the group {g.name}"
-                )
+            if not len(d):
+                raise ValueError(f"No data groups found in the file under {d}")
+            for g in d.values():
+                if not isinstance(g, h5py.Group):
+                    raise ValueError(
+                        f"Expecting a HDF5 Group at {g.name} (third level of file)"
+                    )
+                # Note we allow empty tables to be stored, so no check on len(g) here
+                if (
+                    "identifiers" not in g.attrs
+                ):  # Note this list is allowed to be empty
+                    raise ValueError(
+                        f"No 'identifiers' attribute found in the group {g.name}"
+                    )
+                if (
+                    "experiment_ids" not in g.attrs
+                ):  # Note this list is allowed to be empty
+                    raise ValueError(
+                        f"No 'experiment_ids' attribute found in the group {g.name}"
+                    )
+        # Get the group containing the reflection data
+        g = handle["dials"]
+        # get the last group at the second level, i.e. the most recent entry
+        g = g[list(g.keys())[-1]]
+        return g
+    else:
+        raise ValueError(f"file_version {handle.attrs['file_version']} not recognised")
 
 
 class ReflectionListEncoder(object):
@@ -95,6 +132,9 @@ class ReflectionListEncoder(object):
         second_level_name: str = "processing",
     ) -> None:
         """Encode each reflection table to data in a hdf5 group."""
+
+        handle.attrs["file_type"] = "dials_processed_data"
+        handle.attrs["file_version"] = 1
 
         # Create the reflection data group if it hasn't already been created
         if "dials" in handle:
@@ -143,6 +183,8 @@ class ReflectionListEncoder(object):
                 continue
             if isinstance(data, flex.shoebox):
                 ReflectionListEncoder.encode_shoebox(group, data, key)
+            elif isinstance(data, flex.frame_sliced_shoebox):
+                ReflectionListEncoder.encode_frame_sliced_shoebox(group, data, key)
             elif isinstance(data, flex.int6):
                 s = data.size()
                 this_data = flumpy.to_numpy(data.as_int()).reshape(s, 6)
@@ -215,6 +257,34 @@ class ReflectionListEncoder(object):
             "panel", data=data, shape=data.shape, dtype=data.dtype, compression=lz4
         )
 
+    @staticmethod
+    def encode_frame_sliced_shoebox(
+        group: h5py.Group, data: flex.frame_sliced_shoebox, key: str
+    ):
+        """Encode a column of frame sliced shoeboxes.
+
+        The per-frame arrays vary in length from row to row, so they are stored
+        concatenated, alongside the number of frames of each row.
+        """
+        lz4 = hdf5plugin.LZ4()
+        fss_group = group.create_group(key)
+        arrays = dict(
+            zip(
+                frame_sliced_shoebox_names[1:],
+                data.get_frame_sliced_shoebox_data_arrays(),
+            )
+        )
+        arrays["num_frames"] = data.num_frames()
+        for name in frame_sliced_shoebox_names:
+            this_data = flumpy.to_numpy(arrays[name])
+            fss_group.create_dataset(
+                name,
+                data=this_data,
+                shape=this_data.shape,
+                dtype=this_data.dtype,
+                compression=lz4,
+            )
+
 
 class ReflectionListDecoder(object):
     """Decoder for the reflection data."""
@@ -223,16 +293,13 @@ class ReflectionListDecoder(object):
     def decode(handle: h5py.File) -> List[flex.reflection_table]:
         """Decode the data to a list of reflection tables."""
 
-        validate_format(handle)  # raises ValueError if not conforming to expected spec.
-
-        # Get the group containing the reflection data
-        g = handle["dials"]
-        # get the last group at the second level, i.e. the most recent entry
-        g = g[list(g.keys())[-1]]
+        data_groups = validate_format_return_groups(
+            handle
+        )  # raises ValueError if not conforming to expected spec.
 
         # Create the list of reflection tables
         tables = []
-        for dataset in g.values():
+        for dataset in data_groups.values():
             table = flex.reflection_table([])
             identifiers = dataset.attrs["identifiers"]
             experiment_ids = dataset.attrs["experiment_ids"]
@@ -241,6 +308,12 @@ class ReflectionListDecoder(object):
 
             for key in dataset:
                 if isinstance(dataset[key], h5py.Group):
+                    if "num_frames" in dataset[key]:
+                        # Decode the frame sliced shoebox data
+                        table[key] = ReflectionListDecoder.decode_frame_sliced_shoebox(
+                            dataset[key]
+                        )
+                        continue
                     # Decode all the shoebox data
                     shoebox_arrays: Dict[str, flumpy.FlexArray] = {}
                     names = [
@@ -280,6 +353,19 @@ class ReflectionListDecoder(object):
 
         # Return the list of reflection tables (as stored on disk)
         return tables
+
+    @staticmethod
+    def decode_frame_sliced_shoebox(group: h5py.Group) -> flex.frame_sliced_shoebox:
+        """Decode a group of concatenated per-frame arrays."""
+        for k in group.keys():
+            if k not in frame_sliced_shoebox_names:
+                raise RuntimeError(f"Unrecognised elements {k} in {group}")
+        arrays = {}
+        for name in frame_sliced_shoebox_names:
+            if name not in group:
+                raise RuntimeError(f"Missing element {name} in {group}")
+            arrays[name] = flumpy.from_numpy(group[name][()])
+        return flex.frame_sliced_shoebox(**arrays)
 
     @staticmethod
     def convert_array(data: np.array) -> flumpy.FlexArray:

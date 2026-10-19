@@ -49,11 +49,11 @@ namespace dials { namespace model { namespace boost_python {
     af::ref<double> bg_disp = reflections["background.dispersion"];
 
     // The mask codes
-    int mask_code1 = Valid;
-    int mask_code2 = Valid | Background;
-    int mask_code3 = Valid | Background | BackgroundUsed;
-    int mask_code4 = Valid | Foreground;
-    int mask_code5 = Overlapped;
+    uint8_t mask_code1 = Valid;
+    uint8_t mask_code2 = Valid | Background;
+    uint8_t mask_code3 = Valid | Background | BackgroundUsed;
+    uint8_t mask_code4 = Valid | Foreground;
+    uint8_t mask_code5 = Overlapped;
 
     // Loop through each reflection
     for (std::size_t i = 0; i < panel.size(); ++i) {
@@ -67,7 +67,7 @@ namespace dials { namespace model { namespace boost_python {
       // Get the data arrays
       af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
       af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-      af::versa<int, af::c_grid<3> > mask = v.extract_mask(b, i);
+      af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;

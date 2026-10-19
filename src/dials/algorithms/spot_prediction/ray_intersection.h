@@ -105,15 +105,15 @@ namespace dials { namespace algorithms {
     af::ref<vec3<double> > xyzcalmm = reflections["xyzcal.mm"];
     af::shared<bool> success(reflections.size(), true);
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      try {
-        Detector::coord_type coord = detector.get_ray_intersection(s1[i]);
-        xyzcalmm[i][0] = coord.second[0];
-        xyzcalmm[i][1] = coord.second[1];
-        xyzcalmm[i][2] = phi[i];
-        panel[i] = coord.first;
-      } catch (dxtbx::error const&) {
+      auto coord = detector.try_get_ray_intersection(s1[i]);
+      if (!coord) {
         success[i] = false;
+        continue;
       }
+      xyzcalmm[i][0] = coord->second[0];
+      xyzcalmm[i][1] = coord->second[1];
+      xyzcalmm[i][2] = phi[i];
+      panel[i] = coord->first;
     }
     return success;
   }
@@ -131,15 +131,15 @@ namespace dials { namespace algorithms {
     af::ref<vec3<double> > xyzcalmm = reflections["xyzcal.mm"];
     af::shared<bool> success(reflections.size(), true);
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      try {
-        vec2<double> coord = p.get_ray_intersection(s1[i]);
-        xyzcalmm[i][0] = coord[0];
-        xyzcalmm[i][1] = coord[1];
-        xyzcalmm[i][2] = phi[i];
-        panel[i] = panel_number;
-      } catch (dxtbx::error const&) {
+      auto coord = p.try_get_ray_intersection(s1[i]);
+      if (!coord) {
         success[i] = false;
+        continue;
       }
+      xyzcalmm[i][0] = (*coord)[0];
+      xyzcalmm[i][1] = (*coord)[1];
+      xyzcalmm[i][2] = phi[i];
+      panel[i] = panel_number;
     }
     return success;
   }
@@ -157,16 +157,15 @@ namespace dials { namespace algorithms {
     af::ref<vec3<double> > xyzcalmm = reflections["xyzcal.mm"];
     af::shared<bool> success(reflections.size(), true);
     for (std::size_t i = 0; i < reflections.size(); ++i) {
-      try {
-        const Panel& p = detector[panel_numbers[i]];
-        vec2<double> coord = p.get_ray_intersection(s1[i]);
-        xyzcalmm[i][0] = coord[0];
-        xyzcalmm[i][1] = coord[1];
-        xyzcalmm[i][2] = phi[i];
-        panel[i] = panel_numbers[i];
-      } catch (dxtbx::error const&) {
+      auto coord = detector[panel_numbers[i]].try_get_ray_intersection(s1[i]);
+      if (!coord) {
         success[i] = false;
+        continue;
       }
+      xyzcalmm[i][0] = (*coord)[0];
+      xyzcalmm[i][1] = (*coord)[1];
+      xyzcalmm[i][2] = phi[i];
+      panel[i] = panel_numbers[i];
     }
     return success;
   }

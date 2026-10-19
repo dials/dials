@@ -16,7 +16,7 @@ from dials.array_family import flex
 
 def generate_shoebox(size, mean, nforeground, ninvalid):
     data = flex.double(flex.grid(size), 0.0)
-    mask = flex.int(flex.grid(size), MaskCode.Valid | MaskCode.Background)
+    mask = flex.uint8(flex.grid(size), MaskCode.Valid | MaskCode.Background)
     random_background_plane2(data, mean, 0, 0, 0)
     for i in random.sample(range(len(data)), ninvalid):
         mask[i] &= ~MaskCode.Valid

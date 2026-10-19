@@ -5,7 +5,7 @@ c-compiler
 colorlog
 conda
 cxx-compiler
-dials-data>=2.4.123
+dials-data>=2.4.142
 docutils
 eigen
 future
@@ -22,8 +22,8 @@ mrcfile
 msgpack-cxx
 msgpack-python
 natsort
-numpy
-nxmx
+numpy<=2.4.6
+nxmx>=0.0.6
 optuna
 ordered-set
 pandas
@@ -49,6 +49,7 @@ scons
 setuptools
 six
 sphinx>=4
+sphinx-design
 sqlite
 tabulate
 tqdm

@@ -49,7 +49,7 @@ devnull = open(os.devnull, "wb")  # to redirect unwanted subprocess output
 allowed_ssh_connections = {}
 concurrent_git_connection_limit = threading.Semaphore(5)
 
-_prebuilt_cctbx_base = "2025"
+_prebuilt_cctbx_base = "2026"
 
 
 def make_executable(filepath):
@@ -110,7 +110,7 @@ def install_micromamba(python, cmake):
         raise NotImplementedError(
             "Unsupported platform %s / %s" % (os.name, sys.platform)
         )
-    url = "https://micromamba.snakepit.net/api/micromamba/{0}/latest".format(conda_arch)
+    url = "https://micro.mamba.pm/api/micromamba/{0}/latest".format(conda_arch)
     mamba_prefix = os.path.realpath("micromamba")
     clean_env["MAMBA_ROOT_PREFIX"] = mamba_prefix
     mamba = os.path.join(mamba_prefix, member.split("/")[-1])
@@ -1097,6 +1097,11 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
+# Default builds to release with debug info. This only takes effect in
+# the root CMakeLists, so needs to be included here.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dials/cmake/Modules")
+include(SetDefaultBuildRelWithDebInfo)
+
 if (MSVC)
     # Windows can fail because of too many objects
     add_compile_options(/bigobj)
@@ -1161,7 +1166,6 @@ def configure_build(config_flags):
         "dials",
         "xia2",
         "--skip_phenix_dispatchers",
-        "--use_environment",
     ] + config_flags
 
     run_indirect_command(

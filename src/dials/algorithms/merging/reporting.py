@@ -27,6 +27,7 @@ from dials.report.analysis import (
 )
 from dials.report.plots import d_star_sq_to_d_ticks
 from dials.util import tabulate
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger("dials")
 
@@ -269,8 +270,8 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         )
         data["dF"]["dano"]["data"].append(
             {
-                "x": d_star_sq_bins,
-                "y": list(dFsdF),
+                "x": round_for_json(d_star_sq_bins, ndigits=6),
+                "y": round_for_json(dFsdF),
                 "type": "scatter",
                 "name": "\u03bb" + f"={wave:.4f}",
             }
@@ -279,7 +280,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         return data
     data["dF"]["dano"]["data"].append(
         {
-            "x": d_star_sq_bins,
+            "x": round_for_json(d_star_sq_bins, ndigits=6),
             "y": [0.8] * len(d_star_sq_bins),
             "type": "scatter",
             "mode": "lines",
@@ -288,7 +289,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
     )
     data["dF"]["dano"]["data"].append(
         {
-            "x": d_star_sq_bins,
+            "x": round_for_json(d_star_sq_bins, ndigits=6),
             "y": [1.2] * len(d_star_sq_bins),
             "type": "scatter",
             "mode": "lines",
@@ -300,7 +301,7 @@ https://strucbio.biologie.uni-konstanz.de/ccp4wiki/index.php?title=SHELX_C/D/E
         "title": "<|ΔF|/σ(ΔF)> vs resolution",
         "xaxis": {
             "title": "Resolution (Å)",
-            "tickvals": d_star_sq_tickvals,
+            "tickvals": round_for_json(d_star_sq_tickvals, ndigits=6),
             "ticktext": d_star_sq_ticktext,
         },
         "yaxis": {"title": "<|ΔF|/σ(ΔF)>", "rangemode": "tozero"},
@@ -321,10 +322,13 @@ def generate_html_report(json_data, filename):
             "unit_cell_plots",
             "orientation_graphs",
         ]:
-            for name in list(v[plot_cat].keys()):
-                v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
-                if plot_cat == "orientation_graphs":
-                    styles[name + "_" + str_wl] = "square-plot"
+            if plot_cat in v:
+                for name in list(v[plot_cat].keys()):
+                    v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
+                    if plot_cat == "orientation_graphs":
+                        styles[name + "_" + str_wl] = "square-plot"
+            else:
+                v[plot_cat] = {}
 
     loader = ChoiceLoader(
         [

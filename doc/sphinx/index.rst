@@ -16,6 +16,7 @@ DIALS: Diffraction Integration for Advanced Light Sources
    documentation/tutorials/index
    How-to <howto>
    Knowledge Base <https://dials.github.io/kb>
+   Forum <https://discourse.rs-station.org/c/software/dials/10>
    workshops/index
    US National Resource <national_resource>
    publications
@@ -41,7 +42,7 @@ Contact
 
 For feature requests, bug reports or any other information, please contact
 the DIALS developers at dials-user-group@jiscmail.net, or post an
-`issue`_.
+`issue`_. Ask users and developers for help on the RS-Station `forum`_.
 
 Citing DIALS
 ============
@@ -115,3 +116,4 @@ Work at LBNL is performed under `Department of Energy`_ contract DE-AC02-05CH112
 .. _`Department of Energy`: http://www.energy.gov/
 .. _dials.github.io: https://dials.github.io/
 .. _`NIH`: https://www.nigms.nih.gov/
+.. _`forum`: https://discourse.rs-station.org/c/software/dials/10 

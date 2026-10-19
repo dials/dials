@@ -65,7 +65,8 @@ namespace dials { namespace af { namespace boost_python {
     for (std::size_t i = 0; i < result.size(); ++i) {
       result[i] = Shoebox<FloatType>(panel[i], bbox[i], flatten);
       if (allocate) {
-        result[i].allocate();
+        result[i].allocate_data();
+        result[i].allocate_background();
       }
     }
     return new typename af::flex<Shoebox<FloatType> >::type(
@@ -139,14 +140,15 @@ namespace dials { namespace af { namespace boost_python {
       // Allocate all the arrays
       for (std::size_t i = 0; i < result_.size(); ++i) {
         if (min_pixels <= num_pixels[i] && num_pixels[i] <= max_pixels) {
-          result_[i].allocate();
+          result_[i].allocate_data();
+          result_[i].allocate_background();
         }
       }
 
       // Set all the mask and data points
       for (std::size_t i = 0; i < labels.size(); ++i) {
         int l = labels[i];
-        if (result_[l].is_allocated()) {
+        if (result_[l].is_data_allocated()) {
           FloatType v = values[i];
           vec3<int> c = coords[i];
           int ii = c[2] - result_[l].bbox[0];
@@ -258,7 +260,8 @@ namespace dials { namespace af { namespace boost_python {
 
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].allocate();
+      result[i].allocate_data();
+      result[i].allocate_background();
     }
 
     // Set all the mask and data points
@@ -332,7 +335,8 @@ namespace dials { namespace af { namespace boost_python {
 
     // Allocate all the arrays
     for (std::size_t i = 0; i < result.size(); ++i) {
-      result[i].allocate();
+      result[i].allocate_data();
+      result[i].allocate_background();
     }
 
     // Set all the mask and data points
@@ -360,9 +364,16 @@ namespace dials { namespace af { namespace boost_python {
    * Allocate the shoeboxes
    */
   template <typename FloatType>
-  void allocate(af::ref<Shoebox<FloatType> > a) {
+  void allocate_data(af::ref<Shoebox<FloatType> > a) {
     for (std::size_t i = 0; i < a.size(); ++i) {
-      a[i].allocate();
+      a[i].allocate_data();
+    }
+  }
+
+  template <typename FloatType>
+  void allocate_background(af::ref<Shoebox<FloatType> > a) {
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      a[i].allocate_background();
     }
   }
 
@@ -370,9 +381,9 @@ namespace dials { namespace af { namespace boost_python {
    * Allocate the shoeboxes
    */
   template <typename FloatType>
-  void allocate_with_value(af::ref<Shoebox<FloatType> > a, int mask_code) {
+  void allocate_data_with_value(af::ref<Shoebox<FloatType> > a, int mask_code) {
     for (std::size_t i = 0; i < a.size(); ++i) {
-      a[i].allocate_with_value(mask_code);
+      a[i].allocate_data_with_value(mask_code);
     }
   }
 
@@ -399,13 +410,25 @@ namespace dials { namespace af { namespace boost_python {
   }
 
   /**
-   * Check if the arrays are allocated
+   * Check if the data and mask arrays are allocated
    */
   template <typename FloatType>
-  shared<bool> is_allocated(const const_ref<Shoebox<FloatType> >& a) {
+  shared<bool> is_data_allocated(const const_ref<Shoebox<FloatType> >& a) {
     shared<bool> result(a.size(), af::init_functor_null<bool>());
     for (std::size_t i = 0; i < a.size(); ++i) {
-      result[i] = a[i].is_allocated();
+      result[i] = a[i].is_data_allocated();
+    }
+    return result;
+  }
+
+  /**
+   * Check if the background arrays are allocated
+   */
+  template <typename FloatType>
+  shared<bool> is_background_allocated(const const_ref<Shoebox<FloatType> >& a) {
+    shared<bool> result(a.size(), af::init_functor_null<bool>());
+    for (std::size_t i = 0; i < a.size(); ++i) {
+      result[i] = a[i].is_background_allocated();
     }
     return result;
   }
@@ -441,12 +464,63 @@ namespace dials { namespace af { namespace boost_python {
    * Count the number of mask pixels with the given code
    */
   template <typename FloatType>
-  shared<int> count_mask_values(const const_ref<Shoebox<FloatType> >& a, int code) {
+  shared<int> count_mask_values(const const_ref<Shoebox<FloatType> >& a, uint8_t code) {
     shared<int> result(a.size(), af::init_functor_null<int>());
     for (std::size_t i = 0; i < a.size(); ++i) {
       result[i] = a[i].count_mask_values(code);
     }
     return result;
+  }
+
+  /**
+   * Break a tie between equally-bright pixels by choosing the one nearest the
+   * shoebox centroid, rather than relying on pixel ordering (see
+   * https://github.com/dials/dials/issues/3014). Falls back to first_max (the
+   * first pixel at the maximum, in z, y, x order) when the centroid is
+   * degenerate / non-finite, e.g. for an all-zero shoebox.
+   */
+  template <typename FloatType>
+  std::size_t peak_index_nearest_centroid(
+    const Shoebox<FloatType>& shoebox,
+    const af::const_ref<FloatType, af::c_grid<3> >& data,
+    FloatType max_value,
+    std::size_t first_max) {
+    // Intensity-weighted centroid of the shoebox, in global pixel coordinates.
+    vec3<double> c = shoebox.centroid_all().px.position;
+    if (!std::isfinite(c[0]) || !std::isfinite(c[1]) || !std::isfinite(c[2])) {
+      return first_max;
+    }
+
+    af::c_grid<3> accessor = data.accessor();
+    std::size_t chosen = first_max;
+    double best = -1.0;  // negative sentinel: no candidate measured yet
+
+    // No tied pixel can precede the first maximum, so start the scan there.
+    for (std::size_t j = first_max; j < data.size(); ++j) {
+      // Only the pixels tied at the maximum value are candidates.
+      if (data[j] != max_value) {
+        continue;
+      }
+
+      // Pixel centre in global (x, y, z); the accessor is z, y, x ordered,
+      // hence cd[2]/cd[1]/cd[0] map to x/y/z.
+      tiny<std::size_t, 3> cd = accessor.index_nd(j);
+      vec3<double> p((double)shoebox.bbox[0] + cd[2] + 0.5,
+                     (double)shoebox.bbox[2] + cd[1] + 0.5,
+                     (double)shoebox.bbox[4] + cd[0] + 0.5);
+
+      // Squared distance to the centroid (squared avoids a per-pixel sqrt).
+      double d2 = (p - c).length_sq();
+
+      // Keep the closest candidate; the strict comparison means an equal
+      // distance does not displace an earlier pixel, so ties stay deterministic.
+      if (best >= 0.0 && d2 >= best) {
+        continue;
+      }
+      best = d2;
+      chosen = j;
+    }
+    return chosen;
   }
 
   /**
@@ -456,9 +530,42 @@ namespace dials { namespace af { namespace boost_python {
   shared<vec3<double> > peak_coordinates(ref<Shoebox<FloatType> > a) {
     shared<vec3<double> > result(a.size(), af::init_functor_null<vec3<double> >());
     for (std::size_t i = 0; i < a.size(); ++i) {
-      std::size_t index = af::max_index(a[i].data.const_ref());
-      af::c_grid<3> accessor = a[i].data.accessor();
-      tiny<std::size_t, 3> coord = accessor.index_nd(index);
+      af::const_ref<FloatType, af::c_grid<3> > data = a[i].data.const_ref();
+      // The loop below seeds from data[0], so requires a non-empty
+      // array. This restores the empty-array guard that af::max_index
+      // enforced internally throwing on size 0
+      DIALS_ASSERT(data.size() > 0);
+
+      // Single pass to find the maximum value, the first index
+      // attaining it (preserving the historic z, y, x ordering for the
+      // common, untied case) and how many pixels share that maximum
+      // value. This is the same scan af::max_index performed (update
+      // only on a strictly greater value, so the first maximum is
+      // kept), with the sole addition of counting ties in n_max so we
+      // know whether the centroid tie-break below is needed.
+      FloatType max_value = data[0];
+      std::size_t max_index = 0;
+      std::size_t n_max = 1;
+      for (std::size_t j = 1; j < data.size(); ++j) {
+        if (data[j] > max_value) {
+          max_value = data[j];
+          max_index = j;
+          n_max = 1;
+        } else if (data[j] == max_value) {
+          ++n_max;
+        }
+      }
+
+      af::c_grid<3> accessor = data.accessor();
+
+      // The centroid tie-break is only computed in the rare tied case, keeping
+      // the common single-peak path cheap.
+      std::size_t chosen = max_index;
+      if (n_max > 1) {
+        chosen = peak_index_nearest_centroid(a[i], data, max_value, max_index);
+      }
+
+      tiny<std::size_t, 3> coord = accessor.index_nd(chosen);
       result[i][0] = (FloatType)a[i].bbox[0] + (FloatType)coord[2] + 0.5;
       result[i][1] = (FloatType)a[i].bbox[2] + (FloatType)coord[1] + 0.5;
       result[i][2] = (FloatType)a[i].bbox[4] + (FloatType)coord[0] + 0.5;
@@ -649,7 +756,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double> result(a.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].data;
-      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      af::versa<uint8_t, af::c_grid<3> > mask = a[i].mask;
       double mean = 0.0;
       std::size_t count = 0;
       for (std::size_t j = 0; j < data.size(); ++j) {
@@ -676,7 +783,7 @@ namespace dials { namespace af { namespace boost_python {
     af::shared<double> result(a.size());
     for (std::size_t i = 0; i < result.size(); ++i) {
       af::versa<FloatType, af::c_grid<3> > data = a[i].background;
-      af::versa<int, af::c_grid<3> > mask = a[i].mask;
+      af::versa<uint8_t, af::c_grid<3> > mask = a[i].mask;
       double mean = 0.0;
       std::size_t count = 0;
       for (std::size_t j = 0; j < data.size(); ++j) {
@@ -732,7 +839,7 @@ namespace dials { namespace af { namespace boost_python {
       DIALS_ASSERT(p == 0);
 
       // Get the shoebox mask
-      af::const_ref<int, af::c_grid<3> > sbox_mask = self[s].mask.const_ref();
+      af::const_ref<uint8_t, af::c_grid<3> > sbox_mask = self[s].mask.const_ref();
 
       // Make sure bbox range is ok
       int x00 = x0 >= 0 ? x0 : 0;
@@ -768,7 +875,7 @@ namespace dials { namespace af { namespace boost_python {
     size_t ntot = 0;
     af::shared<float> data_array(n, 0);
     af::shared<float> bg_array(n, 0);
-    af::shared<size_t> mask_array(n, 0);
+    af::shared<uint8_t> mask_array(n, 0);
     for (int i = 0; i < self.size(); ++i) {
       const Shoebox<>& s1 = self[i];
       std::copy(s1.data.begin(), s1.data.end(), data_array.begin() + ntot);
@@ -812,7 +919,7 @@ namespace dials { namespace af { namespace boost_python {
       // Get the shoebox mask
       af::ref<FloatType, af::c_grid<3> > sbox_data = self[s].data.ref();
       af::ref<FloatType, af::c_grid<3> > sbox_bgrd = self[s].background.ref();
-      af::ref<int, af::c_grid<3> > sbox_mask = self[s].mask.ref();
+      af::ref<uint8_t, af::c_grid<3> > sbox_mask = self[s].mask.ref();
 
       // Make sure bbox range is ok
       int x00 = x0 >= 0 ? x0 : 0;
@@ -851,7 +958,7 @@ namespace dials { namespace af { namespace boost_python {
                                 cctbx::miller::index<> hkl,
                                 const PixelToMillerIndex& compute_miller_index) {
     bool modified = false;
-    int mask_code = Valid | Background;
+    uint8_t mask_code = Valid | Background;
     int x0 = self.bbox[0];
     int x1 = self.bbox[1];
     int y0 = self.bbox[2];
@@ -922,8 +1029,16 @@ namespace dials { namespace af { namespace boost_python {
 
     /** Initialise with the version for checking */
     shoebox_to_string() {
-      unsigned int version = 1;
+      unsigned int version = 2;
       *this << version;
+    }
+
+    /** Add the << operator for uint8_t, which is missing from
+     * scitbx::serialization::double_buffered::to_string */
+    to_string& operator<<(uint8_t const& val) {
+      char buf[64];
+      buffer.append(buf, scitbx::serialization::base_256::to_string(buf, val));
+      return *this;
     }
 
     /** Convert a single shoebox instance to string */
@@ -964,7 +1079,14 @@ namespace dials { namespace af { namespace boost_python {
     shoebox_from_string(const char* str_ptr)
         : pickle_double_buffered::from_string(str_ptr) {
       *this >> version;
-      DIALS_ASSERT(version == 1);
+      DIALS_ASSERT(version <= 2);
+    }
+
+    /** Add the >> operator for uint8_t, which is missing from
+     * scitbx::serialization::double_buffered::from_string */
+    from_string& operator>>(uint8_t& val) {
+      val = get_value(scitbx::type_holder<unsigned char>());
+      return *this;
     }
 
     /** Get a single shoebox instance from a string */
@@ -973,7 +1095,20 @@ namespace dials { namespace af { namespace boost_python {
         >> val.bbox[4] >> val.bbox[5];
 
       val.data = profile_from_string<versa<FloatType, c_grid<3> > >();
-      val.mask = profile_from_string<versa<int, c_grid<3> > >();
+
+      if (version == 1) {
+        // In version 1, the mask was stored as an int array, so read it as
+        // such and then copy it over, casting to uint8_t
+        af::versa<int, af::c_grid<3> > mask_as_int =
+          profile_from_string<versa<int, c_grid<3> > >();
+        val.mask = versa<uint8_t, c_grid<3> >(mask_as_int.accessor());
+        for (std::size_t i = 0; i < mask_as_int.size(); ++i) {
+          val.mask[i] = (uint8_t)mask_as_int[i];
+        }
+      } else {
+        val.mask = profile_from_string<versa<uint8_t, c_grid<3> > >();
+      }
+
       val.background = profile_from_string<versa<FloatType, c_grid<3> > >();
 
       return *this;
@@ -1039,11 +1174,13 @@ namespace dials { namespace af { namespace boost_python {
                                boost::python::arg("bbox"),
                                boost::python::arg("allocate") = false,
                                boost::python::arg("flatten") = false)))
-        .def("allocate", &allocate<FloatType>)
-        .def("allocate_with_value", &allocate_with_value<FloatType>)
+        .def("allocate_data", &allocate_data<FloatType>)
+        .def("allocate_background", &allocate_background<FloatType>)
+        .def("allocate_data_with_value", &allocate_data_with_value<FloatType>)
         .def("deallocate", &deallocate<FloatType>)
         .def("is_consistent", &is_consistent<FloatType>)
-        .def("is_allocated", &is_allocated<FloatType>)
+        .def("is_data_allocated", &is_data_allocated<FloatType>)
+        .def("is_background_allocated", &is_background_allocated<FloatType>)
         .def("panels", &panels<FloatType>)
         .def("bounding_boxes", &bounding_boxes<FloatType>)
         .def("count_mask_values", &count_mask_values<FloatType>)

@@ -24,15 +24,15 @@ namespace dials { namespace algorithms { namespace boost_python {
     class_<BayesianIntegratorType>(name, no_init)
       .def(init<const af::const_ref<FloatType>&,
                 const af::const_ref<FloatType>&,
-                const af::const_ref<int>&>(
+                const af::const_ref<uint8_t>&>(
         (arg("signal"), arg("background"), arg("mask"))))
       .def(init<const af::const_ref<FloatType, af::c_grid<2> >&,
                 const af::const_ref<FloatType, af::c_grid<2> >&,
-                const af::const_ref<int, af::c_grid<2> >&>(
+                const af::const_ref<uint8_t, af::c_grid<2> >&>(
         (arg("signal"), arg("background"), arg("mask"))))
       .def(init<const af::const_ref<FloatType, af::c_grid<3> >&,
                 const af::const_ref<FloatType, af::c_grid<3> >&,
-                const af::const_ref<int, af::c_grid<3> >&>(
+                const af::const_ref<uint8_t, af::c_grid<3> >&>(
         (arg("signal"), arg("background"), arg("mask"))))
       .def("intensity", &BayesianIntegratorType::intensity)
       .def("variance", &BayesianIntegratorType::variance)
@@ -47,7 +47,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   BayesianIntegrator<FloatType> make_bayesian_integrator_1d(
     const af::const_ref<FloatType>& image,
     const af::const_ref<FloatType>& background,
-    const af::const_ref<int>& mask) {
+    const af::const_ref<uint8_t>& mask) {
     return BayesianIntegrator<FloatType>(image, background, mask);
   }
 
@@ -55,7 +55,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   BayesianIntegrator<FloatType> make_bayesian_integrator_2d(
     const af::const_ref<FloatType, af::c_grid<2> >& image,
     const af::const_ref<FloatType, af::c_grid<2> >& background,
-    const af::const_ref<int, af::c_grid<2> >& mask) {
+    const af::const_ref<uint8_t, af::c_grid<2> >& mask) {
     return BayesianIntegrator<FloatType>(image, background, mask);
   }
 
@@ -63,7 +63,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   BayesianIntegrator<FloatType> make_bayesian_integrator_3d(
     const af::const_ref<FloatType, af::c_grid<3> >& image,
     const af::const_ref<FloatType, af::c_grid<3> >& background,
-    const af::const_ref<int, af::c_grid<3> >& mask) {
+    const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
     return BayesianIntegrator<FloatType>(image, background, mask);
   }
 

@@ -168,12 +168,12 @@ namespace dials { namespace algorithms { namespace background {
      * @params mask The shoebox mask
      */
     virtual void mark(const af::const_ref<double, af::c_grid<3> >& shoebox,
-                      af::ref<int, af::c_grid<3> > mask) const {
+                      af::ref<uint8_t, af::c_grid<3> > mask) const {
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());
 
       // Copy valid pixels and indices into list
-      int mask_code = shoebox::Valid | shoebox::Background;
+      uint8_t mask_code = shoebox::Valid | shoebox::Background;
       af::shared<int> indices;
       for (std::size_t i = 0; i < shoebox.size(); ++i) {
         if ((mask[i] & mask_code) == mask_code

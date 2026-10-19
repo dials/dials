@@ -32,6 +32,7 @@ namespace dials { namespace af { namespace boost_python {
 
   using namespace boost::python;
   using dials::algorithms::profile_model::gaussian_rs::CoordinateSystem;
+  using dials::model::FrameSlicedShoebox;
   using dials::model::Observation;
   using dials::model::Shoebox;
   using dials::util::streambuf;
@@ -350,7 +351,8 @@ namespace dials { namespace af { namespace boost_python {
         bbox_new[j][5] = z + 1;
         indices[j] = i;
         Shoebox<> s2(panel[i], bbox_new[j]);
-        s2.allocate();
+        s2.allocate_data();
+        s2.allocate_background();
         DIALS_ASSERT(s2.is_consistent());
         std::size_t last = first + s2.data.size();
         std::copy(s1.data.begin() + first, s1.data.begin() + last, s2.data.begin());
@@ -720,6 +722,18 @@ namespace dials { namespace af { namespace boost_python {
    * @param item The item
    */
   void Reflection_set_shoebox(Reflection& self, std::string name, Shoebox<> item) {
+    self[name] = Reflection::data_type(item);
+  }
+
+  /**
+   * Set a FrameSlicedShoebox<> item in the reflection
+   * @param self The reflection
+   * @param name The name of the item
+   * @param item The item
+   */
+  void Reflection_set_frame_sliced_shoebox(Reflection& self,
+                                           std::string name,
+                                           FrameSlicedShoebox<> item) {
     self[name] = Reflection::data_type(item);
   }
 
@@ -1173,6 +1187,7 @@ namespace dials { namespace af { namespace boost_python {
       .def("set_int6", &Reflection_set_int6)
       .def("set_miller_index", &Reflection_set_miller_index)
       .def("set_shoebox", &Reflection_set_shoebox)
+      .def("set_frame_sliced_shoebox", &Reflection_set_frame_sliced_shoebox)
       .def("copy", &Reflection_copy);
 
     // Helper function

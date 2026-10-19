@@ -121,7 +121,7 @@ namespace dials { namespace algorithms { namespace boost_python {
     vec3<double> sp = panel.get_pixel_lab_coord(p1).normalize() * s0_length;
     mat3<double> R = compute_change_of_basis_operation(s0, sp);
 
-    const af::versa<int, af::c_grid<3>> mask = sbox.mask;
+    const af::versa<uint8_t, af::c_grid<3>> mask = sbox.mask;
     const af::const_ref<float_type, af::c_grid<3>> data = sbox.data.const_ref();
     const af::versa<float_type, af::c_grid<3>> bgrd = sbox.background;
     int i0 = sbox.bbox[0];
@@ -306,26 +306,22 @@ namespace dials { namespace algorithms { namespace boost_python {
           // Compute the diffracted beam vector
           vec3<double> v(mubar[0], mubar[1], s0.length());
           vec3<double> s1 = R.transpose() * (v.normalize() * s0.length());
-          try {
-            // Do the panel ray intersection
-            Detector::coord_type impact = detector.get_ray_intersection(s1);
-            std::size_t panel_id = impact.first;
-            Panel panel = detector[panel_id];
-            vec2<double> xymm = panel.get_ray_intersection(s1);
-            vec2<double> xypx = panel.millimeter_to_pixel(xymm);
+          // Do the panel ray intersection; skip if ray misses detector
+          auto impact = detector.try_get_ray_intersection(s1);
+          if (!impact) continue;
+          std::size_t panel_id = impact->first;
+          vec2<double> xymm = impact->second;
+          vec2<double> xypx = detector[panel_id].millimeter_to_pixel(xymm);
 
-            // Append the stuff to arrays
-            experiment_id.push_back(0);
-            miller_indices.push_back(h[i]);
-            entering.push_back(false);
-            panel_list.push_back(panel_id);
-            s1_list.push_back(s1);
-            s2_list.push_back(s2);
-            xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
-            xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
-          } catch (dxtbx::error) {
-            continue;
-          }
+          // Append the stuff to arrays
+          experiment_id.push_back(0);
+          miller_indices.push_back(h[i]);
+          entering.push_back(false);
+          panel_list.push_back(panel_id);
+          s1_list.push_back(s1);
+          s2_list.push_back(s2);
+          xyzcalpx.push_back(vec3<double>(xypx[0], xypx[1], 0));
+          xyzcalmm.push_back(vec3<double>(xymm[0], xymm[1], 0));
         }
       }
 
@@ -736,7 +732,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       mat2<double> Sbar_inv = Sbar.inverse();
 
       // Get the mask array
-      af::ref<int, af::c_grid<3>> mask = sbox.mask.ref();
+      af::ref<uint8_t, af::c_grid<3>> mask = sbox.mask.ref();
 
       // Get the bounding box
       int x0 = sbox.bbox[0];

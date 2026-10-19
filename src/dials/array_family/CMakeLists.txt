@@ -3,6 +3,7 @@ Python_add_library(
     MODULE
     boost_python/flex_int6.cc
     boost_python/flex_shoebox.cc
+    boost_python/flex_frame_sliced_shoebox.cc
     boost_python/flex_centroid.cc
     boost_python/flex_intensity.cc
     boost_python/flex_observation.cc

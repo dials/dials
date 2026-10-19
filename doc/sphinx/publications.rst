@@ -6,6 +6,7 @@ Publications
 DIALS Journal Articles
 ----------------------
 
+* .. pubmed:: 40437940 Enhanced multiplex
 * .. pubmed:: 39608945 xia2.ssx
 * .. pubmed:: 39386198 Laue-DIALS
 * .. pubmed:: 35647922 xia2.multiplex
