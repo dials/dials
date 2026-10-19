@@ -106,7 +106,11 @@ namespace dials { namespace model {
                  boost::python::list mask) {
       frame0_ = frame0;
       frame1_ = frame1;
-      grid_(acc0, acc1, acc2);
+      grid_ = af::c_grid<3>(acc0, acc1, acc2);
+      data_ = af::versa<FloatType, af::c_grid<3>>(grid_, 0);
+      background_ = af::versa<FloatType, af::c_grid<3>>(grid_, 0);
+      mask_ = af::versa<uint8_t, af::c_grid<3>>(grid_, 0);
+      label_ = af::versa<Label, af::c_grid<3>>(grid_);
 
       for (int i = 0; i < acc0; i++) {
         for (int j = 0; j < acc1; j++) {
@@ -121,9 +125,8 @@ namespace dials { namespace model {
         }
       }
 
-      // Not setting the labels here. Implement a get()-set() pair for the contents of
-      // label if required.
-      // label_(grid_);
+      // The label contents are not restored here (label_ is left default-initialised).
+      // Implement a get()-set() pair for the contents of label if required.
     }
 
     /**
