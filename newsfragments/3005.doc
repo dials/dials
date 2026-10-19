@@ -1,0 +1,1 @@
+``dials.model_background``: expand the help to describe the algorithm, its parameters and outputs, and how to use the model in ``dials.integrate``, citing the paper that describes the method.
