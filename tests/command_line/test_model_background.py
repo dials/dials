@@ -94,28 +94,46 @@ def test_model_background(dials_data, tmp_path):
     assert not result.returncode and not result.stderr
 
 
+# Run dials.model_background with the "spawn" start method, as used on Windows,
+# which requires everything sent to the worker processes to be picklable
+SPAWN_SCRIPT = """
+import multiprocessing
+import sys
+
+import libtbx.easy_mp  # noqa: F401 - may set the start method on import
+
+if __name__ == "__main__":
+    multiprocessing.set_start_method("spawn", force=True)
+    from dials.command_line.model_background import run
+
+    run(sys.argv[1:])
+"""
+
+
 def test_model_background_nproc(dials_data, tmp_path):
     data_dir = dials_data("l_cysteine_dials_output")
+    (tmp_path / "spawn.py").write_text(SPAWN_SCRIPT)
 
     models = []
-    for nproc in (1, 2):
-        working_dir = tmp_path / f"nproc_{nproc}"
+    for name, command in (
+        ("nproc_1", [shutil.which("dials.model_background"), "nproc=1"]),
+        ("nproc_2", [shutil.which("dials.model_background"), "nproc=2"]),
+        ("spawn", [sys.executable, tmp_path / "spawn.py", "nproc=2"]),
+    ):
+        working_dir = tmp_path / name
         working_dir.mkdir()
         result = subprocess.run(
-            [
-                shutil.which("dials.model_background"),
-                data_dir / "11_integrated.expt",
-                f"nproc={nproc}",
-            ],
+            command + [data_dir / "11_integrated.expt"],
             cwd=working_dir,
             capture_output=True,
         )
         result.check_returncode()
         assert not result.stderr
-        if nproc > 1 and sys.platform != "win32":
+        if name != "nproc_1":
             assert b"Using multiprocessing with 2 parallel job(s)" in result.stdout
         with open(working_dir / "background.pickle", "rb") as f:
             models.append(pickle.load(f).data(0))
 
-    assert models[1].all() == models[0].all()
-    assert list(models[1]) == list(models[0])
+    for model in models[1:]:
+        assert model.all() == models[0].all()
+        assert list(model) == list(models[0])

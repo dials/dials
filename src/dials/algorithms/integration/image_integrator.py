@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import logging
-import platform
 from time import time
 
 import dials.algorithms.integration
-from dials.algorithms.integration.processor import job
+from dials.algorithms.integration.processor import execute_parallel_task, job
 from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
-from dials.util import log
 from dials.util.log import rehandle_cached_records
 from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
@@ -61,13 +59,6 @@ class ProcessorImage:
         mp_method = self.manager.params.integration.mp.method
         mp_nproc = min(len(self.manager), self.manager.params.integration.mp.nproc)
         mp_njobs = self.manager.params.integration.mp.njobs
-        if (
-            mp_nproc > 1 and platform.system() == "Windows"
-        ):  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warning(
-                "Multiprocessing is not available on windows. Setting nproc = 1\n"
-            )
-            mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"
         logger.info(self.manager.summary())
         logger.info(" Using %s with %d parallel job(s)\n", mp_method, mp_nproc)
@@ -77,15 +68,8 @@ class ProcessorImage:
                 rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
 
-            def execute_task(task):
-                log.config_simple_cached()
-                result = task()
-                handlers = logging.getLogger("dials").handlers
-                assert len(handlers) == 1, "Invalid number of logging handlers"
-                return result, handlers[0].records
-
             multi_node_parallel_map(
-                func=execute_task,
+                func=execute_parallel_task,
                 iterable=list(self.manager.tasks()),
                 njobs=mp_njobs,
                 nproc=mp_nproc,

@@ -5,8 +5,11 @@ import random
 
 import pytest
 
+from dxtbx.model.experiment_list import ExperimentListFactory
+
 from dials.algorithms.background.modeller import (
     BackgroundStatistics,
+    FinalizeModel,
     MultiPanelBackgroundStatistics,
 )
 from dials.array_family import flex
@@ -102,3 +105,22 @@ def test_unpickled_multi_panel_background_statistics_can_be_accumulated():
     assert len(result) == 2
     for i in range(len(result)):
         assert_statistics_equal(expected.get(i), result.get(i))
+
+
+def test_finalize_model_pickle(dials_data):
+    experiments = ExperimentListFactory.from_json_file(
+        dials_data("l_cysteine_dials_output") / "11_integrated.expt",
+        check_format=False,
+    )
+    finalizer = FinalizeModel(experiments, kernel_size=5, niter=10)
+    finalizer2 = pickle.loads(pickle.dumps(finalizer))
+    assert finalizer2.kernel_size == 5
+    assert finalizer2.niter == 10
+
+    nx, ny = experiments[0].detector[0].get_image_size()
+    data = flex.double(flex.grid(ny, nx), 1)
+    mask = flex.bool(flex.grid(ny, nx), True)
+    expected = finalizer.transform.to_polar(data, mask)
+    result = finalizer2.transform.to_polar(data, mask)
+    assert list(result.data()) == list(expected.data())
+    assert list(result.mask()) == list(expected.mask())
