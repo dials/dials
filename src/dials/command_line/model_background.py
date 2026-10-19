@@ -1,11 +1,54 @@
-"""Calculate a global background model and diagnostic images from integrated
-experiments. This background model may improve subsequent integration in some
-cases, such as in the presence of ice rings. The method is described in the
-publication https://doi.org/10.1107/S2052252517010259.
+"""
+Calculate a global model of the detector background from a complete scan, for
+use in integration with background.algorithm=gmodel. This can improve the
+integration of data where the background has structure that is sharp on the
+scale of a reflection but static throughout the scan, such as ice rings, where
+a flat background fitted locally to each reflection systematically biases the
+intensities. The method is described in:
 
-Usage:
-    dials.model_background integrated.expt
-    dials.integrate integrated.expt refined.refl background.algorithm=gmodel gmodel.robust.algorithm=True gmodel.model=background.pickle
+  Parkhurst et al. (2017) Background modelling of diffraction data in the
+  presence of ice rings. IUCrJ 4, 626-638.
+  https://doi.org/10.1107/S2052252517010259
+
+The input is an experiment list with a profile model, such as integrated.expt
+from dials.integrate. Currently a single experiment with a single-panel
+detector is supported. Reflections are predicted from the models and their
+foreground regions are masked out. Every image is then read, and the remaining
+background is accumulated pixel by pixel over the whole scan. Pixels with
+background measurements on fewer than modeller.min_images images are excluded.
+Use nproc to read and process the images in parallel.
+
+The mean background image (or the minimum, with modeller.image_type=min) is
+then transformed into polar coordinates of scattering angle and azimuth. It is
+smoothed around each resolution ring, but not across rings, with a median
+filter (or mean, with modeller.filter_type=mean) of half-width
+modeller.kernel_size polar grid points. Any gaps, such as those behind the beam
+stop or in excluded regions, are filled by diffusion before the image is
+transformed back to the detector. The result is saved as background.pickle.
+
+During integration with background.algorithm=gmodel, this model is scaled to
+fit the background pixels around each reflection independently. Set
+gmodel.robust.algorithm=True to fit the scale robustly, reducing the influence
+of outlying pixels.
+
+Diagnostic images of the background are also written for each panel (the
+suffix _0 is the panel number):
+
+  mean_0.png        Mean background at each pixel
+  variance_0.png    Variance of the background at each pixel
+  dispersion_0.png  Variance / mean, which is about 1 for Poisson statistics
+  mask_0.png        Pixels with enough measurements to contribute to the model
+  min_0.png         Minimum background at each pixel
+  max_0.png         Maximum background at each pixel
+  model_0.png       The final background model
+
+Examples::
+
+  dials.model_background integrated.expt
+
+  dials.model_background integrated.expt nproc=4
+
+  dials.integrate integrated.expt refined.refl background.algorithm=gmodel gmodel.model=background.pickle gmodel.robust.algorithm=True
 """
 
 from __future__ import annotations
@@ -28,7 +71,8 @@ phil_scope = parse(
   output {
     model = 'background.pickle'
       .type = str
-      .help = "The output filename"
+      .help = "The output filename for the background model, for use with"
+              "dials.integrate gmodel.model="
 
     log = 'dials.model_background.log'
       .type = str
@@ -71,23 +115,28 @@ phil_scope = parse(
 
     min_images = 10
       .type = int(value_min=1)
-      .help = "The minimum number of images per pixel"
+      .help = "The minimum number of images on which a pixel must be measured"
+              "as background for it to contribute to the model. If the scan has"
+              "fewer images, all images are required."
 
     filter_type = *median mean
       .type = choice
-      .help = "The filter to use on the polar transformed image"
+      .help = "The filter used to smooth the polar transformed image around each"
+              "resolution ring"
 
     kernel_size = 50
       .type = int(value_min=0)
-      .help = "The kernel size for the median filter"
+      .help = "The half-width of the filter in the azimuthal direction, in polar"
+              "grid points. Set to 0 to disable filtering."
 
     niter = 100
       .type = int(value_min=1)
-      .help = "The number of iterations for filling holes"
+      .help = "The number of diffusion iterations used to fill gaps in the model"
 
     image_type = min *mean
       .type = choice
-      .help = "Which image to use"
+      .help = "Whether to build the model from the mean or the minimum"
+              "background at each pixel"
 
   }
 
