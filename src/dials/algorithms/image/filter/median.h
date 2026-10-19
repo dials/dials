@@ -12,6 +12,7 @@
 #define DIALS_ALGORITHMS_IMAGE_FILTER_MEDIAN_H
 
 #include <algorithm>
+#include <vector>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/error.h>
@@ -64,6 +65,31 @@ namespace dials { namespace algorithms {
     return median;
   }
 
+  namespace detail {
+
+    /**
+     * Make a table of the image indices covered by a filter kernel, indexed by
+     * the image index plus the kernel offset, from 0 to n + 2 * size.
+     * @param n The image size along this axis
+     * @param size The half-width of the kernel along this axis
+     * @param periodic Wrap the indices outside the image
+     * @returns The table of image indices, or -1 for those outside the image
+     */
+    inline std::vector<int> kernel_index_table(int n, int size, bool periodic) {
+      std::vector<int> table(n + 2 * size);
+      for (int k = 0; k < (int)table.size(); ++k) {
+        int index = k - size;
+        if (periodic) {
+          table[k] = (index % n + n) % n;
+        } else {
+          table[k] = (index >= 0 && index < n) ? index : -1;
+        }
+      }
+      return table;
+    }
+
+  }  // namespace detail
+
   /**
    * Apply a median filter to an image with a mask
    * @param image The image to filter
@@ -87,37 +113,32 @@ namespace dials { namespace algorithms {
     af::versa<T, af::c_grid<2> > median(image.accessor(), T(0));
 
     // Create the array to sort to get the median
-    std::size_t ysize = image.accessor()[0];
-    std::size_t xsize = image.accessor()[1];
+    int ysize = image.accessor()[0];
+    int xsize = image.accessor()[1];
     af::shared<T> pixels_array((2 * size[0] + 1) * (2 * size[1] + 1), T(0));
     af::ref<T> pixels = pixels_array.ref();
 
+    // Look up tables from the kernel position to the image row and column,
+    // offset by the kernel size, wrapped if periodic or -1 if outside the image
+    std::vector<int> rows = detail::kernel_index_table(ysize, size[0], periodic);
+    std::vector<int> cols = detail::kernel_index_table(xsize, size[1], periodic);
+
     // For each pixel obtain the median value
-    for (int j = 0; j < (int)ysize; ++j) {
-      for (int i = 0; i < (int)xsize; ++i) {
+    for (int j = 0; j < ysize; ++j) {
+      for (int i = 0; i < xsize; ++i) {
         std::size_t npix = 0;
-        for (int jj = j - size[0]; jj <= j + size[0]; ++jj) {
-          for (int ii = i - size[1]; ii <= i + size[1]; ++ii) {
-            if (periodic) {
-              // Use signed arithmetic, as negative indices would be converted
-              // to large unsigned values and wrap to the wrong place
-              std::size_t jjj = (jj % (int)ysize + (int)ysize) % (int)ysize;
-              std::size_t iii = (ii % (int)xsize + (int)xsize) % (int)xsize;
-              DIALS_ASSERT(jjj >= 0 && iii >= 0 && jjj < ysize && iii < xsize);
-              if (mask(jjj, iii)) {
-                DIALS_ASSERT(npix < pixels.size());
-                pixels[npix++] = image(jjj, iii);
-              }
-            } else {
-              if (jj >= 0 && ii >= 0 && jj < ysize && ii < xsize) {
-                if (mask(jj, ii)) {
-                  pixels[npix++] = image(jj, ii);
-                }
-              }
+        for (int jj = j; jj <= j + 2 * size[0]; ++jj) {
+          int row = rows[jj];
+          if (row < 0) {
+            continue;
+          }
+          for (int ii = i; ii <= i + 2 * size[1]; ++ii) {
+            int col = cols[ii];
+            if (col >= 0 && mask(row, col)) {
+              pixels[npix++] = image(row, col);
             }
           }
         }
-        DIALS_ASSERT(npix <= pixels.size());
         if (npix > 0) {
           size_t n = npix / 2;
           std::nth_element(pixels.begin(), pixels.begin() + n, pixels.begin() + npix);
