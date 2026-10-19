@@ -214,7 +214,7 @@ def cluster_unit_cells(
 
     dendrogram = hierarchy.dendrogram(
         linkage_matrix,
-        # labels=labels,
+        labels=lattice_ids,
         p=200,
         truncate_mode="lastp",  # show only the last p merged clusters
         leaf_font_size=8,

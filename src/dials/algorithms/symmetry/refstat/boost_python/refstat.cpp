@@ -20,8 +20,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
           using namespace boost::python;
           return_value_policy<return_by_value> rbv;
           typedef return_internal_reference<> rir_t;
-          class_<wt, bases<space_group>, std::auto_ptr<wt> >("named_space_group",
-                                                             no_init)
+          class_<wt, bases<space_group> >("named_space_group", no_init)
             .def(init<const space_group_symbols&>((arg("space_group_symbols"))))
             .add_property("name", make_function(&wt::get_name, rbv))
             .def("contains", &wt::contains_all);
@@ -38,7 +37,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
           using namespace boost::python;
           typedef return_internal_reference<> rir_t;
           return_value_policy<return_by_value> rbv;
-          class_<wt, std::auto_ptr<wt> >("extinction_element", no_init)
+          class_<wt>("extinction_element", no_init)
             .def_readonly("id", &wt::get_id)
             .def_readonly("name", &wt::name)
             .def_readonly("sumI", &wt::sumI)
@@ -102,7 +101,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
 
           static void wrap() {
             using namespace boost::python;
-            class_<wt, std::auto_ptr<wt> >("merge_stats_result", no_init)
+            class_<wt>("merge_stats_result", no_init)
               .def_readonly("inconsistent_count", &wt::inconsistent_count)
               .def_readonly("r_int", &wt::r_int);
           }
@@ -113,7 +112,7 @@ namespace dials { namespace algorithms { namespace symmetry { namespace refstat 
 
           static void wrap() {
             using namespace boost::python;
-            class_<wt, std::auto_ptr<wt> >("sysabs_test_result", no_init)
+            class_<wt>("sysabs_test_result", no_init)
               .def_readonly("weak_count", &wt::weak_count)
               .def_readonly("weak_I_sum", &wt::weak_I_sum)
               .def_readonly("weak_sig_sq_sum", &wt::weak_sig_sq_sum)

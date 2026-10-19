@@ -629,6 +629,152 @@ class ResolutionPlotsAndStats:
         d.update(self.multiplicity_vs_resolution_plot())
         d.update(self.r_pim_plot())
         d.update(self.additional_stats_plot())
+        d.update(self.weighted_stats_plot())
+        return d
+
+    def weighted_stats_plot(self):
+        d = {}
+        if not hasattr(self.dataset_statistics, "weighted_cc_data"):
+            return d
+        if self.dataset_statistics.weighted_cc_data:
+            wcc_data = self.dataset_statistics.weighted_cc_data
+            wccanom_data = self.dataset_statistics.weighted_cc_anom_data
+            d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
+
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d.update(
+                {
+                    "cc_one_half_weighted": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=wcc_data.value_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=wccanom_data.value_binned,
+                        cc_anom_critical_values=critical_anom_vals,
+                    )
+                }
+            )
+            d["cc_one_half_weighted"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted)"
+            )
+            d["cc_one_half_weighted"]["layout"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted) vs resolution"
+            )
+
+            ccst_data = self.dataset_statistics.cchalf_sigma_tau
+            if ccst_data:
+                ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
+                critical_vals = ccst_data.significance_critical_values
+                ccanom_critical_vals = ccst_anom_data.significance_critical_values
+                d.update(
+                    {
+                        "cc_one_half_sigma_tau": cc_half_plot(
+                            d_star_sq=d_star_sq_bins,
+                            cc_half=ccst_data.value_binned,
+                            cc_half_fit=None,
+                            d_min=None,
+                            cc_half_critical_values=critical_vals,
+                            cc_anom=ccst_anom_data.value_binned,
+                            cc_anom_critical_values=ccanom_critical_vals,
+                        )
+                    }
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                    "CC<sub>½</sub>(\u03c3-\u03c4)"
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["title"] = (
+                    "CC<sub>½</sub>(\u03c3-\u03c4) vs resolution"
+                )
+        if self.dataset_statistics.weighted_cchalf_sigma_tau:
+            wcc_data = self.dataset_statistics.weighted_cchalf_sigma_tau
+            wccanom_data = self.dataset_statistics.weighted_cchalf_anom_sigma_tau
+            d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
+
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d.update(
+                {
+                    "cc_one_half_weighted_sigma_tau": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=wcc_data.value_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=wccanom_data.value_binned,
+                        cc_anom_critical_values=critical_anom_vals,
+                    )
+                }
+            )
+            d["cc_one_half_weighted_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted)"
+            )
+            d["cc_one_half_weighted_sigma_tau"]["layout"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted) vs resolution"
+            )
+
+        if self.dataset_statistics.weighted_r_split:
+            d_star_sq_bins = []
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(
+                d_star_sq_bins, nticks=5
+            )
+
+            d.update(
+                {
+                    "r_split_weighted": {
+                        "data": [
+                            {
+                                "x": d_star_sq_bins,  # d_star_sq
+                                "y": self.dataset_statistics.weighted_r_split.value_binned,
+                                "type": "scatter",
+                                "name": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            }
+                        ],
+                        "layout": {
+                            "title": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            "xaxis": {
+                                "title": "Resolution (Å)",
+                                "tickvals": d_star_sq_tickvals,
+                                "ticktext": d_star_sq_ticktext,
+                            },
+                            "yaxis": {
+                                "title": "R<sub>split</sub>(\u03c3-weighted)",
+                                "rangemode": "tozero",
+                            },
+                        },
+                    }
+                }
+            )
         return d
 
     def additional_stats_plot(self):
@@ -661,7 +807,7 @@ class ResolutionPlotsAndStats:
                             {
                                 "x": round_for_json(d_star_sq_bins),  # d_star_sq
                                 "y": round_for_json(
-                                    self.dataset_statistics.r_split_binned
+                                    self.dataset_statistics.r_split.value_binned
                                 ),
                                 "type": "scatter",
                                 "name": "R<sub>split</sub> vs resolution",
@@ -904,12 +1050,19 @@ class ResolutionPlotsAndStats:
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
         r_split_vals = []
+        weighted_cc_data = None
+        weighted_cc_anom_data = None
         if (
             hasattr(self.dataset_statistics, "r_split")
-            and self.dataset_statistics.r_split_binned
+            and self.dataset_statistics.r_split
         ):
             headers.insert(-2, "R<sub>split</sub>")
-            r_split_vals = self.dataset_statistics.r_split_binned
+            r_split_vals = self.dataset_statistics.r_split.value_binned
+            weighted_cc_data = self.dataset_statistics.weighted_cc_data
+            headers.append("CC<sub>½</sub>(σ-w)")
+            if not self.is_centric:
+                headers.append("CC<sub>ano</sub>(σ-w)")
+                weighted_cc_anom_data = self.dataset_statistics.weighted_cc_anom_data
         rows = []
 
         def safe_format(format_str, item):
@@ -931,6 +1084,7 @@ class ResolutionPlotsAndStats:
             ]
             if r_split_vals:
                 row.append(f"{r_split_vals[i]:.3f}")
+
             if cc_half_method == "sigma_tau":
                 row.append(
                     "{:.3f}{}".format(
@@ -950,6 +1104,26 @@ class ResolutionPlotsAndStats:
                 row.append(
                     "{:.3f}{}".format(
                         bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
+                    )
+                )
+            if weighted_cc_data:
+                row.append(
+                    "{:.3f}{}".format(
+                        weighted_cc_data.value_binned[i]
+                        if weighted_cc_data.value_binned[i]
+                        else 0.000,
+                        "*" if weighted_cc_data.significance_critical_values[i] else "",
+                    )
+                )
+            if weighted_cc_anom_data:
+                row.append(
+                    "{:.3f}{}".format(
+                        weighted_cc_anom_data.value_binned[i]
+                        if weighted_cc_anom_data.value_binned[i]
+                        else 0.000,
+                        "*"
+                        if weighted_cc_anom_data.significance_critical_values[i]
+                        else "",
                     )
                 )
             rows.append(row)
@@ -985,9 +1159,9 @@ class ResolutionPlotsAndStats:
             and self.dataset_statistics.r_split is not None
         ):
             rsplits = (
-                self.dataset_statistics.r_split,
-                self.dataset_statistics.r_split_binned[0],
-                self.dataset_statistics.r_split_binned[-1],
+                self.dataset_statistics.r_split.value,
+                self.dataset_statistics.r_split.value_binned[0],
+                self.dataset_statistics.r_split.value_binned[-1],
             )
             rows.append(["R<sub>split</sub>"] + [f"{rs:.3f}" for rs in rsplits])
 

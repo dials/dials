@@ -31,12 +31,6 @@ from dials_algorithms_integration_integrator_ext import (
     ShoeboxProcessor,
 )
 
-try:
-    import resource
-except ImportError:
-    # resource does not exist on non-Linux, so can't float the import
-    resource = None
-
 __all__ = [
     "Block",
     "build_processor",

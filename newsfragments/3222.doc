@@ -1,0 +1,1 @@
+Tutorials: correct the ``dials.index`` commands for data containing more than one rotation sequence, which now require ``joint_indexing`` to be set explicitly, and fix the misspelt ``joint=False`` in the intensity-based clustering tutorial.

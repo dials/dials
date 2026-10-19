@@ -3,13 +3,17 @@ from __future__ import annotations
 import json
 import math
 import os
+import pickle
 import shutil
 import subprocess
+from unittest import mock
 
 import pytest
 
 from dxtbx.serialize import load
+from scitbx import matrix
 
+import dials.command_line.integrate
 from dials.algorithms.integration.processor import _average_bbox_size
 from dials.array_family import flex
 
@@ -396,6 +400,116 @@ def test_basic_integration_with_profile_fitting(dials_data, tmp_path):
     assert prf_and_zero.count(True) == 0
 
 
+def test_frame_slice_shoeboxes(dials_data, tmp_path):
+    expts = dials_data("centroid_test_data") / "indexed.expt"
+    refls = dials_data("centroid_test_data") / "indexed.refl"
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            # More than one process, so the tables are passed back by pickling
+            "nproc=2",
+            expts,
+            refls,
+            "frame_slice_shoeboxes=True",
+            "prediction.padding=0",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
+    assert "frame_sliced_shoebox" in table
+
+    # Every reflection should have been sliced over the frames of its bounding box
+    sliced = table["frame_sliced_shoebox"]
+    zsize = flex.size_t(bbox[5] - bbox[4] for bbox in table["bbox"])
+    assert (sliced.num_frames() == zsize).all_eq(True)
+
+    # The rotation angle of each frame should be the scan angle at its centre.
+    # A one-based image number f covers array indices f - 1 to f
+    expt = load.experiment_list(tmp_path / "integrated.expt")[0]
+    scan = expt.scan
+    for i in (0, len(table) // 2, len(table) - 1):
+        expected = [
+            scan.get_angle_from_array_index(f - 0.5, deg=False)
+            for f in sliced[i].frames
+        ]
+        assert list(sliced[i].phi) == pytest.approx(expected)
+
+    # The excitation error of each frame should be the distance of the rotated
+    # reciprocal lattice point from the surface of the Ewald sphere, measured
+    # along the beam. Here the crystal, the beam and the goniometer are all
+    # stationary over the scan
+    gonio = expt.goniometer
+    axis = matrix.col(gonio.get_rotation_axis_datum())
+    S = matrix.sqr(gonio.get_setting_rotation())
+    F = matrix.sqr(gonio.get_fixed_rotation())
+    A = matrix.sqr(expt.crystal.get_A())
+    s0 = matrix.col(expt.beam.get_s0())
+    beam = s0.normalize()
+    for i in range(len(table)):
+        h = matrix.col(table["miller_index"][i])
+        expected = []
+        for phi in sliced[i].phi:
+            R = matrix.sqr(axis.axis_and_angle_as_r3_rotation_matrix(phi, deg=False))
+            r = S * R * F * A * h
+            along = r.dot(beam)
+            across_sq = r.length_sq() - along**2
+            expected.append(math.sqrt(s0.length_sq() - across_sq) - s0.length() - along)
+        assert list(sliced[i].excitation_error) == pytest.approx(expected)
+
+    # The per-frame partialities partition the rocking curve of the reflection
+    # over its frames, so they should sum to the partiality of the whole
+    # reflection, as calculated independently by PartialityCalculator3D
+    summed_partiality = flex.double(
+        sum(sliced[i].partiality) for i in range(len(table))
+    )
+    assert list(summed_partiality) == pytest.approx(list(table["partiality"]))
+
+    # Summing the per-frame summation intensities should recover the summation
+    # intensity of the whole reflection
+    integrated = table.get_flags(table.flags.integrated_sum)
+    summed = flex.double(sum(sliced[i].summation_intensity) for i in range(len(table)))
+    difference = flex.abs(summed - table["intensity.sum.value"]).select(integrated)
+    # The shoebox data are single precision, so scale the tolerance accordingly
+    tolerance = 1e-6 * flex.max(flex.abs(table["intensity.sum.value"]))
+    assert (difference < tolerance).all_eq(True)
+
+    # So should summing the per-frame variances. Where the intensity of the
+    # whole reflection is negative though, the variance of the whole reflection
+    # takes its absolute value, which adds twice that intensity to a total that
+    # the frames, which make no such adjustment, cannot reproduce
+    intensity = table["intensity.sum.value"]
+    negative = intensity < 0.0
+    expected = table["intensity.sum.variance"].deep_copy()
+    expected.set_selected(
+        negative, expected.select(negative) + 2.0 * intensity.select(negative)
+    )
+    summed = flex.double(
+        sum(sliced[i].summation_intensity_variance) for i in range(len(table))
+    )
+    difference = flex.abs(summed - expected).select(integrated)
+    tolerance = 1e-6 * flex.max(flex.abs(expected))
+    assert (difference < tolerance).all_eq(True)
+
+
+def test_frame_slice_shoeboxes_not_available_for_flat3d(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.integrate"),
+            "nproc=1",
+            dials_data("centroid_test_data") / "indexed.expt",
+            dials_data("centroid_test_data") / "indexed.refl",
+            "frame_slice_shoeboxes=True",
+            "integrator=flat3d",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"cannot be used with integrator=flat3d" in result.stderr
+
+
 def test_multi_sweep(dials_data, tmp_path):
     expts = str(dials_data("centroid_test_data") / "multi_sweep_indexed.expt")
     refls = str(dials_data("centroid_test_data") / "multi_sweep_indexed.refl")
@@ -619,3 +733,49 @@ def test_average_bbox_size():
     reflections = flex.reflection_table()
     reflections["bbox"] = flex.int6(*(flex.int(10, i) for i in range(6)))
     assert _average_bbox_size(reflections) == (1, 1, 1)
+
+
+def test_reference_shoeboxes_freed_after_profile_modelling(dials_data):
+    # The reference shoeboxes are only needed for the profile model. Check they
+    # are deleted from the input table before integration starts.
+    data = dials_data("centroid_test_data")
+    experiments = load.experiment_list(data / "indexed.expt", check_format=True)
+    reference = flex.reflection_table.from_file(data / "indexed.refl")
+    assert "shoebox" in reference
+    params = dials.command_line.integrate.working_phil.extract()
+
+    def fake_create_integrator(params, experiments, predicted):
+        assert "shoebox" not in reference
+        raise RuntimeError("Stop before integrating")
+
+    with mock.patch.object(
+        dials.command_line.integrate, "create_integrator", fake_create_integrator
+    ):
+        with pytest.raises(RuntimeError, match="Stop before integrating"):
+            dials.command_line.integrate.run_integration(params, experiments, reference)
+    assert "shoebox" not in reference
+
+
+def test_input_data_not_pickled_with_params(dials_data, tmp_path, monkeypatch):
+    # The profile model keeps params.profile, and each sub-extract refers back to
+    # the whole params tree. Check the input data are not part of it, otherwise
+    # they are pickled into every task sent to a spawned worker process.
+    monkeypatch.chdir(tmp_path)
+    data = dials_data("centroid_test_data")
+    sizes = {}
+
+    def fake_run_integration(params, experiments, reference):
+        sizes["profile"] = len(pickle.dumps(params.profile))
+        sizes["integration"] = len(pickle.dumps(params.integration))
+        raise RuntimeError("Stop before integrating")
+
+    with mock.patch.object(
+        dials.command_line.integrate, "run_integration", fake_run_integration
+    ):
+        with pytest.raises(SystemExit):
+            dials.command_line.integrate.run(
+                [str(data / "indexed.expt"), str(data / "indexed.refl")]
+            )
+    # About 4 kB without the input data, and 337 kB with them
+    assert sizes["profile"] < 50_000
+    assert sizes["integration"] < 50_000

@@ -136,6 +136,16 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     };
 
     /**
+     * Helper struct for FrameSlicedShoebox column type
+     */
+    template <>
+    struct column_type<dials::af::FrameSlicedShoebox<> > {
+      static std::string name() {
+        return "FrameSlicedShoebox<>";
+      }
+    };
+
+    /**
      * A helper class to return size of an element
      */
     template <typename T>
@@ -242,6 +252,59 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
       template <typename Stream, typename ValueType>
       void write(Stream& buffer, const ValueType& x) const {
         buffer.write((const char*)&x, sizeof(ValueType));
+      }
+    };
+
+    /**
+     * Pack a shared<FrameSlicedShoebox<>> into a msgpack array.
+     *
+     * Like Shoebox arrays, these are treated differently because each element is
+     * itself a struct of variable length arrays.
+     */
+    template <typename T>
+    struct pack<scitbx::af::const_ref<dials::af::FrameSlicedShoebox<T> > > {
+      template <typename Stream>
+      msgpack::packer<Stream>& operator()(
+        msgpack::packer<Stream>& o,
+        const scitbx::af::const_ref<dials::af::FrameSlicedShoebox<T> >& v) const {
+        typedef typename scitbx::af::const_ref<
+          dials::af::FrameSlicedShoebox<T> >::const_iterator iterator;
+        std::stringstream buffer;
+
+        // Write the format version once for the whole column
+        write(buffer, (uint8_t)1);
+
+        for (iterator it = v.begin(); it != v.end(); ++it) {
+          // Write the number of frames, which gives the length of each array
+          write(buffer, (uint32_t)it->size());
+
+          write_array(buffer, it->frames());
+          write_array(buffer, it->phi());
+          write_array(buffer, it->excitation_error());
+          write_array(buffer, it->partiality());
+          write_array(buffer, it->summation_intensity());
+          write_array(buffer, it->summation_intensity_variance());
+          write_array(buffer, it->summation_intensity_valid());
+        }
+
+        // Serialise the string to msgpack binary
+        std::string buffer_string = buffer.str();
+        o.pack_bin(buffer_string.size());
+        o.pack_bin_body(buffer_string.c_str(), buffer_string.size());
+        return o;
+      }
+
+      template <typename Stream, typename ValueType>
+      void write(Stream& buffer, const ValueType& x) const {
+        buffer.write((const char*)&x, sizeof(ValueType));
+      }
+
+      template <typename Stream, typename ValueType>
+      void write_array(Stream& buffer, const scitbx::af::shared<ValueType>& a) const {
+        if (a.size() > 0) {
+          buffer.write((const char*)&a[0],
+                       a.size() * element_size_helper<ValueType>::size());
+        }
       }
     };
 
@@ -520,6 +583,84 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
     };
 
     /**
+     * Convert a msgpack array into a variable sized
+     * scitbx::af::shared<FrameSlicedShoebox<>>
+     *
+     * Like Shoebox arrays, these are treated differently because each element is
+     * itself a struct of variable length arrays.
+     */
+    template <typename T>
+    struct convert<scitbx::af::ref<dials::af::FrameSlicedShoebox<T> > > {
+      msgpack::object const& operator()(
+        msgpack::object const& o,
+        scitbx::af::ref<dials::af::FrameSlicedShoebox<T> >& v) const {
+        typedef typename scitbx::af::ref<dials::af::FrameSlicedShoebox<T> >::iterator
+          iterator;
+
+        // Ensure the type is an array
+        if (o.type != msgpack::type::BIN) {
+          throw DIALS_ERROR(
+            "scitbx::af::ref<FrameSlicedShoebox>: msgpack type is not BIN");
+        }
+
+        // Get the data and size
+        std::size_t binary_size = o.via.bin.size;
+        const char* binary_data = reinterpret_cast<const char*>(o.via.bin.ptr);
+        std::stringstream buffer(std::string(binary_data, binary_size));
+
+        // Check the format version
+        uint8_t version = read<uint8_t>(buffer);
+        if (version != 1) {
+          throw DIALS_ERROR(
+            "scitbx::af::ref<FrameSlicedShoebox>: expected version 1, got something "
+            "else");
+        }
+
+        // Stream into the frame sliced shoeboxes
+        for (iterator it = v.begin(); it != v.end(); ++it) {
+          // NB the arrays are read into locals first, as the order in which
+          // function arguments are evaluated is not specified
+          std::size_t nz = read<uint32_t>(buffer);
+          scitbx::af::shared<int> frames = read_array<int>(buffer, nz);
+          scitbx::af::shared<double> phi = read_array<double>(buffer, nz);
+          scitbx::af::shared<double> excitation_error = read_array<double>(buffer, nz);
+          scitbx::af::shared<double> partiality = read_array<double>(buffer, nz);
+          scitbx::af::shared<double> summation_intensity =
+            read_array<double>(buffer, nz);
+          scitbx::af::shared<double> summation_intensity_variance =
+            read_array<double>(buffer, nz);
+          scitbx::af::shared<bool> summation_intensity_valid =
+            read_array<bool>(buffer, nz);
+          *it = dials::af::FrameSlicedShoebox<T>(frames,
+                                                 phi,
+                                                 excitation_error,
+                                                 partiality,
+                                                 summation_intensity,
+                                                 summation_intensity_variance,
+                                                 summation_intensity_valid);
+        }
+
+        return o;
+      }
+
+      template <typename ValueType, typename Stream>
+      ValueType read(Stream& buffer) const {
+        ValueType x;
+        buffer.read((char*)&x, sizeof(ValueType));
+        return x;
+      }
+
+      template <typename ValueType, typename Stream>
+      scitbx::af::shared<ValueType> read_array(Stream& buffer, std::size_t n) const {
+        scitbx::af::shared<ValueType> a(n);
+        if (n > 0) {
+          buffer.read((char*)&a[0], n * element_size_helper<ValueType>::size());
+        }
+        return a;
+      }
+    };
+
+    /**
      * Convert a msgpack array into a variable size scitbx::af::shared
      */
     template <typename T>
@@ -686,6 +827,8 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
           v = extract<cctbx::miller::index<> >(o.via.array.ptr[1]);
         } else if (name == "Shoebox<>") {
           v = extract<dials::af::Shoebox<> >(o.via.array.ptr[1]);
+        } else if (name == "FrameSlicedShoebox<>") {
+          v = extract<dials::af::FrameSlicedShoebox<> >(o.via.array.ptr[1]);
         } else {
           throw DIALS_ERROR(
             "dials::af::reflection_table::mapped_type: unexpected column type");

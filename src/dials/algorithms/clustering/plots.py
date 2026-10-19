@@ -282,6 +282,8 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None, help
     color_list = ddict["color_list"]
     ivl = ddict["ivl"]
 
+    highlight_color = ddict.get("largest_cluster_color", None)
+
     data = []
     xticktext = []
     xtickvals = []
@@ -295,12 +297,19 @@ def scipy_dendrogram_to_plotly_json(ddict, title, xtitle=None, ytitle=None, help
         if y[3] == 0:
             xtickvals.append(x[3])
 
+        if highlight_color:
+            accepted_data = {highlight_color: "rgb(44, 160, 44)"}
+            plot_color = accepted_data.get(color_list[k], "rgb(0, 0, 0)")
+        else:
+            plot_color = colors.get(color_list[k])
+
         data.append(
             {
                 "x": x,
                 "y": round_for_json(y, ndigits=6),
-                "marker": {"color": colors.get(color_list[k])},
+                "marker": {"color": plot_color},
                 "mode": "lines",
+                "showlegend": False,
             }
         )
 

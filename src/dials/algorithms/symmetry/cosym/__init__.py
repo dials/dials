@@ -182,7 +182,7 @@ class CosymAnalysis(symmetry_base, Subject):
             apply_sigma_correction=apply_sigma_correction,
         )
         Subject.__init__(
-            self, events=["optimised", "analysed_symmetry", "analysed_clusters"]
+            self, events=["optimised", "pca", "analysed_symmetry", "analysed_clusters"]
         )
 
         # remove those with less than min_reflections after setup.
@@ -305,9 +305,8 @@ class CosymAnalysis(symmetry_base, Subject):
             nproc=self.params.nproc,
         )
 
-    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
-        logger.info("=" * 80)
-        logger.info("\nAutomatic determination of number of dimensions for analysis")
+    def _functional_by_minimization(self, dims_to_test, outlier_rejection=False):
+        """Minimise once for each candidate number of dimensions."""
         dimensions = []
         functional = []
         for dim in range(1, dims_to_test + 1):
@@ -325,6 +324,73 @@ class CosymAnalysis(symmetry_base, Subject):
                 self.target.compute_functional_score_for_dimension_assessment(
                     self.minimizer.x, outlier_rejection
                 )
+            )
+        return dimensions, functional
+
+    def _functional_by_projection(self, dims_to_test, outlier_rejection=False):
+        """Minimise once, then project onto the leading principal directions.
+
+        A solution in d dimensions is also a solution in d + 1 with a column of
+        zeros, so the curve can be traced downwards from a single solution
+        rather than by starting again at every dimension. Rotating the
+        coordinates so that their principal axes come first and then keeping the
+        leading d of them gives the best d-dimensional representation of that
+        solution, and the functional evaluated there is what the curve wants.
+
+        The rotation costs nothing worth counting: the coordinates are
+        dims_to_test by N, so their Gram matrix is dims_to_test square, and it
+        is that small matrix which is decomposed, not anything of the size of
+        Rij.
+
+        Like the values the minimisation produces, these are upper bounds on the
+        true minimum at each dimension rather than the minimum itself. Unlike
+        them they are monotonic, as a functional that is minimised over a
+        widening space must be.
+        """
+        logger.info(f"Minimising at {dims_to_test} dimensions and projecting")
+        self.target.set_dimensions(dims_to_test)
+        max_calls = self.params.minimization.max_calls
+        self._optimise(
+            self.params.minimization.engine,
+            max_iterations=self.params.minimization.max_iterations,
+            max_calls=min(20, max_calls) if max_calls else max_calls,
+        )
+
+        x = self.minimizer.x.reshape(
+            (dims_to_test, self.minimizer.x.size // dims_to_test)
+        )
+        # Principal axes of the solution, from the small Gram matrix.
+        eigenvalues, eigenvectors = np.linalg.eigh(x @ x.T)
+        order = np.argsort(eigenvalues)[::-1]
+        rotated = eigenvectors[:, order].T @ x
+
+        dimensions = []
+        functional = []
+        for dim in range(1, dims_to_test + 1):
+            self.target.set_dimensions(dim)
+            dimensions.append(dim)
+            functional.append(
+                self.target.compute_functional_score_for_dimension_assessment(
+                    rotated[:dim].flatten(), outlier_rejection
+                )
+            )
+        return dimensions, functional
+
+    def _determine_dimensions(self, dims_to_test, outlier_rejection=False):
+        logger.info("=" * 80)
+        logger.info("\nAutomatic determination of number of dimensions for analysis")
+        # dimensions_method belongs to the dials.cosym command line rather than
+        # to this scope: dials.correlation_matrix includes this scope too and
+        # reduces the dimensions itself, so the choice is not appropriate there.
+        # When the parameter is absent the historical behaviour applies.
+        method = getattr(self.params, "dimensions_method", "minimization")
+        if method == "projection":
+            dimensions, functional = self._functional_by_projection(
+                dims_to_test, outlier_rejection
+            )
+        else:
+            dimensions, functional = self._functional_by_minimization(
+                dims_to_test, outlier_rejection
             )
 
         # Find the elbow point of the curve, in the same manner as that used by
@@ -350,7 +416,7 @@ class CosymAnalysis(symmetry_base, Subject):
 
         p_g = np.array(gaps).argmax()
 
-        x_g = x[p_g + p_m]
+        x_g = int(x[p_g + p_m])
 
         logger.info(
             dials.util.tabulate(
@@ -358,15 +424,15 @@ class CosymAnalysis(symmetry_base, Subject):
             )
         )
 
-        logger.info("Best number of dimensions: %i", x_g)
-        if int(x_g) < 2:
+        logger.info(f"Best number of dimensions: {x_g}")
+        if x_g < 2:
             logger.info(
                 "As a minimum of 2-dimensions is required, dimensions have been set to 2."
             )
             self.target.set_dimensions(2)
         else:
-            self.target.set_dimensions(int(x_g))
-        logger.info("Using %i dimensions for analysis", self.target.dim)
+            self.target.set_dimensions(x_g)
+        logger.info(f"Using {self.target.dim} dimensions for analysis")
 
         return dimensions, functional
 
@@ -411,6 +477,7 @@ class CosymAnalysis(symmetry_base, Subject):
             self.target.dim, NN * n_sym_ops
         ).transpose()
 
+    @Subject.notify_event(event="pca")
     def _principal_component_analysis(self, cluster=False):
         # Perform PCA
         from sklearn.decomposition import PCA
@@ -431,10 +498,37 @@ class CosymAnalysis(symmetry_base, Subject):
         )
         self.explained_variance = pca.explained_variance_
         self.explained_variance_ratio = pca.explained_variance_ratio_
-        if self.target.dim > 3 and not cluster:
-            pca.n_components = 3
         self.coords_reduced = pca.fit_transform(self.coords)
         self.pca_components = pca.components_
+
+        # rotate and save coords for plotting
+
+        cob_mat = np.linalg.inv(np.transpose(self.pca_components))
+        rotated_coords = np.array([])
+        for data in self.coords:
+            rot_coord = np.matmul(cob_mat, data)
+            if rotated_coords.size == 0:
+                rotated_coords = rot_coord
+            else:
+                rotated_coords = np.vstack([rotated_coords, rot_coord])
+
+        # The below limit of 6 dimensions is only for plotting the PCA matrix plot
+        # 6 is an arbitrary limit, as too many dimensions make for an ugly plot
+
+        if rotated_coords.shape[1] > 6:
+            rotated_coords = rotated_coords[:, 0:6]
+            dim_list = list(range(0, 6))
+        else:
+            dim_list = list(range(0, self.target.dim))
+
+        axes_labels = {
+            str(i): f"PC {i + 1} ({var:.1f}%)"
+            for i, var in enumerate(self.explained_variance_ratio * 100)
+        }
+
+        self.rotated_coords = rotated_coords
+        self.dim_list = dim_list
+        self.pca_axes_labels = axes_labels
 
     @Subject.notify_event(event="analysed_symmetry")
     def _analyse_symmetry(self):

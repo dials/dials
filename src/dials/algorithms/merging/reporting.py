@@ -322,10 +322,13 @@ def generate_html_report(json_data, filename):
             "unit_cell_plots",
             "orientation_graphs",
         ]:
-            for name in list(v[plot_cat].keys()):
-                v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
-                if plot_cat == "orientation_graphs":
-                    styles[name + "_" + str_wl] = "square-plot"
+            if plot_cat in v:
+                for name in list(v[plot_cat].keys()):
+                    v[plot_cat][name + "_" + str_wl] = v[plot_cat].pop(name)
+                    if plot_cat == "orientation_graphs":
+                        styles[name + "_" + str_wl] = "square-plot"
+            else:
+                v[plot_cat] = {}
 
     loader = ChoiceLoader(
         [

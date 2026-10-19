@@ -46,6 +46,12 @@ If the unit_cell and space_group parameters are set, then the program will
 only accept solutions which are consistent with these parameters. Space group
 constraints will be enforced in refinement as appropriate.
 
+If the input contains more than one rotation sequence then joint_indexing must
+be set explicitly: joint_indexing=True to index all sequences together with a
+single shared crystal model (e.g. multi-axis data from one sample), or
+joint_indexing=False to index each sequence independently (e.g. data from
+several different samples).
+
 Examples::
 
   dials.index imported.expt strong.refl
@@ -53,6 +59,8 @@ Examples::
   dials.index imported.expt strong.refl unit_cell=37,79,79,90,90,90 space_group=P43212
 
   dials.index imported.expt strong.refl indexing.method=fft1d
+
+  dials.index imported.expt strong.refl joint_indexing=True
 """
 
 
