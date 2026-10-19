@@ -3,6 +3,7 @@ from __future__ import annotations
 import pickle
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -91,3 +92,30 @@ def test_model_background(dials_data, tmp_path):
         capture_output=True,
     )
     assert not result.returncode and not result.stderr
+
+
+def test_model_background_nproc(dials_data, tmp_path):
+    data_dir = dials_data("l_cysteine_dials_output")
+
+    models = []
+    for nproc in (1, 2):
+        working_dir = tmp_path / f"nproc_{nproc}"
+        working_dir.mkdir()
+        result = subprocess.run(
+            [
+                shutil.which("dials.model_background"),
+                data_dir / "11_integrated.expt",
+                f"nproc={nproc}",
+            ],
+            cwd=working_dir,
+            capture_output=True,
+        )
+        result.check_returncode()
+        assert not result.stderr
+        if nproc > 1 and sys.platform != "win32":
+            assert b"Using multiprocessing with 2 parallel job(s)" in result.stdout
+        with open(working_dir / "background.pickle", "rb") as f:
+            models.append(pickle.load(f).data(0))
+
+    assert models[1].all() == models[0].all()
+    assert list(models[1]) == list(models[0])

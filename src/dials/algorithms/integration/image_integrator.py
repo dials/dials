@@ -76,8 +76,6 @@ class ProcessorImage:
             def process_output(result):
                 rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
 
             def execute_task(task):
                 log.config_simple_cached()

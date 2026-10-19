@@ -1,1 +1,1 @@
-Enable pickling for ImageVolume, MultiPanelImageVolume, BackgroundStatistics, and MultiPanelBackgroundStatistics
+``dials.model_background``: support multiprocessing with ``nproc``, which was previously forced to 1.

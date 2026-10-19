@@ -221,14 +221,6 @@ class Script:
         # Configure the logging
         dials.util.log.config(verbosity=options.verbose, logfile=params.output.log)
 
-        if params.integration.mp.nproc != 1 or params.integration.mp.njobs != 1:
-            # https://github.com/dials/dials/issues/1083
-            logger.warning(
-                "Multiprocessing is currently disabled. Setting nproc = njobs = 1"
-            )
-            params.integration.mp.nproc = 1
-            params.integration.mp.njobs = 1
-
         from dials.util.version import dials_version
 
         logger.info(dials_version())
