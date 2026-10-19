@@ -1097,6 +1097,11 @@ conda activate {dist_root}/conda_base
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(dials)
 
+# Default builds to release with debug info. This only takes effect in
+# the root CMakeLists, so needs to be included here.
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/dials/cmake/Modules")
+include(SetDefaultBuildRelWithDebInfo)
+
 if (MSVC)
     # Windows can fail because of too many objects
     add_compile_options(/bigobj)
