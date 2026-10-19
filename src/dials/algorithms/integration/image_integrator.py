@@ -71,17 +71,33 @@ class ProcessorImage:
         logger.info(self.manager.summary())
         logger.info(" Using %s with %d parallel job(s)\n", mp_method, mp_nproc)
         if mp_nproc > 1:
+            # Each task processes a single image, and starting a process and
+            # returning the data for each one is expensive, so give each process
+            # a single chunk of consecutive tasks
+            tasks = list(self.manager.tasks())
+            num_chunks = min(len(tasks), mp_nproc * mp_njobs)
+            chunks = [
+                TaskChunk(
+                    tasks[
+                        i * len(tasks) // num_chunks : (i + 1)
+                        * len(tasks)
+                        // num_chunks
+                    ]
+                )
+                for i in range(num_chunks)
+            ]
 
             def process_output(result):
                 rehandle_cached_records(result[1])
-                self.manager.accumulate(result[0])
+                for task_result in result[0]:
+                    self.manager.accumulate(task_result)
                 # The parallel map holds every result until all tasks have
                 # finished, so release this one now that it is accumulated
                 result.clear()
 
             multi_node_parallel_map(
                 func=_execute_task,
-                iterable=list(self.manager.tasks()),
+                iterable=chunks,
                 njobs=mp_njobs,
                 nproc=mp_nproc,
                 callback=process_output,
@@ -96,6 +112,40 @@ class ProcessorImage:
         self.manager.time.user_time = end_time - start_time
         result = self.manager.result()
         return result, self.manager.time
+
+
+class TaskChunk:
+    """
+    A chunk of tasks to run in sequence in a single process. The data from all
+    the tasks, which must support +=, are summed into the first result so that
+    only a single set is returned.
+    """
+
+    def __init__(self, tasks):
+        """
+        :param tasks: The list of tasks
+        """
+        assert len(tasks) > 0
+        self.tasks = tasks
+
+    def __call__(self):
+        """
+        Do the processing.
+
+        :return: The list of results for each task
+        """
+        results = []
+        data = None
+        for task in self.tasks:
+            result = task()
+            if result.data is not None:
+                if data is None:
+                    data = result.data
+                else:
+                    data += result.data
+            results.append(result._replace(data=None))
+        results[0] = results[0]._replace(data=data)
+        return results
 
 
 class Task:
