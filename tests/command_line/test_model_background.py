@@ -44,7 +44,7 @@ def test_model_background(dials_data, tmp_path):
     min_max_mean = flex.min_max_mean_double(data.as_1d())
     assert min_max_mean.max == pytest.approx(0.1800928143817288)
     assert min_max_mean.min == 0.0
-    assert min_max_mean.mean == pytest.approx(0.020816338853321865)
+    assert min_max_mean.mean == pytest.approx(0.020804310247369236)
 
     # Test integration using this background model. It turns out that 11_integrated.{expt,refl}
     # can't be passed to dials.integrate, so we will make our own input from the

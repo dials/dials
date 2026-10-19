@@ -99,8 +99,10 @@ namespace dials { namespace algorithms {
         for (int jj = j - size[0]; jj <= j + size[0]; ++jj) {
           for (int ii = i - size[1]; ii <= i + size[1]; ++ii) {
             if (periodic) {
-              std::size_t jjj = (jj % ysize + ysize) % ysize;
-              std::size_t iii = (ii % xsize + xsize) % xsize;
+              // Use signed arithmetic, as negative indices would be converted
+              // to large unsigned values and wrap to the wrong place
+              std::size_t jjj = (jj % (int)ysize + (int)ysize) % (int)ysize;
+              std::size_t iii = (ii % (int)xsize + (int)xsize) % (int)xsize;
               DIALS_ASSERT(jjj >= 0 && iii >= 0 && jjj < ysize && iii < xsize);
               if (mask(jjj, iii)) {
                 DIALS_ASSERT(npix < pixels.size());
