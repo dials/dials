@@ -13,6 +13,14 @@ from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImag
 logger = logging.getLogger(__name__)
 
 
+def _execute_task(task):
+    """
+    Run a task in a worker process. The result is returned as a list, rather
+    than a tuple, so that it can be released once it has been accumulated.
+    """
+    return list(execute_parallel_task(task))
+
+
 class ProcessorImage:
     """Top level processor for per image processing."""
 
@@ -67,9 +75,12 @@ class ProcessorImage:
             def process_output(result):
                 rehandle_cached_records(result[1])
                 self.manager.accumulate(result[0])
+                # The parallel map holds every result until all tasks have
+                # finished, so release this one now that it is accumulated
+                result.clear()
 
             multi_node_parallel_map(
-                func=execute_parallel_task,
+                func=_execute_task,
                 iterable=list(self.manager.tasks()),
                 njobs=mp_njobs,
                 nproc=mp_nproc,

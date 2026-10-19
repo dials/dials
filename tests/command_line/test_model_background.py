@@ -137,3 +137,27 @@ def test_model_background_nproc(dials_data, tmp_path):
     for model in models[1:]:
         assert model.all() == models[0].all()
         assert list(model) == list(models[0])
+
+
+def test_model_background_nproc_releases_results(dials_data, tmp_path, monkeypatch):
+    # The parallel map keeps every job result until all have finished, so each
+    # must be released once it has been accumulated to avoid running out of memory
+    from dials.algorithms.integration import image_integrator
+    from dials.command_line import model_background
+
+    original_parallel_map = image_integrator.multi_node_parallel_map
+    returned = []
+
+    def parallel_map(*args, **kwargs):
+        result = original_parallel_map(*args, **kwargs)
+        returned.extend(result)
+        return result
+
+    monkeypatch.setattr(image_integrator, "multi_node_parallel_map", parallel_map)
+    monkeypatch.chdir(tmp_path)
+
+    model_background.run(
+        [str(dials_data("l_cysteine_dials_output") / "11_integrated.expt"), "nproc=2"]
+    )
+    assert len(returned) > 1
+    assert all(result == [] for result in returned)
