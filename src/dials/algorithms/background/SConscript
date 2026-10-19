@@ -1,4 +1,4 @@
-Import("env")
+Import("env", "env_etc")
 
 
 env.SharedLibrary(
@@ -10,7 +10,7 @@ env.SharedLibrary(
 env.SharedLibrary(
     target="#/lib/dials_algorithms_background_modeller_ext",
     source=["boost_python/modeller_ext.cc"],
-    LIBS=env["LIBS"],
+    LIBS=env["LIBS"] + [env_etc.boost_numpy_lib],
 )
 
 env.SharedLibrary(
