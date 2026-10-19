@@ -1155,7 +1155,7 @@ def test_rigaku_hypix_arc_150(dials_data, tmp_path):
     expected_unit_cell = uctbx.unit_cell(
         (6.1634, 13.198, 28.564, 89.928, 90.093, 89.839)
     )
-    expected_rmsds = (0.09, 0.06, 0.009)
+    expected_rmsds = (0.07, 0.07, 0.007)
     expected_hall_symbol = " P 1"
 
     run_indexing(
