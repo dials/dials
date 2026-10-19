@@ -1,0 +1,1 @@
+``dials.integrate``: Stop sending a copy of the whole input reflection table to every worker process. When worker processes are started with "spawn" (on Windows), this used a large amount of memory, both in the workers and in the main process.
