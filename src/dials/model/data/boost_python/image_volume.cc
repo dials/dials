@@ -139,43 +139,40 @@ namespace dials { namespace model { namespace boost_python {
     typedef ImageVolume<FloatType> Class;
 
     struct IVPickleSuite : pickle_suite {
-      static tuple getinitargs(Class& obj) {
-        return make_tuple(0, 1, std::size_t(1), std::size_t(1));
+      // The mask is pickled as a flex_grid array, as the c_grid<3> conversions for
+      // uint8_t are only registered once dials.array_family.flex has been imported
+      typedef af::versa<uint8_t, af::flex_grid<>> flex_mask_type;
+
+      static tuple getinitargs(const Class& obj) {
+        af::c_grid<3> grid = obj.accessor();
+        return make_tuple(obj.frame0(), obj.frame1(), grid[1], grid[2]);
       }
 
-      static object getstate(Class& obj) {
-        return obj.get_all();
-      }
-
-      static void setstate(Class& obj, object state) {
-        obj.set_all(extract<int>(state[0]),
-                    extract<int>(state[1]),
-                    extract<std::size_t>(state[2]),
-                    extract<std::size_t>(state[3]),
-                    extract<std::size_t>(state[4]),
-                    extract<boost::python::list>(state[5]),
-                    extract<boost::python::list>(state[6]),
-                    extract<boost::python::list>(state[7]));
-      }
-    };
-
-    struct SIVPickleSuite : pickle_suite {
-      static tuple getinitargs(af_shared_with_getitem<Class>& obj) {
-        return tuple();
-      }
-
-      static object getstate(af_shared_with_getitem<Class>& obj) {
-        list arg_lst;
-        for (int i = 0; i < obj.size(); i++) {
-          arg_lst.append(obj[i]);
+      static tuple getstate(const Class& obj) {
+        af::versa<uint8_t, af::c_grid<3>> mask = obj.mask();
+        af::versa<Label, af::c_grid<3>> label = obj.label1();
+        af::versa<int, af::c_grid<3>> label_first(label.accessor());
+        af::versa<int, af::c_grid<3>> label_second(label.accessor());
+        for (std::size_t i = 0; i < label.size(); ++i) {
+          label_first[i] = label[i].first;
+          label_second[i] = label[i].second;
         }
-        return tuple(arg_lst);
+        return make_tuple(obj.data(),
+                          obj.background(),
+                          flex_mask_type(mask, mask.accessor().as_flex_grid()),
+                          label_first,
+                          label_second);
       }
 
-      static void setstate(af_shared_with_getitem<Class>& obj, object state) {
-        for (int i = 0; i < len(state); i++) {
-          obj.push_back(extract<Class>(state[i]));
-        }
+      static void setstate(Class& obj, tuple state) {
+        DIALS_ASSERT(len(state) == 5);
+        const flex_mask_type& mask = extract<const flex_mask_type&>(state[2]);
+        obj.set_state(extract<af::const_ref<FloatType, af::c_grid<3>>>(state[0]),
+                      extract<af::const_ref<FloatType, af::c_grid<3>>>(state[1]),
+                      af::const_ref<uint8_t, af::c_grid<3>>(
+                        mask.begin(), af::c_grid<3>(mask.accessor())),
+                      extract<af::const_ref<int, af::c_grid<3>>>(state[3]),
+                      extract<af::const_ref<int, af::c_grid<3>>>(state[4]));
       }
     };
 
@@ -194,28 +191,28 @@ namespace dials { namespace model { namespace boost_python {
       .def("extract_background", &Class::extract_background)
       .def("extract_mask", &Class::extract_mask)
       .def_pickle(IVPickleSuite());
-
-    class_<af_shared_with_getitem<Class>>("shared_ImageVolume")
-      .def_pickle(SIVPickleSuite());
   }
-
-  struct MPIVPickleSuite : pickle_suite {
-    static tuple getinitargs(MultiPanelImageVolume<>& obj) {
-      return make_tuple();
-    }
-
-    static object getstate(MultiPanelImageVolume<>& obj) {
-      return make_tuple(obj.get_volume());
-    }
-
-    static void setstate(MultiPanelImageVolume<>& obj, object state) {
-      obj.set_volume(extract<af_shared_with_getitem<ImageVolume<>>>(state[0]));
-    }
-  };
 
   template <typename FloatType>
   void multi_panel_image_volume_wrapper(const char* name) {
     typedef MultiPanelImageVolume<FloatType> Class;
+
+    struct MPIVPickleSuite : pickle_suite {
+      static tuple getstate(const Class& obj) {
+        list volumes;
+        for (std::size_t i = 0; i < obj.size(); ++i) {
+          volumes.append(obj.get(i));
+        }
+        return tuple(volumes);
+      }
+
+      static void setstate(Class& obj, tuple state) {
+        DIALS_ASSERT(obj.size() == 0);
+        for (std::size_t i = 0; i < len(state); ++i) {
+          obj.add(extract<const ImageVolume<FloatType>&>(state[i]));
+        }
+      }
+    };
 
     class_<Class>(name)
       .def("frame0", &Class::frame0)

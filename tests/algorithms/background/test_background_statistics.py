@@ -54,6 +54,24 @@ def test_unpickled_background_statistics_can_be_accumulated():
     assert_statistics_equal(expected, result)
 
 
+def test_background_statistics_from_arrays():
+    stats = BackgroundStatistics(make_image_volume(0, 3, 4, 5))
+    stats2 = BackgroundStatistics(
+        sum=stats.sum(),
+        sum_sq=stats.sum_sq(),
+        num=stats.num(),
+        min=stats.min(),
+        max=stats.max(),
+    )
+    assert_statistics_equal(stats, stats2)
+
+    other = BackgroundStatistics(make_image_volume(0, 3, 5, 4))
+    with pytest.raises(RuntimeError):
+        BackgroundStatistics(
+            stats.sum(), stats.sum_sq(), other.num(), stats.min(), stats.max()
+        )
+
+
 @pytest.mark.parametrize("protocol", range(pickle.HIGHEST_PROTOCOL + 1))
 def test_multi_panel_background_statistics_pickle(protocol):
     multi = MultiPanelImageVolume()

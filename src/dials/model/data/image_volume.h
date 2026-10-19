@@ -11,24 +11,17 @@
 #ifndef DIALS_MODEL_DATA_IMAGE_VOLUME_H
 #define DIALS_MODEL_DATA_IMAGE_VOLUME_H
 
+#include <algorithm>
 #include <scitbx/array_family/tiny_types.h>
 #include <dials/array_family/scitbx_shared_and_versa.h>
 #include <dials/model/data/image.h>
 #include <dials/model/data/mask_code.h>
 #include <dials/error.h>
-#include <boost/python.hpp>
 
 namespace dials { namespace model {
 
   using dials::model::Valid;
   using scitbx::af::int6;
-  template <typename ElementType>
-  class af_shared_with_getitem : public af::shared<ElementType> {
-  public:
-    ElementType getitem(const int i) {
-      return (*this)[i];
-    }
-  };
 
   class Label {
   public:
@@ -74,59 +67,28 @@ namespace dials { namespace model {
               && mask_.accessor().all_eq(grid_) && label_.accessor().all_eq(grid_));
     }
 
-    boost::python::object get_all() {
-      std::size_t acc0 = grid_[0];
-      std::size_t acc1 = grid_[1];
-      std::size_t acc2 = grid_[2];
-      boost::python::list data;
-      boost::python::list background;
-      boost::python::list mask;
-
-      for (int i = 0; i < acc0; i++) {
-        for (int j = 0; j < acc1; j++) {
-          for (int k = 0; k < acc2; k++) {
-            data.append(data_(i, j, k));
-            background.append(background_(i, j, k));
-            mask.append(mask_(i, j, k));
-          }
-        }
+    /**
+     * Restore the array contents, e.g. when unpickling. All arrays must match
+     * the size of the volume. The labels are given as separate arrays of the
+     * first and second reflection indices of each pixel.
+     */
+    void set_state(const af::const_ref<FloatType, af::c_grid<3>>& data,
+                   const af::const_ref<FloatType, af::c_grid<3>>& background,
+                   const af::const_ref<uint8_t, af::c_grid<3>>& mask,
+                   const af::const_ref<int, af::c_grid<3>>& label_first,
+                   const af::const_ref<int, af::c_grid<3>>& label_second) {
+      DIALS_ASSERT(data.accessor().all_eq(grid_));
+      DIALS_ASSERT(background.accessor().all_eq(grid_));
+      DIALS_ASSERT(mask.accessor().all_eq(grid_));
+      DIALS_ASSERT(label_first.accessor().all_eq(grid_));
+      DIALS_ASSERT(label_second.accessor().all_eq(grid_));
+      std::copy(data.begin(), data.end(), data_.begin());
+      std::copy(background.begin(), background.end(), background_.begin());
+      std::copy(mask.begin(), mask.end(), mask_.begin());
+      for (std::size_t i = 0; i < label_.size(); ++i) {
+        label_[i].first = label_first[i];
+        label_[i].second = label_second[i];
       }
-
-      return boost::python::make_tuple(
-        frame0_, frame1_, acc0, acc1, acc2, data, background, mask);
-    }
-
-    void set_all(int frame0,
-                 int frame1,
-                 std::size_t acc0,
-                 std::size_t acc1,
-                 std::size_t acc2,
-                 boost::python::list data,
-                 boost::python::list background,
-                 boost::python::list mask) {
-      frame0_ = frame0;
-      frame1_ = frame1;
-      grid_ = af::c_grid<3>(acc0, acc1, acc2);
-      data_ = af::versa<FloatType, af::c_grid<3>>(grid_, 0);
-      background_ = af::versa<FloatType, af::c_grid<3>>(grid_, 0);
-      mask_ = af::versa<uint8_t, af::c_grid<3>>(grid_, 0);
-      label_ = af::versa<Label, af::c_grid<3>>(grid_);
-
-      for (int i = 0; i < acc0; i++) {
-        for (int j = 0; j < acc1; j++) {
-          for (int k = 0; k < acc2; k++) {
-            data_(i, j, k) =
-              boost::python::extract<FloatType>(data[i * acc2 * acc1 + j * acc2 + k]);
-            background_(i, j, k) = boost::python::extract<FloatType>(
-              background[i * acc2 * acc1 + j * acc2 + k]);
-            mask_(i, j, k) =
-              boost::python::extract<int>(mask[i * acc2 * acc1 + j * acc2 + k]);
-          }
-        }
-      }
-
-      // The label contents are not restored here (label_ is left default-initialised).
-      // Implement a get()-set() pair for the contents of label if required.
     }
 
     /**
@@ -475,14 +437,6 @@ namespace dials { namespace model {
 
     MultiPanelImageVolume() {}
 
-    af_shared_with_getitem<ImageVolume<FloatType>> get_volume() const {
-      return volume_;
-    }
-
-    void set_volume(af_shared_with_getitem<ImageVolume<FloatType>> volume) {
-      volume_ = volume;
-    }
-
     /**
      * Add an image volume
      * @param x The image volume
@@ -542,7 +496,7 @@ namespace dials { namespace model {
     }
 
   private:
-    af_shared_with_getitem<ImageVolume<FloatType>> volume_;
+    af::shared<ImageVolume<FloatType>> volume_;
   };
 
 }};  // namespace dials::model

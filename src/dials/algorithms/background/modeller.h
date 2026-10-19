@@ -12,11 +12,6 @@
 #define DIALS_ALGORITHMS_BACKGROUND_MODELLER_H
 
 #include <dials/model/data/image_volume.h>
-#include <boost/python.hpp>
-#include <boost/python/numpy.hpp>
-
-namespace p = boost::python;
-namespace np = boost::python::numpy;
 
 namespace dials { namespace algorithms {
 
@@ -24,14 +19,6 @@ namespace dials { namespace algorithms {
   using dials::model::ImageVolume;
   using dials::model::MultiPanelImageVolume;
   using dials::model::Valid;
-
-  template <typename ElementType>
-  class af_shared_with_getitem : public af::shared<ElementType> {
-  public:
-    ElementType getitem(const int i) {
-      return (*this)[i];
-    }
-  };
 
   /**
    * Class to compute background statistics
@@ -70,91 +57,29 @@ namespace dials { namespace algorithms {
       }
     }
 
-    p::object get_all() const {
-      long acc0 = accessor_[0];
-      long acc1 = accessor_[1];
-
-      p::tuple shape = p::make_tuple(acc0, acc1);
-      p::tuple stride_double = p::make_tuple(acc1 * sizeof(double), sizeof(double));
-      p::tuple stride_int = p::make_tuple(acc1 * sizeof(int), sizeof(int));
-      np::ndarray sum = np::from_data(sum_.begin(),
-                                      np::dtype::get_builtin<double>(),
-                                      shape,
-                                      stride_double,
-                                      p::object());
-      np::ndarray sum_sq = np::from_data(sum_sq_.begin(),
-                                         np::dtype::get_builtin<double>(),
-                                         shape,
-                                         stride_double,
-                                         p::object());
-      np::ndarray num = np::from_data(
-        num_.begin(), np::dtype::get_builtin<int>(), shape, stride_int, p::object());
-      np::ndarray min = np::from_data(min_.begin(),
-                                      np::dtype::get_builtin<double>(),
-                                      shape,
-                                      stride_double,
-                                      p::object());
-      np::ndarray max = np::from_data(max_.begin(),
-                                      np::dtype::get_builtin<double>(),
-                                      shape,
-                                      stride_double,
-                                      p::object());
-
-      // np::ndarray sum = np::empty(2, shape, np::dtype::get_builtin<double>());
-      // np::ndarray sum_sq = np::empty(2, shape, np::dtype::get_builtin<double>());
-      // np::ndarray num = np::empty(2, shape, np::dtype::get_builtin<int>());
-      // np::ndarray min = np::empty(2, shape, np::dtype::get_builtin<double>());
-      // np::ndarray max = np::empty(2, shape, np::dtype::get_builtin<double>());
-
-      // double* s = reinterpret_cast<double*>(sum.get_data());
-      // double* ss = reinterpret_cast<double*>(sum_sq.get_data());
-      // int* n = reinterpret_cast<int*>(num.get_data());
-      // double* mi = reinterpret_cast<double*>(min.get_data());
-      // double* ma = reinterpret_cast<double*>(max.get_data());
-
-      // for (int i = 0; i < acc0; i++) {
-      //   for (int j = 0; j < acc1; j++) {
-      //     s[i * acc1 + j] = sum_(i, j);
-      //     ss[i * acc1 + j] = sum_sq_(i, j);
-      //     n[i * acc1 + j] = num_(i, j);
-      //     mi[i * acc1 + j] = min_(i, j);
-      //     ma[i * acc1 + j] = max_(i, j);
-      //   }
-      // }
-
-      return p::make_tuple(
-        acc0, acc1, sum.copy(), sum_sq.copy(), num.copy(), min.copy(), max.copy());
-    }
-
-    void set_all(p::object state) {
-      const long acc0 = p::extract<long>(state[0]);
-      const long acc1 = p::extract<long>(state[1]);
-      const np::ndarray sum = p::extract<np::ndarray>(state[2]);
-      const np::ndarray sum_sq = p::extract<np::ndarray>(state[3]);
-      const np::ndarray num = p::extract<np::ndarray>(state[4]);
-      const np::ndarray min = p::extract<np::ndarray>(state[5]);
-      const np::ndarray max = p::extract<np::ndarray>(state[6]);
-
-      double* s = reinterpret_cast<double*>(sum.get_data());
-      double* ss = reinterpret_cast<double*>(sum_sq.get_data());
-      int* n = reinterpret_cast<int*>(num.get_data());
-      double* mi = reinterpret_cast<double*>(min.get_data());
-      double* ma = reinterpret_cast<double*>(max.get_data());
-
-      accessor_ = af::c_grid<2>(acc0, acc1);
-      sum_ = af::versa<double, af::c_grid<2> >(accessor_);
-      sum_sq_ = af::versa<double, af::c_grid<2> >(accessor_);
-      num_ = af::versa<int, af::c_grid<2> >(accessor_);
-      min_ = af::versa<double, af::c_grid<2> >(accessor_);
-      max_ = af::versa<double, af::c_grid<2> >(accessor_);
-
-      size_t n_elems = static_cast<size_t>(acc0) * static_cast<size_t>(acc1);
-
-      std::memcpy(sum_.begin(), s, n_elems * sizeof(double));
-      std::memcpy(sum_sq_.begin(), ss, n_elems * sizeof(double));
-      std::memcpy(num_.begin(), n, n_elems * sizeof(int));
-      std::memcpy(min_.begin(), mi, n_elems * sizeof(double));
-      std::memcpy(max_.begin(), ma, n_elems * sizeof(double));
+    /**
+     * Initialize from previously accumulated statistics, e.g. when unpickling
+     */
+    BackgroundStatistics(const af::const_ref<double, af::c_grid<2> >& sum,
+                         const af::const_ref<double, af::c_grid<2> >& sum_sq,
+                         const af::const_ref<int, af::c_grid<2> >& num,
+                         const af::const_ref<double, af::c_grid<2> >& min,
+                         const af::const_ref<double, af::c_grid<2> >& max)
+        : accessor_(sum.accessor()),
+          sum_(accessor_),
+          sum_sq_(accessor_),
+          num_(accessor_),
+          min_(accessor_),
+          max_(accessor_) {
+      DIALS_ASSERT(sum_sq.accessor().all_eq(accessor_));
+      DIALS_ASSERT(num.accessor().all_eq(accessor_));
+      DIALS_ASSERT(min.accessor().all_eq(accessor_));
+      DIALS_ASSERT(max.accessor().all_eq(accessor_));
+      std::copy(sum.begin(), sum.end(), sum_.begin());
+      std::copy(sum_sq.begin(), sum_sq.end(), sum_sq_.begin());
+      std::copy(num.begin(), num.end(), num_.begin());
+      std::copy(min.begin(), min.end(), min_.begin());
+      std::copy(max.begin(), max.end(), max_.begin());
     }
 
     /**
@@ -303,12 +228,17 @@ namespace dials { namespace algorithms {
       }
     }
 
-    af_shared_with_getitem<BackgroundStatistics> get_statistics() const {
-      return statistics_;
-    }
+    /**
+     * Initialize with no panels
+     */
+    MultiPanelBackgroundStatistics() {}
 
-    void set_statistics(af_shared_with_getitem<BackgroundStatistics> statistics) {
-      statistics_ = statistics;
+    /**
+     * Add the statistics for a panel
+     * @param statistics The panel statistics
+     */
+    void add(const BackgroundStatistics& statistics) {
+      statistics_.push_back(statistics);
     }
 
     /**
@@ -340,7 +270,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    af_shared_with_getitem<BackgroundStatistics> statistics_;
+    af::shared<BackgroundStatistics> statistics_;
   };
 
 }}  // namespace dials::algorithms
