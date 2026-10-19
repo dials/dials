@@ -167,21 +167,24 @@ class ImageGenerator:
         """
         Save the image
         """
+        import numpy as np
         from matplotlib import pylab
 
         for i, model in enumerate(self.model):
-            image = extractor_fn(model)
+            image = extractor_fn(model).as_numpy_array()
             pylab.figure(figsize=(6, 4))
             if bounded and vmax is None:
+                # The 99th percentile value, without sorting the whole image
+                k = int(0.99 * image.size)
                 boundaries = {
                     "vmin": 0,
-                    "vmax": sorted(image)[int(0.99 * len(image))],
+                    "vmax": np.partition(image, k, axis=None)[k],
                 }
             elif bounded:
                 boundaries = {"vmin": 0, "vmax": vmax}
             else:
                 boundaries = {}
-            pylab.imshow(image.as_numpy_array(), interpolation="none", **boundaries)
+            pylab.imshow(image, interpolation="none", **boundaries)
             ax1 = pylab.gca()
             ax1.get_xaxis().set_visible(False)
             ax1.get_yaxis().set_visible(False)
