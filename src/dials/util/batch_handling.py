@@ -117,11 +117,16 @@ def get_batch_ranges(experiments, batch_offsets):
 def get_image_ranges(experiments):
     """Get image ranges for a list of experiments (including scanless exp.)"""
     # Note, if set to 1,1,for scanless experiments then first batch offset in
-    # _calculate_batch_offsets is zero below, bad!
+    # _calculate_batch_offsets is zero below, bad! Time-of-flight scans have no
+    # oscillation, and like stills are a single stationary orientation.
     return [
         (
             e.scan.get_image_range()
-            if (e.scan and e.scan.get_oscillation()[1] != 0.0)
+            if (
+                e.scan
+                and e.scan.has_property("oscillation")
+                and e.scan.get_oscillation()[1] != 0.0
+            )
             else (0, 0)
         )
         for e in experiments
@@ -140,7 +145,11 @@ def set_batch_offsets(experiment_list, batch_offsets):
     """Set batch offsets in scan objects. Don't need to set anything for
     scanless experiments, as these are not used with the batch system."""
     for exp, offset in zip(experiment_list, batch_offsets):
-        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
+        if (
+            exp.scan
+            and exp.scan.has_property("oscillation")
+            and exp.scan.get_oscillation()[1] != 0.0
+        ):
             exp.scan.set_batch_offset(offset)
 
 
