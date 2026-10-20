@@ -463,7 +463,12 @@ def get_subset_for_symmetry(experiments, reflection_tables, exclude_images=None)
     else:
         for expt, refl in zip(experiments, reflection_tables):
             sel = get_selection_for_valid_image_ranges(refl, expt)
-            if expt.scan and not sel.count(False) and not expt.is_still():
+            if (
+                expt.scan
+                and expt.scan.has_property("oscillation")
+                and not sel.count(False)
+                and not expt.is_still()
+            ):
                 # Use first 360 degrees if <360 deg i.e. first measured data,
                 # but only if no reflections have been explicitly excluded
                 # already
@@ -525,13 +530,17 @@ def change_of_basis_ops_to_minimum_cell(
     else:
         if len(set(centring_symbols)) > 1:
             logger.info(
-                f"Multiple lattice centerings in input cells: {', '.join(list(set(centring_symbols)))}.\n"
+                f"Multiple lattice centerings in input cells: {
+                    ', '.join(list(set(centring_symbols)))
+                }.\n"
                 + "Attempting to map to a common minimum cell through the most common lattice group."
             )
         else:
             median_params = ", ".join(f"{i:.2f}" for i in median_cell.parameters())
             logger.info(
-                f"Some input cells are not sufficiently similar to the median cell:\n  {median_params}\n"
+                f"Some input cells are not sufficiently similar to the median cell:\n  {
+                    median_params
+                }\n"
                 + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
                 + f"  and an absolute_angle_tolerance of {absolute_angle_tolerance}.\n"
                 + "Attempting to map to a common minimum cell through the most common lattice group."
@@ -597,7 +606,9 @@ def change_of_basis_ops_to_minimum_cell(
                     )
                     this_params = ", ".join(f"{i:.2f}" for i in best_cell.parameters())
                     logger.info(
-                        f"Unable to map input cell for dataset {i} to a minimum cell through\n"
+                        f"Unable to map input cell for dataset {
+                            i
+                        } to a minimum cell through\n"
                         + f"a consistent best cell in space group {target_group.info()}.\n"
                         + f"Incompatible best cells:\n  {best_params},\n  {this_params},\n"
                         + f"  within a relative_length_tolerance of {relative_length_tolerance}\n"
@@ -662,7 +673,9 @@ def prepare_datasets_for_symmetry_analysis(
                 "Exiting symmetry analysis: Unable to match all cells to target symmetry.\n"
                 + "This may be avoidable by increasing the absolute_angle_tolerance or relative_length_tolerance,\n"
                 + "if the cells are similar enough.\n"
-                + f"Alternatively, remove dataset number{'s' if len(indices) > 1 else ''} {', '.join(indices)} from the input"
+                + f"Alternatively, remove dataset number{
+                    's' if len(indices) > 1 else ''
+                } {', '.join(indices)} from the input"
             )
         exclude_indices = [i for i, cb_op in enumerate(cb_ops) if not cb_op]
         logger.info(
