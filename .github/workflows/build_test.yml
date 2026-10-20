@@ -27,10 +27,10 @@ jobs:
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: modules/dials
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
       - name: Prepare for Base Environment
@@ -64,7 +64,7 @@ jobs:
           echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
           echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
       - name: Restore Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
           restore-keys: |
@@ -85,10 +85,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: modules/dials
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_MINIMUM_VERSION }}
       - name: Install Base Environment
@@ -113,7 +113,7 @@ jobs:
             --license         modules/dials/LICENSE \
             --readme          modules/dials/LICENSE \
             --binary          tmp/dials-installer-dev
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dials-installer
           path: dist/dials-installer-dev.tar.gz
@@ -125,7 +125,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build_libtbx
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dials-installer
       - name: Install DIALS
@@ -148,7 +148,7 @@ jobs:
           echo "CURRENT_WEEK=$(date +W%W)" >> $GITHUB_ENV
           echo "TODAY_ISO=$(date +%Y%m%d)" >> $GITHUB_ENV
       - name: Restore Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: "${{ env.CURRENT_WEEK }}-${{ env.DIALS_DATA_VERSION }}-${{ env.TODAY_ISO }}-${{ env.DIALS_DATA_VERSION_FULL }}"
           restore-keys: |
@@ -171,7 +171,7 @@ jobs:
     needs: build_libtbx
     if: ${{ github.event_name == 'pull_request' }}
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dials-installer
       - name: Install DIALS
@@ -202,7 +202,7 @@ jobs:
           # Patching done, show what we did
           git diff
       - name: Restore Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           key: "xfel-regression"
           path: |
