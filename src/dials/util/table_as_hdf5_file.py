@@ -413,18 +413,8 @@ class HDF5TableFile:
 
     def __init__(self, filename: str, mode="w") -> None:
         """Open the file with the given mode."""
-        # h5py raises OSError if not a hdf5 file.
-        #
-        # Files are written with libver="latest". The experiment identifiers
-        # are stored as an attribute holding variable-length strings; with the
-        # default (earliest-compatible) file format such attributes must fit
-        # in a 64 KiB object header message, which overflows at 4092
-        # identifiers (dials.combine_experiments on a few thousand stills).
-        # The latest format stores large attributes densely and has no such
-        # limit. The cost is that these files need HDF5 >= 1.10 (2016) to
-        # read; DIALS itself requires far newer, via h5py.
-        kwargs = {"libver": "latest"} if mode in ("w", "w-", "x", "a") else {}
-        self._handle = h5py.File(filename, mode, **kwargs)
+        # h5py raises OSError if not a hdf5 file
+        self._handle = h5py.File(filename, mode, libver="latest")
 
     def close(self) -> None:
         """Close the file."""
