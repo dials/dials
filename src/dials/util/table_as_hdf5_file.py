@@ -12,10 +12,6 @@ import dials_array_family_flex_ext
 from dials.array_family import flex
 
 
-# Bitshuffle exposes the runs of identical bits in numeric data (such as the
-# zero low mantissa bits of integer-valued float32 pixels), which LZ4 then
-# compresses quickly. This makes .refl files about 1.4-2x smaller than plain
-# LZ4 on the shoeboxes alone, at little cost in read or write time.
 def compression() -> hdf5plugin.Bitshuffle:
     return hdf5plugin.Bitshuffle(cname="lz4")
 
