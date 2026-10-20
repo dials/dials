@@ -28,7 +28,7 @@ namespace dials { namespace algorithms {
    * Calculate D-
    */
   template <typename RealType>
-  RealType kolmogorov_smirnov_test_d_minus(const std::vector<RealType> &cdfv) {
+  RealType kolmogorov_smirnov_test_d_minus(const std::vector<RealType>& cdfv) {
     RealType Dmax = 0.0;
     std::size_t n = cdfv.size();
     for (std::size_t i = 0; i < n; ++i) {
@@ -44,7 +44,7 @@ namespace dials { namespace algorithms {
    * Calculate D+
    */
   template <typename RealType>
-  RealType kolmogorov_smirnov_test_d_plus(const std::vector<RealType> &cdfv) {
+  RealType kolmogorov_smirnov_test_d_plus(const std::vector<RealType>& cdfv) {
     RealType Dmax = 0.0;
     std::size_t n = cdfv.size();
     for (std::size_t i = 0; i < n; ++i) {
@@ -61,7 +61,7 @@ namespace dials { namespace algorithms {
    */
   template <typename RealType>
   std::pair<RealType, RealType> kolmogorov_smirnov_test_less(
-    const std::vector<RealType> &cdfv) {
+    const std::vector<RealType>& cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist;
     RealType Dm = kolmogorov_smirnov_test_d_minus(cdfv);
     return std::make_pair(Dm, 1.0 - cdf(ks_dist(cdfv.size()), Dm));
@@ -72,7 +72,7 @@ namespace dials { namespace algorithms {
    */
   template <typename RealType>
   std::pair<RealType, RealType> kolmogorov_smirnov_test_greater(
-    const std::vector<RealType> &cdfv) {
+    const std::vector<RealType>& cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist;
     RealType Dp = kolmogorov_smirnov_test_d_plus(cdfv);
     return std::make_pair(Dp, 1.0 - cdf(ks_dist(cdfv.size()), Dp));
@@ -83,7 +83,7 @@ namespace dials { namespace algorithms {
    */
   template <typename RealType>
   std::pair<RealType, RealType> kolmogorov_smirnov_test_two_sided(
-    const std::vector<RealType> &cdfv) {
+    const std::vector<RealType>& cdfv) {
     typedef kolmogorov_smirnov_one_sided_distribution<RealType> ks_dist1;
     typedef kolmogorov_smirnov_two_sided_distribution<RealType> ks_dist2;
     std::size_t n = cdfv.size();
@@ -112,10 +112,10 @@ namespace dials { namespace algorithms {
    */
   template <typename Dist, typename Iterator>
   std::pair<typename Dist::value_type, typename Dist::value_type>
-  kolmogorov_smirnov_test(const Dist &dist,
+  kolmogorov_smirnov_test(const Dist& dist,
                           Iterator first,
                           Iterator last,
-                          const KSType &kstype) {
+                          const KSType& kstype) {
     typedef typename Dist::value_type value_type;
 
     // Sort the sample values into ascending order

@@ -9,11 +9,12 @@ from __future__ import annotations
 
 import functools
 import itertools
-from collections import defaultdict
+from collections import Counter, defaultdict
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, TypedDict
 
 import h5py
 import numpy as np
@@ -21,6 +22,7 @@ import yaml
 from yaml.loader import SafeLoader
 
 from dxtbx import flumpy
+from dxtbx.model import ExperimentList
 from dxtbx.sequence_filenames import group_files_by_imageset, template_regex
 from dxtbx.serialize import load
 
@@ -80,6 +82,7 @@ grouping:
 
 EPS = 1e-9
 
+
 ## Define classes for defining the metadata type and values/location.
 # class to wrap some metadata
 @dataclass
@@ -90,7 +93,7 @@ class ExtractedValues:
     known_size: bool  # does the size of the data match the number of images
 
 
-class MetadataForFile(object):
+class MetadataForFile:
     def __init__(self):
         self.extracted_data = self.extract()
 
@@ -223,10 +226,10 @@ class NameToMetadataDict(dict):
         return ", ".join(f"{key}: {value}" for key, value in self.items())
 
 
-class ParsedGrouping(object):
-    def __init__(self, images: Dict[str, ImageFile], name):
+class ParsedGrouping:
+    def __init__(self, images: dict[str, ImageFile], name):
         self.name = name
-        self._images_to_metadata: Dict[ImageFile, NameToMetadataDict] = {
+        self._images_to_metadata: dict[ImageFile, NameToMetadataDict] = {
             i: NameToMetadataDict() for i in images.values()
         }
         self.tolerances: dict = {}
@@ -288,7 +291,7 @@ class ParsedGrouping(object):
         header = f"""
 Summary of data in ParsedGrouping class
   Grouping name: {self.name}
-  Metadata names: {', '.join(n for n in self.metadata_names)}
+  Metadata names: {", ".join(n for n in self.metadata_names)}
   Tolerances:
 {tolerances}
 """
@@ -296,9 +299,9 @@ Summary of data in ParsedGrouping class
             header += f"  Image: {i}\n    metadata: {v}\n"
         return header
 
-    def extract_data(self) -> Dict[ImageFile, Dict[str, MetadataForFile]]:
+    def extract_data(self) -> dict[ImageFile, dict[str, MetadataForFile]]:
         # Get the metadata relevant for this grouping, keyed by image.
-        relevant_metadata: Dict[ImageFile, Dict[str, MetadataForFile]] = defaultdict(
+        relevant_metadata: dict[ImageFile, dict[str, MetadataForFile]] = defaultdict(
             dict
         )
         for img, meta in self._images_to_metadata.items():  # ImgFile, NameToMetaDict
@@ -307,10 +310,10 @@ Summary of data in ParsedGrouping class
         return relevant_metadata
 
 
-class ParsedYAML(object):
-    def __init__(self, yml_file: Optional[Path] = None, yml_str: Optional[str] = None):
+class ParsedYAML:
+    def __init__(self, yml_file: Path | None = None, yml_str: str | None = None):
         if yml_file:
-            with open(yml_file, "r") as f:
+            with open(yml_file) as f:
                 data = list(yaml.load_all(f, Loader=SafeLoader))[0]
         elif yml_str:
             data = list(yaml.load_all(yml_str, Loader=SafeLoader))[0]
@@ -384,11 +387,11 @@ class ParsedYAML(object):
         return images
 
     @property
-    def groupings(self) -> Dict[str, ParsedGrouping]:
+    def groupings(self) -> dict[str, ParsedGrouping]:
         return self._groupings
 
     def _parse_metadata(self, metadata: dict):
-        for (name, metadict) in metadata.items():
+        for name, metadict in metadata.items():
             # name is e.g. timepoint, metadict is image : file
             self.metadata_items[name] = ImgToMetadataDict()
             for image, meta in metadict.items():
@@ -398,9 +401,9 @@ class ParsedYAML(object):
                     raise ValueError(
                         f"Image {image} not listed in 'images:' in input yaml"
                     )
-                if type(meta) is float or type(meta) is int:
+                if isinstance(meta, float) or isinstance(meta, int):
                     self.metadata_items[name][imgfile] = ConstantMetadataForFile(meta)
-                elif type(meta) is str:
+                elif isinstance(meta, str):
                     if meta.startswith("repeat="):
                         try:
                             n = int(meta.split("=")[1])
@@ -482,14 +485,12 @@ class ParsedYAML(object):
                     self._groupings[groupby].add_metadata_for_image(
                         imagefile, metaforname
                     )
-            self._groupings[groupby].add_tolerances(
-                {n: t for n, t in zip(values, tolerances)}
-            )
+            self._groupings[groupby].add_tolerances(dict(zip(values, tolerances)))
             self._groupings[groupby].check_consistent()
 
 
 # Class to store metadata group parameters
-class _MetaDataGroup(object):
+class _MetaDataGroup:
     def __init__(self, data_dict):
         self._data_dict: dict[str, dict[str, float]] = data_dict
 
@@ -507,11 +508,11 @@ class _MetaDataGroup(object):
 
 
 # Define mapping from image index to group id.
-class _ImgIdxToGroupId(object):
+class _ImgIdxToGroupId:
     def __init__(
         self,
-        single_return_val: Optional[int] = None,
-        key_to_group_id: Optional[Callable[[int], int]] = None,
+        single_return_val: int | None = None,
+        key_to_group_id: Callable[[int], int] | None = None,
     ):
         self.single_return_val = single_return_val
         self.group_ids: flex.int = flex.int([])
@@ -532,7 +533,7 @@ class _ImgIdxToGroupId(object):
 
 
 class _GroupInfo(TypedDict):
-    group_ids: List[int]
+    group_ids: list[int]
     img_idx_to_group_id: _ImgIdxToGroupId
 
 
@@ -542,7 +543,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
     tolerances = parsed_group.tolerances
 
     unique_values_for_metadata: dict[str, np.array] = {}
-    n_images_per_file: dict[ImageFile, int] = {file: 1 for file in metadata.keys()}
+    n_images_per_file: dict[ImageFile, int] = dict.fromkeys(metadata.keys(), 1)
 
     # Determine the sets of unique metadata values for each metadata name
     for name in parsed_group.metadata_names:
@@ -566,7 +567,7 @@ def _determine_groupings(parsed_group: ParsedGrouping):
                         unique_vals.append(tp)
                 unique_values_for_metadata[name] = np.array(unique_vals)
 
-    groups: List[_MetaDataGroup] = []  # list of dicts
+    groups: list[_MetaDataGroup] = []  # list of dicts
     # NB this is not necessarily the number of actual images, in the case
     # that the metadata for a file is only single values rather than arrays.
     n_images = sum(n_images_per_file.values())
@@ -604,9 +605,9 @@ def _determine_groupings(parsed_group: ParsedGrouping):
 
 
 @dataclass
-class GroupsForExpt(object):
-    single_group: Optional[int] = None
-    groups_array: Optional[np.array] = None
+class GroupsForExpt:
+    single_group: int | None = None
+    groups_array: np.array | None = None
     unique_group_numbers: set = field(default_factory=set)
 
 
@@ -633,17 +634,18 @@ class FilePair:
 
 
 @dataclass
-class SplittingIterable(object):
+class SplittingIterable:
     working_directory: Path
     fp: FilePair
     fileindex: int
     groupindex: int
     groupdata: GroupsForExpt
     name: str
-    params: Optional[Any] = None
+    params: Any | None = None
+    output_name: str | None = None
 
 
-def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
+def save_subset(input_: SplittingIterable) -> tuple[str, FilePair] | None:
     expts = load.experiment_list(input_.fp.expt, check_format=False)
     refls = flex.reflection_table.from_file(input_.fp.refl)
     groupdata = input_.groupdata
@@ -660,22 +662,16 @@ def save_subset(input_: SplittingIterable) -> Optional[Tuple[str, FilePair]]:
         refls = refls.select_on_experiment_identifiers(sel_identifiers)
         refls.reset_ids()
     if expts:
-        exptout = (
-            input_.working_directory
-            / f"group_{input_.groupindex}_{input_.fileindex}.expt"
-        )
-        reflout = (
-            input_.working_directory
-            / f"group_{input_.groupindex}_{input_.fileindex}.refl"
-        )
+        output_name = input_.output_name or f"group_{input_.groupindex}"
+        exptout = input_.working_directory / f"{output_name}_{input_.fileindex}.expt"
+        reflout = input_.working_directory / f"{output_name}_{input_.fileindex}.refl"
         expts.as_file(exptout)
         refls.as_file(reflout)
         return (input_.name, FilePair(exptout, reflout))
     return None
 
 
-class GroupingImageTemplates(object):
-
+class GroupingImageTemplates:
     """Class that takes a parsed group and determines the groupings and mappings
     required to split input data into groups.
 
@@ -694,10 +690,9 @@ class GroupingImageTemplates(object):
 
     @staticmethod
     def _files_to_groups(
-        metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
-        groups: List[_MetaDataGroup],
+        metadata: dict[ImageFile, dict[str, MetadataForFile]],
+        groups: list[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -742,8 +737,8 @@ class GroupingImageTemplates(object):
 
         return file_to_groups
 
-    def _get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
-        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = {}
+    def _get_expt_file_to_groupsdata(self, data_file_pairs: list[FilePair]):
+        expt_file_to_groupsdata: dict[Path, GroupsForExpt] = {}
 
         for fp in data_file_pairs:
             expts = load.experiment_list(fp.expt, check_format=False)
@@ -810,11 +805,11 @@ class GroupingImageTemplates(object):
             expt_file_to_groupsdata[fp.expt] = groupdata
         return expt_file_to_groupsdata
 
-    def write_groupids_into_files(self, data_file_pairs: List[FilePair]) -> None:
+    def write_groupids_into_files(self, data_file_pairs: list[FilePair]) -> None:
         "Write a group_id column into the reflection table"
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        expt_file_to_groupsdata: dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
 
         def set_group_id_column(
             filepair: FilePair,
@@ -828,7 +823,7 @@ class GroupingImageTemplates(object):
                 refls["group_id"] = flex.int(refls.size(), group_id)
             else:
                 identifiers_map = refls.experiment_identifiers()
-                list_of_identifiers: List = list(expts.identifiers())
+                list_of_identifiers: list = list(expts.identifiers())
                 groups_array = flumpy.from_numpy(groupdata.groups_array)
 
                 def table_id_to_group_id(table_id):
@@ -848,17 +843,22 @@ class GroupingImageTemplates(object):
     def split_files_to_groups(
         self,
         working_directory: Path,
-        data_file_pairs: List[FilePair],
+        data_file_pairs: list[FilePair],
         function_to_apply: Callable[
-            [SplittingIterable], Optional[Tuple[str, FilePair]]
+            [SplittingIterable], tuple[str, FilePair] | None
         ] = save_subset,
         params: Any = None,
         prefix: str = "",
+        output_names: list[str] | None = None,
     ):
+        """Split the data into the groups.
 
-        expt_file_to_groupsdata: Dict[
-            Path, GroupsForExpt
-        ] = self._get_expt_file_to_groupsdata(data_file_pairs)
+        If output_names is given, it must have one name per group, which is
+        used in place of group_{groupindex} for the output filenames.
+        """
+        expt_file_to_groupsdata: dict[Path, GroupsForExpt] = (
+            self._get_expt_file_to_groupsdata(data_file_pairs)
+        )
         template = "{name}group_{index:0{maxindexlength:d}d}"
         name_template = functools.partial(
             template.format,
@@ -866,10 +866,10 @@ class GroupingImageTemplates(object):
             maxindexlength=len(str(len(self._groups))),
         )
 
-        names: List[str] = [
+        names: list[str] = [
             name_template(index=i + 1) for i, _ in enumerate(self._groups)
         ]
-        filesdict: dict[str, List[FilePair]] = {name: [] for name in names}
+        filesdict: dict[str, list[FilePair]] = {name: [] for name in names}
 
         input_iterable = []
         for groupindex, name in enumerate(names):
@@ -885,6 +885,7 @@ class GroupingImageTemplates(object):
                             groupdata,
                             name,
                             params,
+                            output_names[groupindex] if output_names else None,
                         )
                     )
         if input_iterable:
@@ -899,17 +900,15 @@ class GroupingImageTemplates(object):
 
 
 class GroupingImageFiles(GroupingImageTemplates):
-
     """This class provides specific implementations for when the images are h5 files.
     The main difference from templates is getting the image index.
     """
 
     @staticmethod
     def _files_to_groups(
-        metadata: Dict[ImageFile, Dict[str, MetadataForFile]],
-        groups: List[_MetaDataGroup],
+        metadata: dict[ImageFile, dict[str, MetadataForFile]],
+        groups: list[_MetaDataGroup],
     ) -> dict[ImageFile, _GroupInfo]:
-
         # Ok now we have the groupings of the metadata. Now find which groups each
         # file contains.
         # Purpose here is to create an object that will allow easy allocation from
@@ -977,8 +976,8 @@ class GroupingImageFiles(GroupingImageTemplates):
 
         return file_to_groups
 
-    def _get_expt_file_to_groupsdata(self, data_file_pairs: List[FilePair]):
-        expt_file_to_groupsdata: Dict[Path, GroupsForExpt] = {}
+    def _get_expt_file_to_groupsdata(self, data_file_pairs: list[FilePair]):
+        expt_file_to_groupsdata: dict[Path, GroupsForExpt] = {}
 
         for fp in data_file_pairs:
             expts = load.experiment_list(fp.expt, check_format=False)
@@ -1010,7 +1009,11 @@ class GroupingImageFiles(GroupingImageTemplates):
                     groups_for_this = []
                     group_indices = group_info["img_idx_to_group_id"]
                     for expt in expts:
-                        index = expt.imageset.indices()[0]
+                        # Current processing have scans that index into an imageset
+                        try:
+                            index = expt.scan.get_image_range()[0] - 1
+                        except AttributeError:  # fallback for old style processing files that don't have scans
+                            index = expt.imageset.indices()[0]
                         idx = group_indices[index]
                         groups_for_this.append(idx)
                     groupdata.groups_array = np.array(groups_for_this, dtype=np.uint64)
@@ -1039,3 +1042,102 @@ def get_grouping_handler(parsed: ParsedYAML, grouping: str, nproc: int = 1):
     if grouping not in parsed.groupings:
         raise ValueError(f"Grouping definition {grouping} not found in parsed yaml.")
     return handler_class(parsed.groupings[grouping], nproc)
+
+
+def series_repeat_to_groupings(
+    experiments: list[ExperimentList], series_repeat: int, groupname="split_by"
+) -> ParsedYAML:
+    """
+    For a dose series data collection, attempt to create and then parse a
+    groupings yaml based on the images in the input experiments.
+
+    Callers of this function should be prepared to catch Exceptions!
+    """
+    # if all end with .h5 or .nxs then images, else template?
+
+    images = set()
+    for expts in experiments:
+        for iset in expts.imagesets():
+            images.update(iset.paths())
+
+    metalines = ""
+    if all(image.endswith(".nxs") or image.endswith(".h5") for image in images):
+        # ok assume all independent:
+        metadata = []
+        for image in images:
+            metadata.append(f"{image} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    else:
+        isets = group_files_by_imageset(images)
+        metadata = []
+        for iset in isets.keys():
+            metadata.append(f"{iset} : 'repeat={series_repeat}'")
+        metalines = "\n    ".join(s for s in metadata)
+    if not metalines:
+        raise ValueError("Unable to extract images/templates from experiments")
+    grouping = f"""
+metadata:
+  dose_point:
+    {metalines}
+grouping:
+  {groupname}:
+    values:
+      - dose_point
+"""
+    parsed_yaml = ParsedYAML(yml_str=grouping)
+    return parsed_yaml
+
+
+def parse_series_repeat_names(series_repeat: list[str]) -> list[str]:
+    """Interpret a series_repeat phil option as a list of group names.
+
+    The option may be given as a single integer, the size of the repeat, in
+    which case the groups are given the generic names group_0, group_1, ...
+
+    Otherwise, it is a list of names. Phil does not split multi-word values,
+    so the names may be given as a comma-separated list
+    (series_repeat=first,second,last) or as a quoted, whitespace-separated
+    list (series_repeat='first second last').
+
+    A name may be repeated, in which case each occurrence is numbered in
+    order, padded to the digits needed for that name, e.g.
+    series_repeat=dose,dose,apo gives the names dose_1, dose_2, apo.
+    """
+    names: list[str] = []
+    for item in series_repeat:
+        names.extend(item.replace(",", " ").split())
+    if len(names) == 1 and names[0].isdigit():
+        n = int(names[0])
+        if n < 2:
+            raise ValueError(
+                f"series_repeat must be at least 2 if given as an integer, got {n}"
+            )
+        return [f"group_{i}" for i in range(n)]
+    if len(names) < 2:
+        raise ValueError(
+            "series_repeat must be an integer, or at least two names, "
+            "e.g. series_repeat=3 or series_repeat=first,second,last"
+        )
+    for name in names:
+        if name != Path(name).name or name in (".", ".."):
+            raise ValueError(
+                f"Invalid name given for series_repeat: {name}\n"
+                "Names are used as file names, so must not contain path separators"
+            )
+
+    counts = Counter(names)
+    seen: dict[str, int] = defaultdict(int)
+    numbered: list[str] = []
+    for name in names:
+        if counts[name] == 1:
+            numbered.append(name)
+        else:
+            seen[name] += 1
+            numbered.append(f"{name}_{seen[name]:0{len(str(counts[name]))}d}")
+    duplicates = [n for n, c in Counter(numbered).items() if c > 1]
+    if duplicates:
+        raise ValueError(
+            f"Names given for series_repeat are ambiguous: {names}\n"
+            f"Numbering repeated names gives duplicate names: {duplicates}"
+        )
+    return numbered

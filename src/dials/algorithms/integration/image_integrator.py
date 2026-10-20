@@ -144,9 +144,9 @@ class Task:
         exp_id = list(set(self.reflections["id"]))
         imageset = self.experiments[exp_id[0]].imageset
         for i in exp_id[1:]:
-            assert (
-                self.experiments[i].imageset == imageset
-            ), "Task can only handle 1 imageset"
+            assert self.experiments[i].imageset == imageset, (
+                "Task can only handle 1 imageset"
+            )
 
         # Get the sub imageset
         frame00, frame01 = self.frames
@@ -188,11 +188,12 @@ class Task:
             image = imageset.get_corrected_data(i)
             mask = imageset.get_mask(i)
             if self.params.integration.lookup.mask is not None:
-                assert len(mask) == len(
-                    self.params.lookup.mask
-                ), "Mask/Image are incorrect size %d %d" % (
-                    len(mask),
-                    len(self.params.integration.lookup.mask),
+                assert len(mask) == len(self.params.lookup.mask), (
+                    "Mask/Image are incorrect size %d %d"
+                    % (
+                        len(mask),
+                        len(self.params.integration.lookup.mask),
+                    )
                 )
                 mask = tuple(
                     m1 & m2 for m1, m2 in zip(self.params.integration.lookup.mask, mask)

@@ -9,6 +9,8 @@ import logging
 import sys
 
 import iotbx.phil
+from cctbx.sgtbx import space_group_info
+from dxtbx.model import Crystal
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import Auto
 
@@ -44,6 +46,12 @@ If the unit_cell and space_group parameters are set, then the program will
 only accept solutions which are consistent with these parameters. Space group
 constraints will be enforced in refinement as appropriate.
 
+If the input contains more than one rotation sequence then joint_indexing must
+be set explicitly: joint_indexing=True to index all sequences together with a
+single shared crystal model (e.g. multi-axis data from one sample), or
+joint_indexing=False to index each sequence independently (e.g. data from
+several different samples).
+
 Examples::
 
   dials.index imported.expt strong.refl
@@ -51,6 +59,8 @@ Examples::
   dials.index imported.expt strong.refl unit_cell=37,79,79,90,90,90 space_group=P43212
 
   dials.index imported.expt strong.refl indexing.method=fft1d
+
+  dials.index imported.expt strong.refl joint_indexing=True
 """
 
 
@@ -146,6 +156,14 @@ def index(experiments, reflections, params):
                     combination of sequence and stills data.
         dials.algorithms.indexing.DialsIndexError: Indexing failed.
     """
+    if params.indexing.known_symmetry.A_matrix is not None:
+        sg = params.indexing.known_symmetry.space_group
+        if sg is None:
+            sg = space_group_info("P1")
+        crystal = Crystal(params.indexing.known_symmetry.A_matrix, sg.group())
+        for expt in experiments:
+            expt.crystal = crystal
+
     if experiments.crystals()[0] is not None:
         # note not just experiments.crystals(), as models may be shared.
         known_crystal_models = [expt.crystal for expt in experiments]
@@ -168,16 +186,17 @@ def index(experiments, reflections, params):
     if params.indexing.image_range:
         reflections = slice_reflections(reflections, params.indexing.image_range)
 
-    if params.indexing.joint_indexing is Auto:
+    if params.indexing.joint_indexing is Auto and len(experiments) > 1:
         if all(e.is_still() for e in experiments):
             params.indexing.joint_indexing = False
-            logger.info("joint_indexing=False has been set for stills experiments")
+            logger.info("Disabling joint_indexing for still data")
         elif all(not e.is_still() for e in experiments):
-            params.indexing.joint_indexing = True
-            logger.info("joint_indexing=True has been set for scans experiments")
+            raise ValueError(
+                "Unable to set joint_indexing automatically: set 'joint_indexing=True' for multi-axis data from a single crystal or 'joint_indexing=False' for data from multiple samples"
+            )
         else:
             raise ValueError(
-                "Unable to set joint_indexing automatically for a mixture of stills and scans experiments"
+                "Unable to set joint_indexing automatically for a mixture of still and rotation data"
             )
 
     if len(experiments) == 1 or params.indexing.joint_indexing:
@@ -223,8 +242,8 @@ def index(experiments, reflections, params):
                 try:
                     iset_id = futures[future]
                     idx_expts, idx_refl = future.result()
-                except Exception as e:
-                    print(e)
+                except DialsIndexError as e:
+                    logger.warning(str(e))
                 else:
                     if idx_expts is None:
                         continue
@@ -233,6 +252,7 @@ def index(experiments, reflections, params):
                     tables_list.append(idx_refl)
                     indexed_experiments.extend(idx_expts)
         indexed_reflections = flex.reflection_table.concat(tables_list)
+
     return indexed_experiments, indexed_reflections
 
 
@@ -275,6 +295,11 @@ def run(args=None, phil=working_phil):
         )
     except (DialsIndexError, ValueError) as e:
         sys.exit(str(e))
+
+    # Copy history from the imported experiments to the output
+    history = experiments.consolidate_histories()
+    for experiment in indexed_experiments:
+        experiment.history = history
 
     # Save experiments
     logger.info("Saving refined experiments to %s", params.output.experiments)

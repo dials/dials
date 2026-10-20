@@ -57,8 +57,10 @@ class spot_wrapper:
     def display(self, experiments, reflections):
         import wx
 
+        from dials.util import use_conda_gsettings_schemas
         from dials.util.image_viewer.spotfinder_frame import SpotFrame
 
+        use_conda_gsettings_schemas()
         try:
             wx.App.GTKSuppressDiagnostics(-1)
         except AttributeError:
@@ -97,7 +99,7 @@ class spot_wrapper:
             self._shutdown_zmq_endpoint()
 
     def load_image(self, filename):
-        from dials.util.spotfinder_frame import create_load_image_event
+        from dials.util.image_viewer.spotfinder_frame import create_load_image_event
 
         if self.frame is not None:
             create_load_image_event(self.frame, filename)

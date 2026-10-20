@@ -30,7 +30,6 @@ class Script:
         )
 
     def run(self, args=None):
-
         from dials.util.options import flatten_reflections
         from dials.viewer.viewer_interface import extract_n_show
 
@@ -40,6 +39,17 @@ class Script:
         if len(table) == 0:
             self.parser.print_help()
             return
+
+        # list columns
+        cols = "\n showing columns:"
+        ikey = 0
+        for key in table[0].keys():
+            cols = cols + " " + key
+            ikey = ikey + 1
+            if ikey == 5:
+                cols = cols + "\n                 "
+                ikey = 0
+        print(cols + "\n")
 
         extract_n_show(table[0])
 

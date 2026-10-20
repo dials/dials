@@ -13,6 +13,52 @@ from dials.array_family import flex
 FilenameDataWrapper = collections.namedtuple("FilenameDataWrapper", "filename, data")
 
 
+class LazyFilenameDataWrapper:
+    """
+    Like FilenameDataWrapper, but the file is only read the first time data is
+    accessed.
+
+    libtbx.phil converts the words to Python objects on every extract, fetch and
+    fetch_diff, so if the converters read the file each time, a large reflection
+    file would be read again just to show the modified parameters.
+    """
+
+    def __init__(self, filename, loader, *args):
+        self.filename = filename
+        self._loader = loader
+        self._args = args
+        self._data = None
+
+    @property
+    def data(self):
+        if self._loader is not None:
+            self._data = self._loader(self.filename, *self._args)
+            self._loader = None
+            self._args = ()
+        return self._data
+
+    # Behave like the FilenameDataWrapper namedtuple
+    def __iter__(self):
+        return iter((self.filename, self.data))
+
+    def __getitem__(self, index):
+        return (self.filename, self.data)[index]
+
+    def __len__(self):
+        return 2
+
+    def __repr__(self):
+        return f"LazyFilenameDataWrapper(filename={self.filename!r})"
+
+
+def _load_experiments(filename, check_format):
+    return ExperimentListFactory.from_json_file(filename, check_format=check_format)
+
+
+def _load_reflections(filename):
+    return flex.reflection_table.from_file(filename)
+
+
 class ExperimentListConverters:
     """A phil converter for the experiment list class."""
 
@@ -32,12 +78,7 @@ class ExperimentListConverters:
             return FilenameDataWrapper(filename=s, data=None)
         if not os.path.exists(s):
             raise Sorry(f"File {s} does not exist")
-        return FilenameDataWrapper(
-            filename=s,
-            data=ExperimentListFactory.from_json_file(
-                s, check_format=self._check_format
-            ),
-        )
+        return LazyFilenameDataWrapper(s, _load_experiments, self._check_format)
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -61,7 +102,7 @@ class ReflectionTableConverters:
             return None
         if not os.path.exists(s):
             raise Sorry(f"File {s} does not exist")
-        return FilenameDataWrapper(filename=s, data=flex.reflection_table.from_file(s))
+        return LazyFilenameDataWrapper(s, _load_reflections)
 
     def as_words(self, python_object, master):
         if python_object is None:
@@ -99,10 +140,8 @@ class ReflectionTableSelectorConverters:
         if python_object is None:
             value = "None"
         else:
-            value = "{}{}{}".format(
-                python_object.column,
-                python_object.op_string,
-                python_object.value,
+            value = (
+                f"{python_object.column}{python_object.op_string}{python_object.value}"
             )
         return [libtbx.phil.tokenizer.word(value=value)]
 

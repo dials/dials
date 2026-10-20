@@ -114,7 +114,7 @@ namespace dials { namespace util { namespace {
     def("write_and_seek", write_and_seek_ostream);
   }
 
-}}}  // namespace dials::util::
+}}}  // namespace dials::util
 
 BOOST_PYTHON_MODULE(dials_util_streambuf_test_ext) {
   dials::util::wrap_all();

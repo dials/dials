@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import logging
 
-logging.getLogger("dials").addHandler(logging.NullHandler())
-
 # Intercept easy_mp exceptions to extract stack traces before they are lost at
 # the libtbx process boundary/the easy_mp API. In the case of a subprocess
 # crash we print the subprocess stack trace, which will be most useful for
 # debugging parallelized sections of DIALS code.
 import libtbx.scheduling.stacktrace as _lss
+
+logging.getLogger("dials").addHandler(logging.NullHandler())
 
 
 def _stacktrace_tracer(error, trace, intercepted_call=_lss.set_last_exception):

@@ -84,7 +84,6 @@ def run(args=None):
     predicted_xyz = flex.vec3_double()
 
     for reflection_list in reflections:
-
         if len(params.scan_range):
             sel = flex.bool(len(reflection_list), False)
 

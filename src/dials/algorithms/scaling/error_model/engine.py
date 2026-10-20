@@ -1,12 +1,14 @@
 """
 Refinement engine and functions for error model refinement.
 """
+
 from __future__ import annotations
 
 import logging
 
 from dials.algorithms.refinement.engine import SimpleLBFGS
 from dials.algorithms.scaling.error_model.error_model import (
+    BasicErrorModel,
     ErrorModelA_APM,
     ErrorModelB_APM,
     ErrorModelRegressionAPM,
@@ -22,8 +24,8 @@ logger = logging.getLogger("dials")
 
 
 def run_error_model_refinement(
-    model, Ih_table, min_partiality=0.4, use_stills_filtering=False
-):
+    model: BasicErrorModel, Ih_table, min_partiality=0.4, use_stills_filtering=False
+) -> BasicErrorModel:
     """
     Refine an error model for the input data, returning the model.
 
@@ -81,7 +83,6 @@ def error_model_refinery(model, active_parameters, error_model_scope, max_iterat
 
 
 class ErrorModelRegressionRefiner(SimpleLBFGS):
-
     """Use LBFGS for convenience, actually is a linear regression.
 
     Therefore target.predict step is unnecessary."""
@@ -148,7 +149,6 @@ class ErrorModelRegressionRefiner(SimpleLBFGS):
 
 
 class ErrorModelRefinery:
-
     """Refiner for the basic error model."""
 
     def __init__(self, model, parameters_to_refine, *args, **kwargs):

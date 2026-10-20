@@ -9,6 +9,7 @@ import json
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
 from dials.algorithms.clustering.observers import UnitCellAnalysisObserver
+from dials.algorithms.correlation.plots import plot_pca_coords
 from dials.algorithms.symmetry.cosym import SymmetryAnalysis
 from dials.algorithms.symmetry.cosym.plots import plot_coords, plot_rij_histogram
 from dials.util.observer import Observer, singleton
@@ -20,7 +21,7 @@ def register_default_cosym_observers(script):
         event="analysed_symmetry", observer=SymmetryAnalysisObserver()
     )
     script.cosym_analysis.register_observer(
-        event="optimised", observer=CosymClusterAnalysisObserver()
+        event="pca", observer=CosymClusterAnalysisObserver()
     )
     script.register_observer(event="run_cosym", observer=UnitCellAnalysisObserver())
     script.register_observer(
@@ -57,6 +58,7 @@ class CosymHTMLGenerator(Observer):
         html = template.render(
             page_title="DIALS cosym report",
             cosym_graphs=self.data["cosym_graphs"],
+            pca_plot=self.data["pca_analysis"],
             unit_cell_graphs=self.data["unit_cell_graphs"],
             symmetry_analysis=self.data["symmetry_analysis"],
         )
@@ -93,12 +95,24 @@ class CosymClusterAnalysisObserver(Observer):
         """Update the data in the observer."""
         self.data["coordinates"] = cosym.coords
         self.data["rij_matrix"] = cosym.target.rij_matrix
+        self.data["rotated_coords"] = cosym.rotated_coords
+        self.data["plot_dimensions"] = cosym.dim_list
+        self.data["pca_labels"] = cosym.pca_axes_labels
 
     def make_plots(self):
         """Generate cosym cluster analysis plot data."""
         d = plot_rij_histogram(self.data["rij_matrix"])
-        d.update(plot_coords(self.data["coordinates"]))
-        graphs = {"cosym_graphs": d}
+        d.update(
+            plot_coords(
+                self.data["rotated_coords"][:, 0:2], pcs=self.data["pca_labels"]
+            )
+        )
+        pca = plot_pca_coords(
+            self.data["rotated_coords"],
+            self.data["pca_labels"],
+            self.data["plot_dimensions"],
+        )
+        graphs = {"cosym_graphs": d, "pca_analysis": pca}
         return graphs
 
 

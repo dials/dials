@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import py.path
 import pytest
 
 from cctbx import sgtbx, uctbx
@@ -14,12 +13,10 @@ from dials.command_line.slice_sequence import slice_experiments, slice_reflectio
 
 
 @pytest.fixture
-def i04_weak_data(dials_regression):
-    data_dir = py.path.local(dials_regression).join(
-        "indexing_test_data", "i04_weak_data"
-    )
-    reflections_path = data_dir.join("full.pickle").strpath
-    experiments_path = data_dir.join("experiments_import.json").strpath
+def i04_weak_data(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    reflections_path = data_dir / "full.pickle"
+    experiments_path = data_dir / "experiments_import.json"
 
     reflections = flex.reflection_table.from_file(reflections_path)
     experiments = load.experiment_list(experiments_path, check_format=False)

@@ -2,7 +2,6 @@
 Definition of the target function for error model minimisation.
 """
 
-
 from __future__ import annotations
 
 import numpy as np
@@ -26,7 +25,6 @@ def calculate_regression_x_y(Ih_table):
 
 
 class ErrorModelTarget:
-
     """Error model target for finding slope of norm distribution.
     (i.e. the 'a' parameter of the basic error model)"""
 
@@ -115,7 +113,6 @@ class ErrorModelTargetRegression(ErrorModelTarget):
 
 
 class ErrorModelTargetA(ErrorModelTarget):
-
     """Target to minimise the 'a' component of the basic error model."""
 
     def calculate_residuals(self, apm):
@@ -137,7 +134,6 @@ class ErrorModelTargetA(ErrorModelTarget):
 
 
 class ErrorModelTargetB(ErrorModelTarget):
-
     """Target to minimise the 'b' component of the basic error model.
 
     Uses the binner to calculate residuals, gradients"""

@@ -3,15 +3,14 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from pathlib import Path
 
 from dxtbx.serialize import load
 
 from dials.command_line.show import model_connectivity, run
 
 
-def test_dials_show(dials_regression: Path):
-    path = os.path.join(dials_regression, "experiment_test_data", "experiment_1.json")
+def test_dials_show(dials_data):
+    path = str(dials_data("experiment_test_data") / "experiment_1.json")
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -70,27 +69,23 @@ Goniometer:
 Crystal:
     Unit cell: 42.272, 42.272, 39.670, 90.000, 89.999, 90.000
     Space group: P 4 2 2
-    U matrix:  {{ 0.8336, -0.5360, -0.1335},
-                {-0.1798, -0.0348, -0.9831},
-                { 0.5223,  0.8435, -0.1254}}
-    B matrix:  {{ 0.0237,  0.0000,  0.0000},
-                {-0.0000,  0.0237,  0.0000},
-                {-0.0000,  0.0000,  0.0252}}
-    A = UB:    {{ 0.0197, -0.0127, -0.0034},
-                {-0.0043, -0.0008, -0.0248},
-                { 0.0124,  0.0200, -0.0032}}
+    U matrix:  {{ 0.833603, -0.535987, -0.133506},
+                {-0.179804, -0.034770, -0.983088},
+                { 0.522280,  0.843510, -0.125357}}
+    B matrix:  {{ 0.023656,  0.000000,  0.000000},
+                {-0.000000,  0.023656,  0.000000},
+                {-0.000000,  0.000000,  0.025208}}
+    A = UB:    {{ 0.019720, -0.012679, -0.003365},
+                {-0.004253, -0.000823, -0.024781},
+                { 0.012355,  0.019954, -0.003160}}
     Mosaicity:  0.157000
 """.strip()
     )
 
 
-def test_dials_show_i04_weak_data(dials_regression: Path):
-    path = os.path.join(
-        dials_regression,
-        "indexing_test_data",
-        "i04_weak_data",
-        "experiments_import.json",
-    )
+def test_dials_show_i04_weak_data(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    path = data_dir / "experiments_import.json"
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -153,7 +148,7 @@ Goniometer:
 def test_dials_show_centroid_test_data(dials_data):
     result = subprocess.run(
         [shutil.which("dials.show")]
-        + sorted(dials_data("centroid_test_data", pathlib=True).glob("centroid_*.cbf")),
+        + sorted(dials_data("centroid_test_data").glob("centroid_*.cbf")),
         env={"DIALS_NOBANNER": "1", **os.environ},
         capture_output=True,
     )
@@ -213,10 +208,10 @@ Goniometer:
     )
 
 
-def test_dials_show_multi_panel_i23(dials_regression: Path):
-    path = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+def test_dials_show_multi_panel_i23(dials_data):
+    data_dir = dials_data("image_examples")
+    path = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
+
     result = subprocess.run(
         [shutil.which("dials.show"), path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -310,7 +305,7 @@ def test_dials_show_reflection_table(dials_data):
     result = subprocess.run(
         [
             shutil.which("dials.show"),
-            dials_data("centroid_test_data", pathlib=True) / "integrated.pickle",
+            dials_data("centroid_test_data") / "integrated.pickle",
         ],
         env={"DIALS_NOBANNER": "1", **os.environ},
         capture_output=True,
@@ -365,11 +360,10 @@ def test_dials_show_reflection_table(dials_data):
         assert name in out
 
 
-def test_dials_show_image_statistics(dials_regression: Path):
+def test_dials_show_image_statistics(dials_data):
     # Run on one multi-panel image
-    path = os.path.join(
-        dials_regression, "image_examples", "DLS_I23", "germ_13KeV_0001.cbf"
-    )
+    data_dir = dials_data("image_examples")
+    path = data_dir / "DLS_I23_germ_13KeV_0001.cbf"
     result = subprocess.run(
         [shutil.which("dials.show"), "image_statistics.show_raw=true", path],
         env={"DIALS_NOBANNER": "1", **os.environ},
@@ -380,13 +374,13 @@ def test_dials_show_image_statistics(dials_regression: Path):
     output = [_f for _f in (s.rstrip() for s in output.split("\n")) if _f]
     assert (
         output[-1]
-        == "germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
+        == "DLS_I23_germ_13KeV_0001.cbf: Min: -2.0 Q1: 9.0 Med: 12.0 Q3: 16.0 Max: 1070079.0"
     )
 
 
 def test_dials_show_on_scaled_data(dials_data):
     """Test that dials.show works on scaled data."""
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     refl = location / "scaled_30.refl"
     expt = location / "scaled_30.expt"
 
@@ -398,7 +392,7 @@ def test_dials_show_on_scaled_data(dials_data):
 
 def test_model_connectivity(dials_data):
     """Test that dials.show experiments_has_model option."""
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     expts = load.experiment_list(location / "indexed.expt", check_format=False)
     assert (
         model_connectivity(expts)
@@ -430,7 +424,7 @@ Experiment 3  x"""
 
 def test_dials_show_shared_models(dials_data, capsys):
     """Test that dials.show experiments_has_model option."""
-    location = dials_data("l_cysteine_dials_output", pathlib=True)
+    location = dials_data("l_cysteine_dials_output")
     run([str(location / "indexed.expt"), "show_shared_models=True"])
     stdout, stderr = capsys.readouterr()
     assert not stderr
@@ -440,7 +434,7 @@ def test_dials_show_shared_models(dials_data, capsys):
 def test_dials_show_centroid_test_data_image_zero(dials_data, tmp_path):
     """Integration test: import image 0; show import / show works"""
 
-    im1 = dials_data("centroid_test_data", pathlib=True) / "centroid_0001.cbf"
+    im1 = dials_data("centroid_test_data") / "centroid_0001.cbf"
     im0 = tmp_path / "centroid_0000.cbf"
 
     shutil.copyfile(im1, im0)

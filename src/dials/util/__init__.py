@@ -148,6 +148,25 @@ def debug_context_manager(original_context_manager, name="", log_func=None):
     return DCM(name, log_func)
 
 
+def use_conda_gsettings_schemas():
+    """
+    Make GTK use the GSettings schemas matching our own GTK.
+
+    GLib only searches its own prefix for schemas when XDG_DATA_DIRS is unset,
+    so may pick up mismatched system GTK schemas and abort, e.g. when opening a
+    file dialog. Conda's activation script normally sets this, but dispatchers
+    don't activate the environment. Call before creating a wx.App.
+    """
+    schema_dir = os.path.join(sys.prefix, "share", "glib-2.0", "schemas")
+    if not os.path.isdir(schema_dir):
+        return
+    schema_dirs = os.environ.get("GSETTINGS_SCHEMA_DIR", "").split(os.pathsep)
+    if schema_dir not in schema_dirs:
+        os.environ["GSETTINGS_SCHEMA_DIR"] = os.pathsep.join(
+            [schema_dir] + [d for d in schema_dirs if d]
+        )
+
+
 @contextlib.contextmanager
 def enable_faulthandler():
     # Don't clobber someone elses faulthandler settings
@@ -165,7 +184,7 @@ def show_mail_on_error():
     try:
         yield
     except Exception as e:
-        text = "Please report this error to dials-support@lists.sourceforge.net:"
+        text = "Please report this error at https://github.com/dials/dials/issues or to dials-user-group@jiscmail.ac.uk:"
         if issubclass(e.__class__, Sorry):
             raise
 
@@ -217,8 +236,8 @@ def show_mail_handle_errors():
 
 @dataclasses.dataclass
 class HTCondorJobClassAd:
-    cpus_provisioned: Optional[int] = None
-    memory_provisioned: Optional[float] = None
+    cpus_provisioned: int | None = None
+    memory_provisioned: float | None = None
 
 
 def parse_htcondor_job_classad(filepath: pathlib.Path) -> HTCondorJobClassAd:

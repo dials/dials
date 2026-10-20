@@ -64,7 +64,7 @@ namespace dials { namespace af {
      * @param y The quantity
      * @returns The sum of y in each bin
      */
-    af::shared<double> sum(const af::const_ref<double> &y) const {
+    af::shared<double> sum(const af::const_ref<double>& y) const {
       DIALS_ASSERT(y.size() == index_.size());
       af::shared<double> result(nbins_, 0);
       for (std::size_t i = 0; i < y.size(); ++i) {
@@ -78,7 +78,7 @@ namespace dials { namespace af {
      * @param y The quantity
      * @returns The sum of y in each bin
      */
-    af::shared<int> sum(const af::const_ref<int> &y) const {
+    af::shared<int> sum(const af::const_ref<int>& y) const {
       DIALS_ASSERT(y.size() == index_.size());
       af::shared<int> result(nbins_, 0);
       for (std::size_t i = 0; i < y.size(); ++i) {
@@ -92,7 +92,7 @@ namespace dials { namespace af {
      * @param y The quantity
      * @returns The sum of y in each bin
      */
-    af::shared<int> sum(const af::const_ref<bool> &y) const {
+    af::shared<int> sum(const af::const_ref<bool>& y) const {
       DIALS_ASSERT(y.size() == index_.size());
       af::shared<int> result(nbins_, 0);
       for (std::size_t i = 0; i < y.size(); ++i) {
@@ -106,7 +106,7 @@ namespace dials { namespace af {
      * @param y The quantity
      * @returns The mean of y in each bin
      */
-    af::shared<double> mean(const af::const_ref<double> &y) const {
+    af::shared<double> mean(const af::const_ref<double>& y) const {
       DIALS_ASSERT(y.size() == index_.size());
       af::shared<std::size_t> num = count();
       af::shared<double> result(nbins_, 0);
@@ -134,7 +134,7 @@ namespace dials { namespace af {
   public:
     typedef std::map<double, std::size_t> map_type;
 
-    Binner(const af::const_ref<double> &bins) {
+    Binner(const af::const_ref<double>& bins) {
       DIALS_ASSERT(bins.size() > 1);
       bins_.insert(std::pair<double, std::size_t>(bins[0], 0));
       for (std::size_t i = 1; i < bins.size(); ++i) {
@@ -160,7 +160,7 @@ namespace dials { namespace af {
      * @param x The x value
      * @returns an indexer
      */
-    BinIndexer indexer(const af::const_ref<double> &x) {
+    BinIndexer indexer(const af::const_ref<double>& x) {
       // Find the indices of elements
       af::shared<std::size_t> index(x.size());
       for (std::size_t i = 0; i < x.size(); ++i) {

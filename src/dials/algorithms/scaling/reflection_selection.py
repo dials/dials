@@ -83,7 +83,7 @@ logger = logging.getLogger("dials")
 
 
 def _build_class_matrix(class_index, class_matrix, offset=0):
-    for (i, val) in enumerate(class_index, start=offset):
+    for i, val in enumerate(class_index, start=offset):
         class_matrix[val, i] = 1.0
     return class_matrix
 
@@ -125,7 +125,6 @@ scaling not possible."""
 def _perform_quasi_random_selection(
     Ih_table, n_datasets, min_per_class, min_total, max_total
 ):
-
     class_matrix = sparse.matrix(n_datasets, Ih_table.size)
     class_matrix = _build_class_matrix(
         flumpy.from_numpy(Ih_table.Ih_table["dataset_id"].to_numpy()), class_matrix

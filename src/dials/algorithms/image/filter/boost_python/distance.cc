@@ -17,7 +17,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   using namespace boost::python;
 
   af::versa<int, af::c_grid<2> > manhattan_distance_wrapper(
-    const af::const_ref<bool, af::c_grid<2> > &src,
+    const af::const_ref<bool, af::c_grid<2> >& src,
     bool value) {
     af::versa<int, af::c_grid<2> > dst(src.accessor());
     manhattan_distance(src, value, dst.ref());
@@ -25,7 +25,7 @@ namespace dials { namespace algorithms { namespace boost_python {
   }
 
   af::versa<int, af::c_grid<2> > chebyshev_distance_wrapper(
-    const af::const_ref<bool, af::c_grid<2> > &src,
+    const af::const_ref<bool, af::c_grid<2> >& src,
     bool value) {
     af::versa<int, af::c_grid<2> > dst(src.accessor());
     chebyshev_distance(src, value, dst.ref());

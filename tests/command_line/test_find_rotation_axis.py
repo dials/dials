@@ -9,7 +9,7 @@ import dials.command_line.find_rotation_axis as dials_find_rotation_axis
 
 
 def test_find_rotation_axis(dials_data, run_in_tmp_path):
-    myd88 = dials_data("MyD88_processed", pathlib=True)
+    myd88 = dials_data("MyD88_processed")
     dials_find_rotation_axis.run(
         args=[str(myd88 / "imported.expt"), str(myd88 / "strong.refl")]
     )
@@ -27,7 +27,7 @@ def test_find_rotation_axis(dials_data, run_in_tmp_path):
 
 
 def test_find_rotation_axis_multi_axis_goniometer(dials_data, run_in_tmp_path):
-    myd88 = dials_data("MyD88_processed", pathlib=True)
+    myd88 = dials_data("MyD88_processed")
     experiments = load.experiment_list(str(myd88 / "imported.expt"), check_format=False)
 
     # Replace single-axis goniometer with multi-axis goniometer

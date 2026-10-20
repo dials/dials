@@ -80,7 +80,10 @@ class Script:
             axis = matrix.col(rot.axis)
             if abs(angle) < 10:
                 continue
-            print("Axis: %8.5f %8.5f %8.5f" % axis.elems, f"angle: {angle:7.4f}")
+            print(
+                "Axis: {:8.5f} {:8.5f} {:8.5f}".format(*axis.elems),
+                f"angle: {angle:7.4f}",
+            )
 
 
 def determine_axis(detectors, params):
@@ -119,8 +122,8 @@ def determine_axis(detectors, params):
     )
 
     print(
-        "Centre: %7.4f %7.4f %7.4f" % centre.elems,
-        "  axis: %7.4f %7.4f %7.4f" % axis.elems,
+        "Centre: {:7.4f} {:7.4f} {:7.4f}".format(*centre.elems),
+        "  axis: {:7.4f} {:7.4f} {:7.4f}".format(*axis.elems),
         f"angle: {two_theta:.2f}",
     )
 

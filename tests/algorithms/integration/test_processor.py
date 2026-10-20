@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import math
+import os
 from unittest import mock
 
+import psutil
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -14,7 +16,7 @@ from dials_algorithms_integration_integrator_ext import JobList, max_memory_need
 
 
 def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
-    path = dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+    path = dials_data("centroid_test_data") / "experiments.json"
 
     exlist = ExperimentListFactory.from_json_file(path)[0]
     exlist.profile = Model(
@@ -40,14 +42,16 @@ def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
 
 
 @mock.patch("dials.algorithms.integration.processor.flex.max")
-@mock.patch("dials.algorithms.integration.processor.MEMORY_LIMIT", 1_000_000)
+@mock.patch("dials.algorithms.integration.processor.MEMORY_LIMIT", 1_000_000_000)
 def test_runtime_error_raised_when_not_enough_memory(mock_flex_max):
-    mock_flex_max.return_value = 750_001
+    # We are taking into account current memory usage, which will typically be ~200MB.
+    # So set the shoebox memory limit to be 500MB, which should fail the memory test.
+    mock_flex_max.return_value = 500_000_000
 
     phil_mock = mock.Mock()
     phil_mock.mp.method = "multiprocessing"
     phil_mock.mp.nproc = 4
-    phil_mock.block.max_memory_usage = 0.75
+    phil_mock.block.max_memory_usage = 0.5
 
     reflections = {"bbox": flex.int6(1000, (0, 1, 0, 1, 0, 1))}
     manager = dials.algorithms.integration.processor._Manager(
@@ -60,7 +64,9 @@ def test_runtime_error_raised_when_not_enough_memory(mock_flex_max):
     assert "Not enough memory to run integration jobs." in exc_info.value.args[0]
     mock_flex_max.assert_called_once_with(manager.jobs.shoebox_memory.return_value)
 
-    # Reduce memory usage by 1 byte, should then pass
-    mock_flex_max.return_value = 750000
+    # Reduce memory usage of the shoeboxes by the current memory usage
+    # (with an extra 1MB for safety), should then pass.
+    current_memory_usage = psutil.Process(os.getpid()).memory_info().rss
+    mock_flex_max.return_value = 499_000_000 - current_memory_usage
     manager.compute_processors()
     mock_flex_max.assert_called_with(manager.jobs.shoebox_memory.return_value)

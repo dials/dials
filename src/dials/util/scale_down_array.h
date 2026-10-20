@@ -15,7 +15,7 @@ namespace dials { namespace util {
    * as the input array.
    */
 
-  af::shared<int> scale_down_array(const af::const_ref<int> &image,
+  af::shared<int> scale_down_array(const af::const_ref<int>& image,
                                    const double scale_factor) {
     // create the RNG
 

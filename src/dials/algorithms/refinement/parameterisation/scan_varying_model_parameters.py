@@ -43,7 +43,6 @@ class ScanVaryingParameterSet(Parameter):
         ptype=None,
         name="ScanVaryingParameterSet",
     ):
-
         assert num_samples >= 2  # otherwise use scan-independent parameterisation
 
         value = [value] * num_samples
@@ -77,14 +76,15 @@ class ScanVaryingParameterSet(Parameter):
         return self._name_stem
 
     def __str__(self):
-
         msg = "ScanVaryingParameterSet " + self.name_stem + ":\n"
         try:
             msg += "    Type: " + self.param_type + "\n"
         except TypeError:
             msg += "    Type: " + str(self.param_type) + "\n"
         try:
-            msg += "    Axis: (%5.3f, %5.3f, %5.3f)" % tuple(self.axis) + "\n"
+            msg += (
+                "    Axis: ({:5.3f}, {:5.3f}, {:5.3f})".format(*tuple(self.axis)) + "\n"
+            )
         except TypeError:
             msg += "    Axis: " + str(self.axis) + "\n"
         vals = ", ".join(["%5.3f"] * len(self)) % tuple(self.value)
@@ -137,7 +137,6 @@ class ScanVaryingModelParameterisation(ModelParameterisation):
         experiment_ids,
         is_multi_state=False,
     ):
-
         ModelParameterisation.__init__(
             self, model, initial_state, param_sets, experiment_ids, is_multi_state
         )

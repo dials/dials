@@ -231,7 +231,6 @@ class Test:
         "algorithm", [DispersionThreshold, DispersionExtendedThreshold]
     )
     def test_dispersion_algorithm_symmetry(self, algorithm):
-
         nsig_b = 3
         nsig_s = 3
 
@@ -266,7 +265,6 @@ class Test:
         "algorithm", [DispersionThresholdDebug, DispersionExtendedThresholdDebug]
     )
     def test_dispersion_debug_algorithm_symmetry(self, algorithm):
-
         nsig_b = 3
         nsig_s = 3
 

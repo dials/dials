@@ -85,7 +85,7 @@ def test_r_free_flags_from_reference(tmp_path):
     params = phil_scope.extract()
     r_free_flags = generate_r_free_flags(params, mtz_datasets)
     mtz = make_merged_mtz_file(mtz_datasets, r_free_array=r_free_flags)
-    mtz.write(str(mtz_file))
+    mtz.write_to_file(str(mtz_file))
 
     # Now actually test r_free_flags_from_reference
     params.r_free_flags.reference = str(mtz_file)

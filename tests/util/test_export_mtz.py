@@ -2,7 +2,6 @@
 Unit testing for the export_mtz.py routines
 """
 
-
 from __future__ import annotations
 
 import itertools
@@ -53,13 +52,13 @@ class TestBatchRangeCalculations:
         assert self._run_ranges([(1, 1)]) == [(1, 1)]
 
         # Zero is shifted
-        assert all(
-            x > 0 for x in self._run_ranges_to_set([(0, 0)])
-        ), "Should be no zeroth/negative batch"
+        assert all(x > 0 for x in self._run_ranges_to_set([(0, 0)])), (
+            "Should be no zeroth/negative batch"
+        )
 
-        assert not set(self._run_ranges([(1, 1), (1, 1)])) == {
-            (1, 1)
-        }, "Overlapping simple ranges"
+        assert not set(self._run_ranges([(1, 1), (1, 1)])) == {(1, 1)}, (
+            "Overlapping simple ranges"
+        )
 
         data_tests = [
             [(1, 1), (1, 1)],
@@ -77,9 +76,9 @@ class TestBatchRangeCalculations:
             assert all(
                 isinstance(x, int) for x in itertools.chain(*self._run_ranges(data))
             ), "Not all true integers"
-            assert all(
-                x > 0 for x in self._run_ranges_to_set([(0, 0)])
-            ), "Should be no zeroth/negative batch"
+            assert all(x > 0 for x in self._run_ranges_to_set([(0, 0)])), (
+                "Should be no zeroth/negative batch"
+            )
             assert not has_consecutive_ranges(self._run_ranges(data))
 
         exp1 = TestBatchRangeCalculations.MockExperiment((1, 1), scan=False)

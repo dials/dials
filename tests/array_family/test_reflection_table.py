@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import copy
 import logging
-import os
 import pickle
 import random
-from pathlib import Path
 
 import pytest
 
@@ -789,7 +787,8 @@ def test_extract_shoeboxes():
         reflections.append({"panel": random.randint(0, 1), "bbox": bbox})
 
     reflections["shoebox"] = flex.shoebox(reflections["panel"], reflections["bbox"])
-    reflections["shoebox"].allocate()
+    reflections["shoebox"].allocate_data()
+    reflections["shoebox"].allocate_background()
 
     class FakeImageSet:
         def __init__(self):
@@ -971,7 +970,8 @@ def test_split_partials_with_shoebox():
         v2 = random.randint(0, 100)
         v3 = random.uniform(0, 100)
         sbox = Shoebox(0, (x0, x1, y0, y1, z0, z1))
-        sbox.allocate()
+        sbox.allocate_data()
+        sbox.allocate_background()
         assert sbox.is_consistent()
         w = x1 - x0
         h = y1 - y0
@@ -991,7 +991,8 @@ def test_split_partials_with_shoebox():
         )
         for z in range(z0, z1):
             sbox = Shoebox(0, (x0, x1, y0, y1, z, z + 1))
-            sbox.allocate()
+            sbox.allocate_data()
+            sbox.allocate_background()
             assert sbox.is_consistent()
             w = x1 - x0
             h = y1 - y0
@@ -1095,35 +1096,37 @@ def test_find_overlapping():
             assert is_overlap(b0, b1, i)
 
 
-def test_to_from_msgpack(tmp_path):
-    def gen_shoebox():
-        shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
-        shoebox.allocate()
-        for k in range(1):
-            for j in range(3):
-                for i in range(4):
-                    shoebox.data[k, j, i] = i + j + k + 0.1
-                    shoebox.mask[k, j, i] = i % 2
-                    shoebox.background[k, j, i] = i * j + 0.2
-        return shoebox
+def gen_shoebox():
+    shoebox = Shoebox(0, (0, 4, 0, 3, 0, 1))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(1):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.mask[k, j, i] = i % 2
+                shoebox.background[k, j, i] = i * j + 0.2
+    return shoebox
 
-    def compare(a, b):
-        assert a.is_consistent()
-        assert b.is_consistent()
-        assert a.panel == b.panel
-        assert a.bbox == b.bbox
-        for aa, bb in zip(a.data, b.data):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.background, b.background):
-            if abs(aa - bb) > 1e-9:
-                return False
-        for aa, bb in zip(a.mask, b.mask):
-            if aa != bb:
-                return False
-        return True
 
-    # The columns as lists
+def compare(a, b):
+    assert a.is_consistent()
+    assert b.is_consistent()
+    assert a.panel == b.panel
+    assert a.bbox == b.bbox
+    for aa, bb in zip(a.data, b.data):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.background, b.background):
+        if abs(aa - bb) > 1e-9:
+            return False
+    for aa, bb in zip(a.mask, b.mask):
+        if aa != bb:
+            return False
+    return True
+
+
+def table_and_columns():
     c1 = list(range(10))
     c2 = list(range(10))
     c3 = ["a", "b", "c", "d", "e", "f", "g", "i", "j", "k"]
@@ -1134,7 +1137,7 @@ def test_to_from_msgpack(tmp_path):
     c8 = [tuple(i + j for j in range(9)) for i in range(10)]
     c9 = [tuple(i + j for j in range(6)) for i in range(10)]
     c10 = [(i + 1, i + 2, i + 3) for i in range(10)]
-    c11 = [gen_shoebox() for i in range(10)]
+    c11 = [gen_shoebox() for _ in range(10)]
 
     # Create a table with some elements
     table = flex.reflection_table()
@@ -1149,6 +1152,47 @@ def test_to_from_msgpack(tmp_path):
     table["col9"] = flex.int6(c9)
     table["col10"] = flex.miller_index(c10)
     table["col11"] = flex.shoebox(c11)
+    return table, [c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11]
+
+
+def test_to_from_h5(tmp_path):
+    # The columns as lists
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
+    table["id"] = flex.int(table.size(), 0)
+    table.experiment_identifiers()[0] = "test"
+
+    table.as_hdf5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
+    assert new_table.is_consistent()
+    assert new_table.nrows() == 10
+    assert new_table.ncols() == 12  # one more as an id column is needed
+    assert all(tuple(a == b for a, b in zip(new_table["col1"], c1)))
+    assert all(tuple(a == b for a, b in zip(new_table["col2"], c2)))
+    assert all(tuple(a == b for a, b in zip(new_table["col3"], c3)))
+    assert all(tuple(a == b for a, b in zip(new_table["col4"], c4)))
+    assert all(tuple(a == b for a, b in zip(new_table["col5"], c5)))
+    assert all(tuple(a == b for a, b in zip(new_table["col6"], c6)))
+    assert all(tuple(a == b for a, b in zip(new_table["col7"], c7)))
+    assert all(tuple(a == b for a, b in zip(new_table["col8"], c8)))
+    assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
+    assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
+    assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
+
+    assert all(new_table["id"] == 0)
+    assert dict(new_table.experiment_identifiers()) == {0: "test"}
+
+    # test empty table
+    t = flex.reflection_table([])
+    t.as_hdf5(tmp_path / "empty.h5")
+    empty_table = flex.reflection_table.from_hdf5(tmp_path / "empty.h5")
+    assert list(empty_table.keys()) == []
+    assert not dict(empty_table.experiment_identifiers())
+
+
+def test_to_from_msgpack(tmp_path):
+    table, columns = table_and_columns()
+    c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11 = columns
 
     obj = table.as_msgpack()
     new_table = flex.reflection_table.from_msgpack(obj)
@@ -1183,6 +1227,85 @@ def test_to_from_msgpack(tmp_path):
     assert all(tuple(a == b for a, b in zip(new_table["col9"], c9)))
     assert all(tuple(a == b for a, b in zip(new_table["col10"], c10)))
     assert all(tuple(compare(a, b) for a, b in zip(new_table["col11"], c11)))
+
+
+def gen_multi_frame_shoebox(z0, nz):
+    shoebox = Shoebox(0, (0, 4, 0, 3, z0, z0 + nz))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(nz):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = i + j + k + 0.1
+                shoebox.background[k, j, i] = i * j + 0.2
+                shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+    return shoebox
+
+
+def table_with_frame_sliced_shoeboxes():
+    """A table whose frame sliced shoeboxes have differing numbers of frames"""
+    shoeboxes = flex.shoebox(
+        [gen_multi_frame_shoebox(z0, nz) for z0, nz in ((0, 1), (5, 3), (10, 2))]
+    )
+    table = flex.reflection_table()
+    table["id"] = flex.int(len(shoeboxes), 0)
+    table["miller_index"] = flex.miller_index([(1, 0, 0), (0, 1, 0), (0, 0, 1)])
+    # Experimental models at the centres of images 1 to 12, for a scan of 0.1
+    # radian oscillations beginning at zero, a stationary crystal with a 10
+    # Angstrom cubic cell and a stationary 1 Angstrom beam along -z
+    phi = flex.double([0.1 * (f - 0.5) for f in range(1, 13)])
+    phi_scan_points = flex.double([0.1 * (f - 1) for f in range(1, 14)])
+    UB = flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 12)
+    s0 = flex.vec3_double([(0, 0, -1)] * 12)
+    table["frame_sliced_shoebox"] = flex.frame_sliced_shoebox(
+        shoeboxes,
+        table["miller_index"],
+        flex.double([0.05, 0.65, 1.05]),
+        flex.double(len(shoeboxes), 0.1),
+        phi,
+        phi_scan_points,
+        UB,
+        s0,
+        1,
+    )
+    return table
+
+
+def check_frame_sliced_shoeboxes(new_table, table):
+    assert new_table.is_consistent()
+    assert new_table.nrows() == table.nrows()
+    assert new_table.ncols() == table.ncols()
+    new_column = new_table["frame_sliced_shoebox"]
+    column = table["frame_sliced_shoebox"]
+    assert list(new_column.num_frames()) == [1, 3, 2]
+    assert all(a == b for a, b in zip(new_column, column))
+
+
+def test_frame_sliced_shoebox_column_to_from_msgpack(tmp_path):
+    table = table_with_frame_sliced_shoeboxes()
+
+    new_table = flex.reflection_table.from_msgpack(table.as_msgpack())
+    check_frame_sliced_shoeboxes(new_table, table)
+
+    table.as_msgpack_file(tmp_path / "reflections.mpack")
+    new_table = flex.reflection_table.from_msgpack_file(tmp_path / "reflections.mpack")
+    check_frame_sliced_shoeboxes(new_table, table)
+
+
+def test_frame_sliced_shoebox_column_to_from_h5(tmp_path):
+    table = table_with_frame_sliced_shoeboxes()
+
+    table.as_hdf5(tmp_path / "reflections.h5")
+    new_table = flex.reflection_table.from_hdf5(tmp_path / "reflections.h5")
+    check_frame_sliced_shoeboxes(new_table, table)
+
+
+def test_frame_sliced_shoebox_column_to_from_pickle():
+    # Tables are pickled to pass them between subprocesses
+    table = table_with_frame_sliced_shoeboxes()
+
+    new_table = pickle.loads(pickle.dumps(table, protocol=pickle.HIGHEST_PROTOCOL))
+    check_frame_sliced_shoeboxes(new_table, table)
 
 
 def test_experiment_identifiers():
@@ -1386,10 +1509,10 @@ def test_as_miller_array():
         _ = table.as_miller_array(experiment, intensity="2")
 
 
-def test_map_centroids_to_reciprocal_space(dials_regression: Path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    expts_path = os.path.join(data_dir, "experiments_import.json")
+def test_map_centroids_to_reciprocal_space(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    expts_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_file(pickle_path)
     expts = load.experiment_list(expts_path, check_format=False)
@@ -1443,10 +1566,10 @@ def test_map_centroids_to_reciprocal_space(dials_regression: Path):
     )
 
 
-def test_calculate_entering_flags(dials_regression: Path):
-    data_dir = os.path.join(dials_regression, "indexing_test_data", "i04_weak_data")
-    pickle_path = os.path.join(data_dir, "full.pickle")
-    experiments_path = os.path.join(data_dir, "experiments_import.json")
+def test_calculate_entering_flags(dials_data):
+    data_dir = dials_data("i04_weak_data")
+    pickle_path = data_dir / "full.pickle"
+    experiments_path = data_dir / "experiments_import.json"
 
     refl = flex.reflection_table.from_pickle(pickle_path)
     experiments = load.experiment_list(experiments_path, check_format=False)
@@ -1602,13 +1725,72 @@ def test_concat():
     ids2[0] = "c"
     ids2[1] = "d"
 
-    table1 = flex.reflection_table.concat([table1, table2])
+    table3 = flex.reflection_table.concat([table1, table2])
+    ids3 = dict(table3.experiment_identifiers())
 
-    assert list(table1["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
-    assert list(ids1.keys()) == [0, 1, 2, 3]
-    assert list(ids1.values()) == ["a", "b", "c", "d"]
+    assert list(table3["id"]) == [0, 0, 1, 1, 2, 2, 3, 3]
+    assert list(ids3.keys()) == [0, 1, 2, 3]
+    assert list(ids3.values()) == ["a", "b", "c", "d"]
 
     # test empty tables
     table1 = flex.reflection_table()
     table2 = flex.reflection_table()
     table1 = flex.reflection_table.concat([table1, table2])
+
+
+def test_as_pandas_dataframe():
+    nn = 10
+
+    table = flex.reflection_table()
+    table["miller_index"] = flex.miller_index(
+        flex.int(range(nn)), flex.int(range(nn)), flex.int(range(nn))
+    )
+    table["id"] = flex.int(nn, 0)
+    table["intensity.sum.value"] = flex.double(range(nn))
+    table["xyzobs.px.value"] = flex.vec3_double([(n, n + 1, n + 2) for n in range(nn)])
+    table["bbox"] = flex.int6(*(flex.int(nn, j) for j in range(6)))
+
+    df = table.as_pandas_dataframe()
+
+    assert len(df) == nn
+
+    # single valued columns keep their name
+    assert list(df["id"]) == [0] * nn
+    assert list(df["intensity.sum.value"]) == list(range(nn))
+
+    # multiple valued columns are unpacked, element by element
+    assert list(df["miller_index_0"]) == list(range(nn))
+    assert list(df["miller_index_2"]) == list(range(nn))
+    assert list(df["xyzobs.px.value_1"]) == [n + 1 for n in range(nn)]
+
+    # including those flumpy does not handle directly
+    assert list(df["bbox_0"]) == [0] * nn
+    assert list(df["bbox_5"]) == [5] * nn
+
+    assert "miller_index" not in df
+    assert "bbox" not in df
+
+
+def test_as_pandas_dataframe_selected_columns():
+    nn = 10
+
+    table = flex.reflection_table()
+    table["id"] = flex.int(nn, 0)
+    table["intensity.sum.value"] = flex.double(range(nn))
+
+    df = table.as_pandas_dataframe(columns=["intensity.sum.value"])
+
+    assert list(df.columns) == ["intensity.sum.value"]
+
+    with pytest.raises(KeyError):
+        table.as_pandas_dataframe(columns=["not.a.column"])
+
+
+def test_as_pandas_dataframe_omits_shoebox():
+    table = flex.reflection_table()
+    table["id"] = flex.int(2, 0)
+    table["shoebox"] = flex.shoebox(2)
+
+    df = table.as_pandas_dataframe()
+
+    assert list(df.columns) == ["id"]

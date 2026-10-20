@@ -50,8 +50,8 @@ namespace dials { namespace algorithms {
      * @param weights The weight to give the profile
      * @param profile The profile data
      */
-    void add(const af::const_ref<std::size_t> &indices,
-             const af::const_ref<double> &weights,
+    void add(const af::const_ref<std::size_t>& indices,
+             const af::const_ref<double>& weights,
              data_const_reference profile) {
       DIALS_ASSERT(finalized_ == false);
       DIALS_ASSERT(indices.size() == weights.size());
@@ -121,7 +121,7 @@ namespace dials { namespace algorithms {
      * Accumulate the results of another modeller
      * @param other The other modeller
      */
-    void accumulate_raw_pointer(const EmpiricalProfileModeller *other) {
+    void accumulate_raw_pointer(const EmpiricalProfileModeller* other) {
       DIALS_ASSERT(other != NULL);
       DIALS_ASSERT(finalized_ == false);
 

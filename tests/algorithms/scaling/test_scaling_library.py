@@ -163,7 +163,7 @@ def generated_param(absorption_term=False):
 
 
 def test_datastructure_from_structural_model(dials_data, test_experiments):
-    pdb_file = os.fspath(dials_data("cunir_serial", pathlib=True) / "2BW4.pdb")
+    pdb_file = os.fspath(dials_data("cunir_serial") / "2BW4.pdb")
     expt, table = create_datastructures_for_structural_model(test_experiments, pdb_file)
     assert expt.scaling_model.is_scaled
     assert table["intensity"]
@@ -333,7 +333,7 @@ def test_determine_best_unit_cell(test_experiments):
 
 
 def test_scaled_data_as_miller_array(dials_data):
-    location = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    location = dials_data("l_cysteine_4_sweeps_scaled")
     reflections = flex.reflection_table.from_file(location / "scaled_20_25.refl")
     experiments = ExperimentList.from_file(
         location / "scaled_20_25.expt", check_format=False

@@ -45,7 +45,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Any, List, Type
+from typing import Any
 
 from cctbx import crystal, miller
 
@@ -78,7 +78,7 @@ def filter_reflection_table_selection(
 
 def filter_reflection_table(
     reflection_table: flex.reflection_table,
-    intensity_choice: List[str],
+    intensity_choice: list[str],
     *args: Any,
     **kwargs: Any,
 ) -> flex.reflection_table:
@@ -108,7 +108,7 @@ def filter_reflection_table(
         raise ValueError("intensity_choice must be List[str]")
 
     if intensity_choice == ["scale"]:
-        reducer: Type[FilterForExportAlgorithm] = ScaleIntensityReducer
+        reducer: type[FilterForExportAlgorithm] = ScaleIntensityReducer
     elif intensity_choice == ["sum"]:
         reducer = SumIntensityReducer
     elif intensity_choice == ["profile"]:
@@ -123,13 +123,11 @@ def filter_reflection_table(
         reducer = SumAndScaleIntensityReducer
     else:
         raise ValueError(
-            (
-                "Unrecognised intensity choice for filter_reflection_table,\n"
-                "value read: {}\n"
-                "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
-                "                'sum scale', 'profile sum scale'\n"
-                "(if parsing from command line, multiple choices passed as e.g. profile+sum"
-            ).format(intensity_choice)
+            "Unrecognised intensity choice for filter_reflection_table,\n"
+            f"value read: {intensity_choice}\n"
+            "must be one of: 'scale', 'profile', 'sum', 'profile sum', \n"
+            "                'sum scale', 'profile sum scale'\n"
+            "(if parsing from command line, multiple choices passed as e.g. profile+sum"
         )
     # Validate that the reflection table has the columns we need
     required_columns_lookup = {
@@ -279,7 +277,6 @@ def checkdataremains(func):
     """Decorate a filtering method, to raise a ValueError if all data filtered."""
 
     def wrapper(*args, **kwargs):
-
         reflections = func(*args, **kwargs)
 
         if not reflections:
@@ -463,9 +460,9 @@ class FilterForExportAlgorithm(FilteringReductionMethods):
         d_max=None,
     ):
         """Apply the filtering methods to reflection table."""
-        assert (
-            reflection_table.size() > 0
-        ), """Empty reflection table given to reduce_data_for_export function"""
+        assert reflection_table.size() > 0, (
+            """Empty reflection table given to reduce_data_for_export function"""
+        )
         reflection_table = cls.filter_unassigned_reflections(reflection_table)
         reflection_table = cls.reduce_on_intensities(reflection_table)
 

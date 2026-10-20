@@ -4,20 +4,25 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+import pytest
 
+
+@pytest.mark.skipif(
+    shutil.which("gemmi") is None, reason="Could not find gemmi executable"
+)
 def test_ssx_reduction(dials_data, tmp_path):
     """
     Check that dials.cosym, dials.scale, dials.export and dials.merge run
     successfully on ssx data.
     Also test a few smaller analysis programs.
     """
-    ssx = dials_data("cunir_serial_processed", pathlib=True)
-    ssx_data = dials_data("cunir_serial", pathlib=True)
+    ssx = dials_data("cunir_serial_processed")
+    ssx_data = dials_data("cunir_serial")
     refls = ssx / "integrated.refl"
     expts = ssx / "integrated.expt"
 
     result = subprocess.run(
-        [shutil.which("dials.cosym"), expts, refls],
+        [shutil.which("dials.cosym"), expts, refls, "partiality_threshold=0.25"],
         cwd=tmp_path,
         capture_output=True,
     )
@@ -67,6 +72,25 @@ def test_ssx_reduction(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     assert (tmp_path / "scaled.mtz").is_file()
+
+    # now try running mmcif export
+    result = subprocess.run(
+        [shutil.which("dials.export"), scale_expts, scale_refls, "format=mmcif"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "scaled.cif").is_file()
+    # check that gemmi can understand the output cif
+    cmd = [
+        shutil.which("gemmi"),
+        "cif2mtz",
+        tmp_path / "scaled.cif",
+        tmp_path / "test.mtz",
+    ]
+    result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "test.mtz").is_file()
 
     result = subprocess.run(
         [shutil.which("dials.merge"), scale_expts, scale_refls],

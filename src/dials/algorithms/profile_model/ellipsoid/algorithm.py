@@ -377,7 +377,6 @@ def predict_after_ellipsoid_refinement(experiment, reflection_table):
 
 
 def compute_prediction_probability(experiment, reflection_table):
-
     # Get stuff from experiment
     s0 = np.array([experiment.beam.get_s0()], dtype=np.float64).reshape(3, 1)
     s0_length = norm(s0)
@@ -469,7 +468,7 @@ def run_ellipsoid_refinement(
             LL_tolerance=LL_tolerance,
             max_cell_volume_change_fraction=max_cell_volume_change_fraction,
         )
-        if capture_progress:
+        if capture_progress and refinerc:
             # Save some data for plotting later.
             output_data["refiner_output"]["history"].append(refinerc.history)
             output_data["refiner_output"]["correlation"] = refinerc.correlation()

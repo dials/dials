@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import math
 import random
+
+import pytest
 
 
 def test_consistent():
@@ -21,7 +24,8 @@ def test_consistent():
     assert shoebox.is_consistent() == flex.bool(10, False)
 
     for i in range(10):
-        shoebox[i].allocate()
+        shoebox[i].allocate_data()
+        shoebox[i].allocate_background()
 
     assert shoebox.is_consistent() == flex.bool(10, True)
 
@@ -110,7 +114,8 @@ def test_count_mask_values():
         z1 = random.randint(1, 10) + z0
 
         shoebox[i] = Shoebox((x0, x1, y0, y1, z0, z1))
-        shoebox[i].allocate()
+        shoebox[i].allocate_data()
+        shoebox[i].allocate_background()
         maxnum = len(shoebox[i].mask)
         num[i] = random.randint(1, maxnum)
         indices = random.sample(list(range(maxnum)), num[i])
@@ -118,6 +123,53 @@ def test_count_mask_values():
             shoebox[i].mask[j] = value
 
     assert shoebox.count_mask_values(value) == num
+
+
+def test_peak_coordinates_unique_maximum():
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    # A shoebox with a single, unique brightest pixel: the peak must be that
+    # pixel's global coordinate (bbox origin + index + 0.5). This covers the
+    # cheap, untied path which must behave exactly as before.
+    bbox = (10, 14, 20, 24, 30, 34)
+    shoebox = flex.shoebox(1)
+    shoebox[0] = Shoebox(bbox)
+    shoebox[0].allocate_data()
+    data = shoebox[0].data  # shape (z, y, x)
+    data[1, 2, 3] = 100
+
+    peak = shoebox.peak_coordinates()
+    assert peak[0] == (10 + 3 + 0.5, 20 + 2 + 0.5, 30 + 1 + 0.5)
+
+
+def test_peak_coordinates_ties_resolved_by_centroid():
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    # Two pixels share the maximum value. Place the intensity mass (and hence the
+    # centroid) near one of them; the tie must be broken in favour of the pixel
+    # nearest the centroid rather than the z, y, x-first pixel. On the previous
+    # (max_index only) implementation this returned the far corner instead.
+    # See https://github.com/dials/dials/issues/3014.
+    bbox = (0, 6, 0, 6, 0, 1)  # single frame, 6x6 in y, x
+    shoebox = flex.shoebox(1)
+    shoebox[0] = Shoebox(bbox)
+    shoebox[0].allocate_data()
+    data = shoebox[0].data  # shape (z=1, y=6, x=6)
+
+    # Build a blob of intensity in the high-y, high-x corner so the centroid sits
+    # there. Two equal maxima: one at the near corner (in the blob) and one at
+    # the far (low-y, low-x) corner which is first in z, y, x order.
+    for y in range(3, 6):
+        for x in range(3, 6):
+            data[0, y, x] = 5
+    data[0, 0, 0] = 10  # far, z/y/x-first maximum
+    data[0, 5, 5] = 10  # near the centroid
+
+    peak = shoebox.peak_coordinates()
+    # Expect the near-centroid pixel (x=5, y=5), not the (0, 0) corner.
+    assert peak[0] == (5 + 0.5, 5 + 0.5, 0 + 0.5)
 
 
 def test_bounding_boxes():
@@ -139,3 +191,121 @@ def test_bounding_boxes():
     bbox2 = shoebox.bounding_boxes()
     for i in range(10):
         assert bbox2[i] == bbox[i]
+
+
+def frame_sliced_shoebox_test_models():
+    """Everything the frame slicing needs besides the shoeboxes themselves, as
+    keyword arguments. That is a Miller index and a rocking curve per shoebox,
+    then the rotation angles, orientation matrices and beam vectors covering
+    images 1 to 13 with the image number the first of them refers to.
+
+    The scan has 0.1 radian oscillations beginning at zero, the crystal is
+    stationary with a 10 Angstrom cubic cell aligned with the laboratory axes,
+    and the beam is stationary along -z with a wavelength of 1 Angstrom"""
+    from dials.array_family import flex
+
+    return {
+        "miller_indices": flex.miller_index([(1, 0, 0), (0, 0, 10)]),
+        # The first shoebox spans images 11 to 13 and the second images 1 to 2,
+        # and each rocking curve is centred on the middle of its own shoebox
+        "phi_cal": flex.double([1.15, 0.1]),
+        "sigma_phi": flex.double([0.1, 0.1]),
+        "phi": flex.double([0.1 * (f - 0.5) for f in range(1, 14)]),
+        "phi_scan_points": flex.double([0.1 * (f - 1) for f in range(1, 15)]),
+        "UB": flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * 13),
+        "s0": flex.vec3_double([(0, 0, -1)] * 13),
+        "first_frame": 1,
+    }
+
+
+def frame_sliced_shoebox_test_data():
+    """Two shoeboxes with a different number of frames each"""
+    from dials.algorithms.shoebox import MaskCode
+    from dials.array_family import flex
+    from dials.model.data import Shoebox
+
+    shoeboxes = []
+    for z0, nz in ((10, 3), (0, 2)):
+        shoebox = Shoebox(0, (0, 4, 0, 3, z0, z0 + nz))
+        shoebox.allocate_data()
+        shoebox.allocate_background()
+        for k in range(nz):
+            for j in range(3):
+                for i in range(4):
+                    shoebox.data[k, j, i] = k + 1
+                    shoebox.background[k, j, i] = 0.5
+                    shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+        shoeboxes.append(shoebox)
+    return flex.shoebox(shoeboxes)
+
+
+def test_frame_sliced_shoebox_from_shoeboxes():
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), **frame_sliced_shoebox_test_models()
+    )
+
+    assert len(sliced) == 2
+    assert list(sliced.num_frames()) == [3, 2]
+    assert list(sliced[0].frames) == [11, 12, 13]
+    assert list(sliced[1].frames) == [1, 2]
+    # Each shoebox takes the rotation angles of its own frames from the scan
+    assert list(sliced[0].phi) == pytest.approx([1.05, 1.15, 1.25])
+    assert list(sliced[1].phi) == pytest.approx([0.05, 0.15])
+    # Each shoebox uses its own Miller index. (1, 0, 0) sits just outside the
+    # Ewald sphere, while (0, 0, 10) is at its centre, a whole radius inside
+    assert list(sliced[0].excitation_error) == pytest.approx(
+        [math.sqrt(0.99) - 1.0] * 3
+    )
+    assert list(sliced[1].excitation_error) == pytest.approx([1.0, 1.0])
+    # Each shoebox uses its own rocking curve. Both are centred on the middle of
+    # their own shoebox, but the second spans an even number of frames, so its
+    # reflection is split equally between them
+    assert list(sliced[0].partiality) == pytest.approx(
+        [0.24173033, 0.38292492, 0.24173033]
+    )
+    assert list(sliced[1].partiality) == pytest.approx([0.34134475, 0.34134475])
+
+    # Every pixel is a valid foreground pixel, so the summation intensity is the
+    # background-subtracted foreground sum, and no frame has a background pixel
+    # to contribute an m/n term to the variance
+    assert list(sliced[0].summation_intensity) == [6.0, 18.0, 30.0]
+    assert list(sliced[0].summation_intensity_variance) == [12.0, 24.0, 36.0]
+    assert list(sliced[1].summation_intensity_valid) == [True, True]
+
+
+def test_frame_sliced_shoebox_data_arrays_round_trip():
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), **frame_sliced_shoebox_test_models()
+    )
+    arrays = sliced.get_frame_sliced_shoebox_data_arrays()
+
+    # The per-frame arrays of every element are concatenated together
+    assert list(arrays[0]) == [11, 12, 13, 1, 2]
+
+    rebuilt = flex.frame_sliced_shoebox(sliced.num_frames(), *arrays)
+    assert list(rebuilt.num_frames()) == list(sliced.num_frames())
+    assert all(a == b for a, b in zip(rebuilt, sliced))
+
+
+def test_frame_sliced_shoebox_is_picklable():
+    import pickle
+
+    from dials.array_family import flex
+
+    sliced = flex.frame_sliced_shoebox(
+        frame_sliced_shoebox_test_data(), **frame_sliced_shoebox_test_models()
+    )
+
+    unpickled = pickle.loads(pickle.dumps(sliced, protocol=pickle.HIGHEST_PROTOCOL))
+    assert list(unpickled.num_frames()) == [3, 2]
+    assert all(a == b for a, b in zip(unpickled, sliced))
+
+    # Default constructed elements have no frames at all
+    empty = pickle.loads(
+        pickle.dumps(flex.frame_sliced_shoebox(3), protocol=pickle.HIGHEST_PROTOCOL)
+    )
+    assert list(empty.num_frames()) == [0, 0, 0]

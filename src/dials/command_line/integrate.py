@@ -19,15 +19,12 @@ Examples::
   dials.integrate models.expt refined.refl background.algorithm=glm
 """
 
-
 from __future__ import annotations
 
 import logging
 import math
 import sys
 import warnings
-
-from orderedset import OrderedSet
 
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
@@ -37,7 +34,6 @@ from dials.algorithms.integration.integrator import create_integrator
 from dials.algorithms.profile_model.factory import ProfileModelFactory
 from dials.array_family import flex
 from dials.util import show_mail_handle_errors
-from dials.util.command_line import heading
 from dials.util.exclude_images import expand_exclude_multiples, set_invalid_images
 from dials.util.options import ArgumentParser, reflections_and_experiments_from_files
 from dials.util.slice import slice_crystal
@@ -268,7 +264,6 @@ def sample_predictions(experiments, predicted, params):
 
     working_isel = flex.size_t()
     for iexp, exp in enumerate(experiments):
-
         sel = predicted["id"] == iexp
         isel = sel.iselection()
         nrefs = sample_size = len(isel)
@@ -315,7 +310,6 @@ def split_for_scan_range(experiments, reference, scan_range):
 
     # Only do anything is the scan range is set
     if scan_range is not None and len(scan_range) > 0:
-
         # Ensure that all experiments have the same imageset and scan
         iset = [e.imageset for e in experiments]
         scan = [e.scan for e in experiments]
@@ -347,17 +341,13 @@ def split_for_scan_range(experiments, reference, scan_range):
             # Validate the requested scan range
             if scan_end == scan_start:
                 raise ValueError(
-                    "Scan range end must be higher than start; pass {},{} for single image".format(
-                        scan_start, scan_start + 1
-                    )
+                    f"Scan range end must be higher than start; pass {scan_start},{scan_start + 1} for single image"
                 )
             if scan_end < scan_start:
                 raise ValueError("Scan range must be in ascending order")
             elif scan_start < frames_start or scan_end > frames_end:
                 raise ValueError(
-                    "Scan range must be within image range {}..{}".format(
-                        frames_start, frames_end
-                    )
+                    f"Scan range must be within image range {frames_start}..{frames_end}"
                 )
 
             assert scan_end > scan_start
@@ -460,19 +450,21 @@ def run_integration(params, experiments, reference=None):
         logger.info(summary)
 
     logger.info("\n".join(("", "=" * 80, "")))
-    logger.info(heading("Initialising"))
+    logger.info("Initialising")
 
-    # Load the data
+    # Load the data. profile_reference is the subset of the reference
+    # reflections used to build the profile model
+    profile_reference = None
     if reference:
-        reference, rubbish = process_reference(reference)
+        profile_reference, rubbish = process_reference(reference)
 
         # Check pixels don't belong to neighbours
         if exp.goniometer is not None and exp.scan is not None:
-            reference = filter_reference_pixels(reference, experiments)
+            profile_reference = filter_reference_pixels(profile_reference, experiments)
 
         # Modify experiment list if scan range is set.
-        experiments, reference = split_for_scan_range(
-            experiments, reference, params.scan_range
+        experiments, profile_reference = split_for_scan_range(
+            experiments, profile_reference, params.scan_range
         )
 
     # Modify experiment list if exclude_images is set
@@ -510,7 +502,7 @@ def run_integration(params, experiments, reference=None):
 
     # Predict the reflections
     logger.info("\n".join(("", "=" * 80, "")))
-    logger.info(heading("Predicting reflections"))
+    logger.info("Predicting reflections")
     predicted = flex.reflection_table.from_predictions_multi(
         experiments,
         dmin=params.prediction.d_min,
@@ -519,11 +511,11 @@ def run_integration(params, experiments, reference=None):
         force_static=params.prediction.force_static,
         padding=params.prediction.padding,
     )
-    isets = OrderedSet(e.imageset for e in experiments)
+    isets = {e.imageset: i for i, e in enumerate(experiments)}
     predicted["imageset_id"] = flex.int(predicted.size(), 0)
     if len(isets) > 1:
         for e in experiments:
-            iset_id = isets.index(e.imageset)
+            iset_id = isets[e.imageset]
             for id_ in predicted.experiment_identifiers().keys():
                 identifier = predicted.experiment_identifiers()[id_]
                 if identifier == e.identifier:
@@ -532,10 +524,12 @@ def run_integration(params, experiments, reference=None):
                     break
 
     # Match reference with predicted
-    if reference:
-        matched, reference, unmatched = predicted.match_with_reference(reference)
+    if profile_reference:
+        matched, profile_reference, unmatched = predicted.match_with_reference(
+            profile_reference
+        )
         assert len(matched) == len(predicted)
-        assert matched.count(True) <= len(reference)
+        assert matched.count(True) <= len(profile_reference)
         if matched.count(True) == 0:
             raise ValueError(
                 """
@@ -574,8 +568,8 @@ def run_integration(params, experiments, reference=None):
                 dest.extend(tmp)
 
             for expt_id, experiment in enumerate(experiments):
-                if len(reference.select(reference["id"] == expt_id)) != 0:
-                    refl_extend(reference, f_reference, expt_id)
+                if (profile_reference["id"] == expt_id).count(True):
+                    refl_extend(profile_reference, f_reference, expt_id)
                     refl_extend(predicted, f_predicted, expt_id)
                     refl_extend(rubbish, f_rubbish, expt_id)
                     f_experiments.append(experiment)
@@ -586,7 +580,7 @@ def run_integration(params, experiments, reference=None):
                         expt_id,
                     )
 
-            reference = f_reference
+            profile_reference = f_reference
             predicted = f_predicted
             experiments = f_experiments
             rubbish = f_rubbish
@@ -597,11 +591,20 @@ def run_integration(params, experiments, reference=None):
 
     # Compute the profile model - either load existing or compute
     # can raise RuntimeError
-    experiments = ProfileModelFactory.create(params, experiments, reference)
+    experiments = ProfileModelFactory.create(params, experiments, profile_reference)
     for expr in experiments:
         if expr.profile is None:
             raise ValueError("No profile information in experiment list")
-    del reference
+    del profile_reference
+
+    # The reference shoeboxes were only needed for the profile model, but are
+    # often most of the memory used by the input table. Deleting our name for
+    # that table would not free it, as the caller still holds it, so delete the
+    # shoebox column in place. Also drop the bad reference data unless output.
+    if reference and "shoebox" in reference:
+        del reference["shoebox"]
+    if not params.output.include_bad_reference:
+        rubbish = None
 
     # Compute the bounding box
     predicted.compute_bbox(experiments)
@@ -731,6 +734,12 @@ def run(args=None, phil=working_phil):
     reference, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    # Drop the input data from params. Every sub-extract (such as params.profile,
+    # which the profile model keeps) refers back to the whole params tree, so
+    # otherwise the input reflection table is pickled into every task sent to a
+    # spawned worker process.
+    params.input.reflections = []
+    params.input.experiments = []
 
     if not reference and not experiments:
         parser.print_help()
@@ -763,7 +772,7 @@ def run(args=None, phil=working_phil):
         )
         reflections.as_file(params.output.reflections)
         logger.info("Saving the experiments to %s", params.output.experiments)
-        experiments.as_file(params.output.experiments)
+        experiments.as_file(params.output.experiments, history_as_integrated=True)
 
         if report:
             report.as_file(params.output.report)

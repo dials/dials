@@ -11,7 +11,7 @@ def test_convert_to_cbf(dials_data, filename, tmp_path):
     result = subprocess.run(
         [
             shutil.which("dials.import"),
-            dials_data("vmxi_thaumatin", pathlib=True) / filename,
+            dials_data("vmxi_thaumatin") / filename,
             "image_range=1,10",
         ],
         cwd=tmp_path,

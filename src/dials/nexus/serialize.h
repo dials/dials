@@ -13,7 +13,7 @@ namespace dials { namespace nexus {
   using scitbx::vec2;
   using scitbx::vec3;
 
-  std::string dataset_name(const H5::DataSet &ds) {
+  std::string dataset_name(const H5::DataSet& ds) {
     size_t len = H5Iget_name(ds.getId(), NULL, 0);
     char buffer[len];
     H5Iget_name(ds.getId(), buffer, len + 1);
@@ -24,16 +24,16 @@ namespace dials { namespace nexus {
   template <typename T>
   struct serialize {
     template <typename Handle>
-    static T load(const Handle &handle);
+    static T load(const Handle& handle);
 
     template <typename Handle>
-    static void dump(const T &obj, Handle &handle);
+    static void dump(const T& obj, Handle& handle);
   };
 
   template <>
   struct serialize<std::string> {
     template <typename Handle>
-    static std::string load(const Handle &dataset) {
+    static std::string load(const Handle& dataset) {
       std::string result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -49,13 +49,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const std::string &obj, Handle &handle) {}
+    static void dump(const std::string& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<bool> {
     template <typename Handle>
-    static bool load(const Handle &dataset) {
+    static bool load(const Handle& dataset) {
       bool result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -70,13 +70,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const bool &obj, Handle &handle) {}
+    static void dump(const bool& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<int> {
     template <typename Handle>
-    static int load(const Handle &dataset) {
+    static int load(const Handle& dataset) {
       int result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -91,13 +91,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const int &obj, Handle &handle) {}
+    static void dump(const int& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<double> {
     template <typename Handle>
-    static double load(const Handle &dataset) {
+    static double load(const Handle& dataset) {
       double result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -112,13 +112,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const double &obj, Handle &handle) {}
+    static void dump(const double& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<vec2<int> > {
     template <typename Handle>
-    static vec2<int> load(const Handle &dataset) {
+    static vec2<int> load(const Handle& dataset) {
       vec2<int> result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -133,13 +133,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const vec2<int> &obj, Handle &handle) {}
+    static void dump(const vec2<int>& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<af::shared<double> > {
     template <typename Handle>
-    static af::shared<double> load(const Handle &dataset) {
+    static af::shared<double> load(const Handle& dataset) {
       af::shared<double> result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -154,13 +154,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const af::shared<double> &obj, Handle &handle) {}
+    static void dump(const af::shared<double>& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<af::versa<double, af::c_grid<2> > > {
     template <typename Handle>
-    static af::versa<double, af::c_grid<2> > load(const Handle &dataset) {
+    static af::versa<double, af::c_grid<2> > load(const Handle& dataset) {
       af::versa<double, af::c_grid<2> > result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -175,13 +175,13 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const af::versa<double, af::c_grid<2> > &obj, Handle &handle) {}
+    static void dump(const af::versa<double, af::c_grid<2> >& obj, Handle& handle) {}
   };
 
   template <>
   struct serialize<af::versa<int, af::c_grid<2> > > {
     template <typename Handle>
-    static af::versa<int, af::c_grid<2> > load(const Handle &dataset) {
+    static af::versa<int, af::c_grid<2> > load(const Handle& dataset) {
       af::versa<int, af::c_grid<2> > result;
       H5::DataType datatype = dataset.getDataType();
       H5::DataSpace dataspace = dataset.getSpace();
@@ -196,11 +196,11 @@ namespace dials { namespace nexus {
     }
 
     template <typename Handle>
-    static void dump(const af::versa<int, af::c_grid<2> > &obj, Handle &handle) {}
+    static void dump(const af::versa<int, af::c_grid<2> >& obj, Handle& handle) {}
   };
 
   template <typename Handle>
-  bool is_nx_class(const Handle &handle, std::string test_name) {
+  bool is_nx_class(const Handle& handle, std::string test_name) {
     if (handle.attrExists("NX_class")) {
       H5::Attribute attr = handle.openAttribute("NX_class");
       H5::DataType dtype = attr.getDataType();
@@ -216,7 +216,7 @@ namespace dials { namespace nexus {
   }
 
   template <typename Handle>
-  bool is_nxmx_entry(const Handle &handle) {
+  bool is_nxmx_entry(const Handle& handle) {
     try {
       if ("NXmx" == serialize<std::string>::load(handle.openDataSet("definition"))) {
         return true;
@@ -230,7 +230,7 @@ namespace dials { namespace nexus {
   }
 
   template <typename Handle>
-  bool is_nx_entry(const Handle &handle) {
+  bool is_nx_entry(const Handle& handle) {
     if (handle.attrExists("NX_class")) {
       H5::Attribute attr = handle.openAttribute("NX_class");
       H5::DataType dtype = attr.getDataType();
@@ -246,7 +246,7 @@ namespace dials { namespace nexus {
   }
 
   template <typename Handle, typename Iterator>
-  void find_nx_entries(Handle &handle, Iterator out) {
+  void find_nx_entries(Handle& handle, Iterator out) {
     for (std::size_t i = 0; i < handle.getNumObjs(); ++i) {
       if (handle.getObjTypeByIdx(i) == H5G_GROUP) {
         std::string name = handle.getObjnameByIdx(i);

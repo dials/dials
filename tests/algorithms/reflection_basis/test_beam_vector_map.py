@@ -17,9 +17,7 @@ SequenceAndModel = namedtuple(
 
 @pytest.fixture
 def sequence_and_model(dials_data):
-    sequence = load.imageset(
-        dials_data("centroid_test_data", pathlib=True) / "sweep.json"
-    )
+    sequence = load.imageset(dials_data("centroid_test_data") / "sweep.json")
     return SequenceAndModel(
         sequence=sequence,
         beam=sequence.get_beam(),

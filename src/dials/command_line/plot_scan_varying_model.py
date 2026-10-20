@@ -118,7 +118,6 @@ class Script:
         # cell plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -171,7 +170,6 @@ class Script:
         # orientation plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             crystal = exp.crystal
             scan = exp.scan
 
@@ -212,7 +210,6 @@ class Script:
         # beam centre plot
         dat = []
         for iexp, exp in enumerate(experiments):
-
             beam = exp.beam
             detector = exp.detector
             scan = exp.scan

@@ -22,16 +22,20 @@ def find_max_cell(
     filter_ice=True,
     filter_overlaps=True,
     overlaps_border=0,
+    convert_reflections_z_to_deg=True,
 ):
     logger.debug("Finding suitable max_cell based on %i reflections", len(reflections))
     # Exclude potential ice-ring spots from nearest neighbour analysis if needed
     if filter_ice:
-
         ice_sel = ice_rings_selection(reflections)
         reflections = reflections.select(~ice_sel)
         logger.debug(
             "Rejecting %i reflections at ice ring resolution", ice_sel.count(True)
         )
+        if not reflections.size():
+            raise DialsIndexError(
+                "No spots left for max cell analysis after ice-ring filtering"
+            )
 
     # need bounding box in reflections to find overlaps; this is not there if
     # spots are from XDS (for example)
@@ -63,6 +67,7 @@ def find_max_cell(
             percentile=nearest_neighbor_percentile,
             histogram_binning=histogram_binning,
             nn_per_bin=nn_per_bin,
+            convert_reflections_z_to_deg=convert_reflections_z_to_deg,
         )
     except AssertionError as e:
         raise DialsIndexError("Failure in nearest neighbour analysis:\n" + str(e))

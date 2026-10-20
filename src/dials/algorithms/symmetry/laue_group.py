@@ -40,6 +40,7 @@ class LaueGroupAnalysis(symmetry_base):
         relative_length_tolerance=None,
         absolute_angle_tolerance=None,
         best_monoclinic_beta=True,
+        apply_sigma_correction=True,
     ):
         """Initialise a LaueGroupAnalysis object.
 
@@ -77,6 +78,7 @@ class LaueGroupAnalysis(symmetry_base):
             relative_length_tolerance=relative_length_tolerance,
             absolute_angle_tolerance=absolute_angle_tolerance,
             best_monoclinic_beta=best_monoclinic_beta,
+            apply_sigma_correction=apply_sigma_correction,
         )
 
         self._estimate_cc_sig_fac()
@@ -167,7 +169,6 @@ class LaueGroupAnalysis(symmetry_base):
             self.cc_sig_fac = 0
 
     def _estimate_cc_true(self):
-
         # A1.2. Estimation of E(CC; S).
 
         # (i)
@@ -238,8 +239,8 @@ class LaueGroupAnalysis(symmetry_base):
         # solution p_best and that for the next best solution p_next:
         #   confidence = [p_best * (p_best - p_next)]^1/2.
 
-        for i, score in enumerate(self.subgroup_scores[:-1]):
-            next_score = self.subgroup_scores[i + 1]
+        for isc, score in enumerate(self.subgroup_scores[:-1]):
+            next_score = self.subgroup_scores[isc + 1]
             if score.likelihood > 0 and next_score.likelihood > 0:
                 lgc = score.likelihood * (score.likelihood - next_score.likelihood)
                 confidence = abs(lgc) ** 0.5
@@ -287,7 +288,7 @@ class LaueGroupAnalysis(symmetry_base):
 
         header = ("likelihood", "Z-CC", "CC", "N", "", "Operator")
         rows = [header]
-        for score in self.sym_op_scores:
+        for isc, score in enumerate(self.sym_op_scores):
             if score.likelihood > 0.9:
                 stars = "***"
             elif score.likelihood > 0.7:
@@ -296,6 +297,7 @@ class LaueGroupAnalysis(symmetry_base):
                 stars = "*"
             else:
                 stars = ""
+            letter = chr(ord("a") + isc)
             rows.append(
                 (
                     f"{score.likelihood:.3f}",
@@ -303,7 +305,7 @@ class LaueGroupAnalysis(symmetry_base):
                     f"{score.cc.coefficient():.2f}",
                     "%i" % score.n_refs,
                     stars,
-                    f"{score.sym_op.r().info()}",
+                    f"{letter}: {score.sym_op.r().info()}",
                 )
             )
         output.append("\n" + "-" * 80 + "\n")
@@ -319,8 +321,9 @@ class LaueGroupAnalysis(symmetry_base):
             "Zcc-",
             "CC",
             "CC-",
-            "delta",
+            "delta(°)",
             "Reindex operator",
+            "Elements",
         )
         rows = [header]
         for score in self.subgroup_scores:
@@ -332,6 +335,10 @@ class LaueGroupAnalysis(symmetry_base):
                 stars = "*"
             else:
                 stars = ""
+            elements = "".join(
+                (chr(ord("a") + isub) if in_subgroup else ".")
+                for isub, in_subgroup in enumerate(score.sym_op_in_subgroup)
+            )
             rows.append(
                 (
                     f"{score.subgroup['best_subsym'].space_group_info()}",
@@ -344,6 +351,7 @@ class LaueGroupAnalysis(symmetry_base):
                     f"{score.cc_against.coefficient(): .2f}",
                     f"{score.subgroup['max_angular_difference']:.1f}",
                     f"{score.subgroup['cb_op_inp_best']}",
+                    elements,
                 )
             )
         output.append("\n" + "-" * 80 + "\n")
@@ -529,10 +537,8 @@ class ScoreSymmetryElement:
                     outliers.set_selected(col > q3_x + cut_x, True)
                     outliers.set_selected(col < q1_x - cut_x, True)
             if outliers.count(True):
-                logger.debug(
-                    "Rejecting %s outlier value%s",
-                    libtbx.utils.plural_s(outliers.count(True)),
-                )
+                n, s = libtbx.utils.plural_s(outliers.count(True))
+                logger.debug(f"Rejecting {n} outlier value{s}")
                 x = x.select(~outliers)
                 y = y.select(~outliers)
 
@@ -620,8 +626,11 @@ class ScoreSubGroup:
         patterson_group = subgroup["subsym"].space_group()
         self.cc_for = CorrelationCoefficientAccumulator()
         self.cc_against = CorrelationCoefficientAccumulator()
+        self.sym_op_in_subgroup = []
         for score in sym_op_scores:
-            if score.sym_op in patterson_group:
+            in_subgroup = score.sym_op in patterson_group
+            self.sym_op_in_subgroup.append(in_subgroup)
+            if in_subgroup:
                 self.cc_for += score.cc
             else:
                 self.cc_against += score.cc
@@ -710,6 +719,7 @@ class ScoreSubGroup:
             "cc_against": self.cc_against.coefficient(),
             "max_angular_difference": self.subgroup["max_angular_difference"],
             "cb_op": f"{self.subgroup['cb_op_inp_best']}",
+            "sym_op_in_subgroup": self.sym_op_in_subgroup,
         }
 
 

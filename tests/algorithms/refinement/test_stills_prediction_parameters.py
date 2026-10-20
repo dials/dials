@@ -121,7 +121,6 @@ class _Test:
         self.reflections["xyzobs.mm.variance"] += (1e-3, 1e-3, 1e-6)
 
     def get_fd_gradients(self, pred_param, ref_predictor):
-
         # get finite difference gradients
         p_vals = pred_param.get_param_vals()
         deltas = [1.0e-7] * len(p_vals)
@@ -129,7 +128,6 @@ class _Test:
         fd_grads = []
         p_names = pred_param.get_param_names()
         for i in range(len(deltas)):
-
             # save parameter value
             val = p_vals[i]
 
@@ -208,7 +206,6 @@ def test_stills_pred_param(tc):
     fd_grads = tc.get_fd_gradients(pred_param, ref_predictor)
 
     for i, (an_grad, fd_grad) in enumerate(zip(an_grads, fd_grads)):
-
         # compare FD with analytical calculations
         print(f"\nParameter {i}: {fd_grad['name']}")
 

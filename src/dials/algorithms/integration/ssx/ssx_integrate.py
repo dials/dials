@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 import functools
+import pathlib
 from abc import ABC, abstractmethod
 
 import numpy as np
 from jinja2 import ChoiceLoader, Environment, PackageLoader
 
+from dxtbx.format.FormatMultiImage import FormatMultiImage
+
 import dials.extensions
 from dials.array_family import flex
+from dials.util.plotly_utils import round_for_json
 
 
 def generate_html_report(plots_data, filename):
@@ -29,7 +33,6 @@ def generate_html_report(plots_data, filename):
 
 
 class SimpleIntegrator(ABC):
-
     """Define an interface for ssx prediction/integration processing"""
 
     def __init__(self, params):
@@ -38,14 +41,14 @@ class SimpleIntegrator(ABC):
         BackgroundAlgorithm = dials.extensions.Background.load(
             params.integration.background.algorithm
         )
-        flex.reflection_table.background_algorithm = functools.partial(
-            BackgroundAlgorithm, params
+        flex.reflection_table.background_algorithm = staticmethod(
+            functools.partial(BackgroundAlgorithm, params)
         )
         CentroidAlgorithm = dials.extensions.Centroid.load(
             params.integration.centroid.algorithm
         )
-        flex.reflection_table.centroid_algorithm = functools.partial(
-            CentroidAlgorithm, params
+        flex.reflection_table.centroid_algorithm = staticmethod(
+            functools.partial(CentroidAlgorithm, params)
         )
 
     @abstractmethod
@@ -76,8 +79,7 @@ class SimpleIntegrator(ABC):
         pass
 
 
-class NullCollector(object):
-
+class NullCollector:
     """
     Defines a null data collector for cases where you don't want
     to record data during the process.
@@ -102,8 +104,7 @@ class NullCollector(object):
         pass
 
 
-class OutputCollector(object):
-
+class OutputCollector:
     """
     Defines a data collector to log common quantities for all algorithm choices
     for an individual image.
@@ -116,6 +117,14 @@ class OutputCollector(object):
     # for integration of a single image.
 
     def initial_collect(self, experiment, reflection_table):
+        # for things like nexus files, we want image to be expressed like
+        # experiment_001.nxs-50, experiment_001.nxs-62, etc.
+        # for things like cbfs, we want image to be expressed like
+        # experiment_0050.cbf, experiment_0062.cbf, etc.
+        self.data["image"] = pathlib.Path(experiment.imageset.paths()[0]).name
+        if issubclass(experiment.imageset.get_format_class(), FormatMultiImage):
+            index = experiment.imageset.indices()[0] + 1
+            self.data["image"] += f"-{index}"
         self.data["initial_n_refl"] = reflection_table.size()
         xobs, yobs, _ = reflection_table["xyzobs.px.value"].parts()
         xcal, ycal, _ = reflection_table["xyzcal.px"].parts()
@@ -148,7 +157,6 @@ class OutputCollector(object):
 
 
 class OutputAggregator:
-
     """
     Simple aggregator class to aggregate data from all images and generate
     json data for output/plotting.
@@ -196,7 +204,7 @@ class OutputAggregator:
                     (
                         {
                             "x": n,
-                            "y": I_over_sigma,
+                            "y": round_for_json(I_over_sigma),
                             "type": "scatter",
                             "mode": "markers",
                         }
@@ -252,14 +260,14 @@ class OutputAggregator:
                 "data": [
                     {
                         "x": n,
-                        "y": overall_rmsd,
+                        "y": round_for_json(overall_rmsd),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "Initial 2D rmsd of strong spots",
                     },
                     {
                         "x": n,
-                        "y": overall_rmsd_preprocessed,
+                        "y": round_for_json(overall_rmsd_preprocessed),
                         "type": "scatter",
                         "mode": "markers",
                         "name": "2D rmsd after preprocess",
@@ -288,7 +296,7 @@ class OutputAggregator:
                 data_angular.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": round_for_json(v, ndigits=6),
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,
@@ -299,7 +307,7 @@ class OutputAggregator:
                 data.append(
                     {
                         "x": n,
-                        "y": list(v),
+                        "y": round_for_json(v, ndigits=6),
                         "type": "scatter",
                         "mode": "markers",
                         "name": k,

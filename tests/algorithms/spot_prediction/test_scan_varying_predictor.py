@@ -3,7 +3,6 @@ Test prediction of reflections using the scan-varying reflection
 predictor.
 """
 
-
 from __future__ import annotations
 
 import math
@@ -143,7 +142,7 @@ def test():
 
     assert len(refs1_sorted) == len(refs2_sorted)
 
-    for (r1, r2) in zip(refs1_sorted, refs2_sorted):
+    for r1, r2 in zip(refs1_sorted, refs2_sorted):
         assert r1["miller_index"] == r2["miller_index"]
         dz = r1["xyzcal.px"][2] - r2["xyzcal.px"][2]
         assert abs(dz) < 0.01

@@ -9,7 +9,7 @@ from dials.algorithms.simulation.reciprocal_space import Simulator
 
 def test_simulation(dials_data):
     experiments = ExperimentListFactory.from_json_file(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+        dials_data("centroid_test_data") / "experiments.json",
         check_format=False,
     )
 

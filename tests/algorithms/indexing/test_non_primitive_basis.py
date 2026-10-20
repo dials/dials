@@ -27,7 +27,6 @@ def test_detect(space_group_symbol):
 
 @pytest.mark.parametrize("space_group_symbol", bravais_types.acentric)
 def test_correct(space_group_symbol):
-
     sgi = sgtbx.space_group_info(space_group_symbol)
     cs = sgi.any_compatible_crystal_symmetry(volume=1000)
     ms = cs.build_miller_set(anomalous_flag=True, d_min=1).expand_to_p1()

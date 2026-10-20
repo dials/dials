@@ -141,6 +141,29 @@ def prepare_input(params, experiments, reflections):
         reflections, experiments, params.exclude_images
     )
 
+    is_ssx_data = any(e.is_still() for e in experiments)
+    if params.scaling_options.full_matrix is Auto:
+        if is_ssx_data:
+            params.scaling_options.full_matrix = False
+        elif len(experiments) > 10:
+            params.scaling_options.full_matrix = False
+        else:
+            params.scaling_options.full_matrix = True
+        logger.info(
+            f"Set scaling_options.full_matrix={params.scaling_options.full_matrix}"
+        )
+
+    if (
+        params.reflection_selection.method == "auto"
+    ):  # auto parsed differently if choice type
+        if is_ssx_data:
+            params.reflection_selection.method = "intensity_ranges"
+        else:
+            params.reflection_selection.method = "quasi_random"
+        logger.info(
+            f"Set reflection_selection.method={params.reflection_selection.method}"
+        )
+
     #### Allow checking of consistent indexing, useful for
     #### targeted / incremental scaling.
     if params.scaling_options.check_consistent_indexing:
@@ -173,9 +196,11 @@ def prepare_input(params, experiments, reflections):
     #### and reflection table to the lists
     if params.scaling_options.reference:
         # Set a suitable d_min in the case when we might have a model file
-        d_min_for_structure_model = 2.0
+        d_min_for_structure_model = None
         if params.cut_data.d_min not in (None, Auto):
             d_min_for_structure_model = params.cut_data.d_min
+        else:
+            d_min_for_structure_model = min(flex.min(r["d"]) for r in reflections)
         expt, reflection_table = create_datastructures_for_reference_file(
             experiments,
             params.scaling_options.reference,
@@ -184,8 +209,28 @@ def prepare_input(params, experiments, reflections):
             k_sol=params.scaling_options.reference_model.k_sol,
             b_sol=params.scaling_options.reference_model.b_sol,
         )
+        if params.cut_data.small_scale_cutoff is Auto:
+            mean_ref_intensity = flex.mean(reflection_table["intensity"])
+            mean_data_intensities = [
+                flex.mean(
+                    r["intensity.sum.value"].select(r.get_flags(r.flags.integrated_sum))
+                )
+                for r in reflections
+            ]
+            n_refls = [r.size() for r in reflections]
+            mean_data_intensity = sum(
+                n * m for n, m in zip(mean_data_intensities, n_refls)
+            ) / sum(n_refls)
+            ratio = mean_ref_intensity / mean_data_intensity
+            params.cut_data.small_scale_cutoff = round(1e-5 / ratio, 12)
+            logger.info(
+                f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}"
+            )
         experiments.append(expt)
         reflections.append(reflection_table)
+    elif params.cut_data.small_scale_cutoff is Auto:
+        params.cut_data.small_scale_cutoff = 0.001
+        logger.info(f"Set small scale cutoff to {params.cut_data.small_scale_cutoff}")
 
     #### Perform any non-batch cutting of the datasets, including the target dataset
     best_unit_cell = params.reflection_selection.best_unit_cell
@@ -229,6 +274,8 @@ class ScalingAlgorithm:
         )
         logger.info("\nScaling models have been initialised for all experiments.")
         logger.info("%s%s%s", "\n", "=" * 80, "\n")
+        if len(self.experiments) == 1 and self.experiments[0].scaling_model.id_ == "KB":
+            raise RuntimeError("Invalid model option (KB) for scaling a single dataset")
 
         self.experiments = set_image_ranges_in_scaling_models(self.experiments)
 
@@ -272,7 +319,6 @@ class ScalingAlgorithm:
                 self.params.scaling_options.only_target
                 or self.params.scaling_options.reference
             ):
-
                 self.scaler = targeted_scaling_algorithm(self.scaler)
                 return
             # Now pass to a multiscaler ready for next round of scaling.
@@ -406,9 +452,11 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
 
                 if counter == 1:
                     results.initial_expids_and_image_ranges = [
-                        (exp.identifier, exp.scan.get_image_range())
-                        if exp.scan
-                        else None
+                        (
+                            (exp.identifier, exp.scan.get_image_range())
+                            if exp.scan
+                            else None
+                        )
                         for exp in self.experiments
                     ]
 
@@ -416,6 +464,9 @@ multi-dataset scaling mode (not single dataset or scaling against a reference)""
                 delta_cc_params.mode = self.params.filtering.deltacchalf.mode
                 delta_cc_params.group_size = (
                     self.params.filtering.deltacchalf.group_size
+                )
+                delta_cc_params.partiality_threshold = (
+                    self.params.cut_data.partiality_cutoff
                 )
                 delta_cc_params.stdcutoff = self.params.filtering.deltacchalf.stdcutoff
                 logger.info("\nPerforming a round of filtering.\n")
@@ -584,7 +635,6 @@ def scaling_algorithm(scaler):
         scaler.params.reflection_selection.intensity_choice == "combine"
         or scaler.params.scaling_options.outlier_rejection
     ):
-
         expand_and_do_outlier_rejection(scaler)
 
         do_intensity_combination(scaler, reselect=True)
@@ -605,7 +655,6 @@ def scaling_algorithm(scaler):
         need_to_rescale = True
 
     if scaler.params.scaling_options.full_matrix:
-
         scaler.perform_scaling(
             engine=scaler.params.scaling_refinery.full_matrix_engine,
             max_iterations=scaler.params.scaling_refinery.full_matrix_max_iterations,

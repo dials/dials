@@ -54,9 +54,8 @@ def _index(reflection_table, experiment, fail_on_bad_index=False):
 
         # Print warning if reindexing
         if tuple(h) != miller_index[i]:
-            logger.warn(
-                "Reindexing (% 3d, % 3d, % 3d) -> (% 3d, % 3d, % 3d)"
-                % (miller_index[i] + tuple(h))
+            logger.warning(
+                f"Reindexing ({miller_index[i][0]:3d}, {miller_index[i][1]:3d}, {miller_index[i][2]:3d}) -> ({h[0][0]:3d}, {h[1][0]:3d}, {h[2][0]:3d})"
             )
             num_reindexed += 1
             miller_index[i] = matrix.col(flumpy.from_numpy(h))
@@ -169,12 +168,11 @@ def _filter_reflections_based_on_centroid_distance(
     logger.info(" Mean X RMSD: %f" % (sqrt(flex.sum(Xres**2) / len(Xres))))
     logger.info(" Mean Y RMSD: %f" % (sqrt(flex.sum(Yres**2) / len(Yres))))
     logger.info(" Mean E RMSD: %f" % (sqrt(flex.sum(Eres**2) / len(Eres))))
-    logger.info(" MCD location estimate: %.4f, %.4f" % tuple(T))
+    logger.info(" MCD location estimate: {:.4f}, {:.4f}".format(*tuple(T)))
     logger.info(
         """ MCD scatter estimate:
-    %.7f, %.7f,
-    %.7f, %.7f"""
-        % tuple(S)
+    {:.7f}, {:.7f},
+    {:.7f}, {:.7f}""".format(*tuple(S))
     )
     logger.info(" Number of outliers: %d" % selection1.count(False))
     logger.info(

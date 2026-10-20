@@ -189,8 +189,8 @@ class Script:
         reflections = reflections.select(mask)
 
         logger.info(
-            "{} out of {} reflections remain after filtering to keep only strong"
-            " and integrated centroids".format(len(reflections), orig_len)
+            f"{len(reflections)} out of {orig_len} reflections remain after filtering to keep only strong"
+            " and integrated centroids"
         )
         return reflections
 
@@ -297,10 +297,12 @@ class Script:
             "\n".join(
                 [
                     "TITLE    Auto-generated .p4p file from dials.two_theta_refine",
-                    "CELL     %.4f %.4f %.4f %.4f %.4f %.4f %.4f"
-                    % tuple(cell + (vol,)),
-                    "CELLSD   %.4f %.4f %.4f %.4f %.4f %.4f %.4f"
-                    % tuple(esd + (vol_esd,)),
+                    "CELL     {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}".format(
+                        *tuple(cell + (vol,))
+                    ),
+                    "CELLSD   {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f} {:.4f}".format(
+                        *tuple(esd + (vol_esd,))
+                    ),
                     "SOURCE   SYNCH   %.6f" % beam.get_wavelength(),
                     "",
                 ]

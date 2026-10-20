@@ -89,12 +89,11 @@ def beam_centre_raw_image_px(detector, s0):
 
 
 def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
-
     # standard static beam model string
     s = str(beam)
 
     # time of flight experiments have no scan points
-    if experiment_type == ExperimentType.TOF:
+    if experiment_type in [ExperimentType.TOF, ExperimentType.LAUE]:
         return s
 
     # report whether the beam is scan-varying
@@ -113,16 +112,14 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
                 y_px,
             )
             x_raw_px, y_raw_px = beam_centre_raw_image_px(detector, beam.get_s0())
-            beam_centre_raw_px_str = "    px, raw image: ({:.2f},{:.2f})".format(
-                x_raw_px,
-                y_raw_px,
+            beam_centre_raw_px_str = (
+                f"    px, raw image: ({x_raw_px:.2f},{y_raw_px:.2f})"
             )
             x_raw_mm, y_raw_mm = detector[panel_id].pixel_to_millimeter(
                 (x_raw_px, y_raw_px)
             )
-            beam_centre_raw_mm_str = "    mm, raw image: ({:.2f},{:.2f})".format(
-                x_raw_mm,
-                y_raw_mm,
+            beam_centre_raw_mm_str = (
+                f"    mm, raw image: ({x_raw_mm:.2f},{y_raw_mm:.2f})"
             )
         else:
             beam_centre_mm_str = f"    mm: ({x:.2f},{y:.2f})"
@@ -155,24 +152,13 @@ def show_beam(detector, beam, experiment_type: ExperimentType | None = None):
         xy = [detector[pnl].millimeter_to_pixel(e) for e in xy]
         x_px, y_px = zip(*xy)
 
-        s += "Beam centre range (mm): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
-            min(x_mm),
-            max(x_mm),
-            min(y_mm),
-            max(y_mm),
-        )
-        s += "Beam centre range (px): ([{:.2f},{:.2f}],[{:.2f},{:.2f}])\n".format(
-            min(x_px),
-            max(x_px),
-            min(y_px),
-            max(y_px),
-        )
+        s += f"Beam centre range (mm): ([{min(x_mm):.2f},{max(x_mm):.2f}],[{min(y_mm):.2f},{max(y_mm):.2f}])\n"
+        s += f"Beam centre range (px): ([{min(x_px):.2f},{max(x_px):.2f}],[{min(y_px):.2f},{max(y_px):.2f}])\n"
 
     return s
 
 
 def show_goniometer(goniometer):
-
     # standard static goniometer model string
     s = str(goniometer)
 
@@ -252,7 +238,6 @@ def run(args=None):
 
 
 def show_experiments(experiments, show_scan_varying=False):
-
     text = []
     for i_expt, expt in enumerate(experiments):
         text.append("Experiment %i:" % i_expt)
@@ -268,7 +253,7 @@ def show_experiments(experiments, show_scan_varying=False):
         except AttributeError:
             pass
         text.append(str(expt.detector))
-        if expt.get_type() == ExperimentType.TOF:
+        if expt.get_type() in [ExperimentType.TOF, ExperimentType.LAUE]:
             min_wavelength = min(expt.beam.get_wavelength_range())
             s0 = tuple([i / min_wavelength for i in expt.beam.get_unit_s0()])
         else:
@@ -316,7 +301,6 @@ def show_experiments(experiments, show_scan_varying=False):
 
 
 def show_image_statistics(experiments, im_type):
-
     if im_type == "raw":
         raw = True
     elif im_type == "corrected":
@@ -439,10 +423,9 @@ def show_reflections(
     max_reflections=None,
     show_identifiers=False,
 ):
-
     text = []
 
-    from orderedset import OrderedSet
+    from ordered_set import OrderedSet
 
     formats = {
         "miller_index": "%i, %i, %i",
@@ -659,7 +642,6 @@ def show_reflections(
         column = flex.std_string()
         max_element_lengths = [c.max_element_length() for c in c_strings]
         for i in range(len(c_strings[0])):
-
             column.append(
                 f"%{len(key)}s"
                 % ", ".join(

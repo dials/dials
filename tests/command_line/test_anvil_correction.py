@@ -2,7 +2,6 @@
 Tests for dials.command_line.anvil_correction.
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -21,7 +20,7 @@ from dials.command_line.anvil_correction import (
 
 def test_correct_correction(dials_data):
     """Test that the anvil absorption correction is producing expected values."""
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
 
     # We'll need an integrated reflection table and an experiment list.
     reflections_file = data_dir / "integrated.pickle"
@@ -73,7 +72,7 @@ def test_correct_correction(dials_data):
         assert pytest.approx(reflections[case].select(~flagged)) == old_reflections[
             case
         ].select(~flagged), (
-            "Un-integrated reflections have been erroneously " "'corrected'."
+            "Un-integrated reflections have been erroneously 'corrected'."
         )
 
         # Check that the applied corrections are correct.
@@ -84,7 +83,7 @@ def test_correct_correction(dials_data):
 
 def test_help_message(dials_data, capsys):
     """Test that we get a help message when improper input is provided."""
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
 
     # We'll need an integrated reflection table and an experiment list.
     reflections_file = str(data_dir / "integrated.pickle")
@@ -106,7 +105,7 @@ def test_help_message(dials_data, capsys):
 
 def test_command_line(dials_data, run_in_tmp_path):
     """Test that the program runs correctly."""
-    data_dir = dials_data("centroid_test_data", pathlib=True)
+    data_dir = dials_data("centroid_test_data")
 
     # We'll need an integrated reflection table and an experiment list.
     reflections_file = str(data_dir / "integrated.pickle")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import wx
 
+from dials.util import use_conda_gsettings_schemas
 from dials.viewer.viewer_low_level_util import (
     MyGrid,
     flex_3d_frame,
@@ -69,6 +70,7 @@ class show_3d:
     """
 
     def __init__(self, flex_arr_one, flex_arr_two=None):
+        use_conda_gsettings_schemas()
         app = show_3d_wx_app(redirect=False)
         app.in_lst(flex_arr_one, flex_arr_two)
         app.MainLoop()
@@ -89,10 +91,10 @@ class show_3d_wx_app(wx.App):
 
 class show_reflections:
     def __init__(self, table, two_windows=False):
-
         # two_windows = True
         print("two_windows =", two_windows)
 
+        use_conda_gsettings_schemas()
         if two_windows:
             app = show_tabl_2fr_wx_app(redirect=False)
         else:
@@ -103,7 +105,6 @@ class show_reflections:
 
 class show_tabl_2fr_wx_app(wx.App):
     def OnInit(self):
-
         self.ImgFrame = flex_3d_frame(None, "DIALS reflections viewer IMG")
         self.flex_panel = flex_arr_img_panel(self.ImgFrame)
         self.ImgFrame.frame_ini_img(self.flex_panel)
@@ -141,7 +142,6 @@ class show_tabl_1fr_wx_app(wx.App):
         return True
 
     def in_tabl(self, table, two_windows):
-
         # if not two_windows:
         self.upper_panel.ini_n_intro(table)
         self.data_grid.ini_n_intro(table)

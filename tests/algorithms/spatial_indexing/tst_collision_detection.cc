@@ -56,45 +56,45 @@ namespace dials { namespace algorithms {
 
   // Helper functions needed for 2D collision detection
   template <>
-  double get_minimum_bound<0, Box>(const Box &b) {
+  double get_minimum_bound<0, Box>(const Box& b) {
     return b.x0;
   }
   template <>
-  double get_minimum_bound<1, Box>(const Box &b) {
+  double get_minimum_bound<1, Box>(const Box& b) {
     return b.y0;
   }
   template <>
-  double get_maximum_bound<0, Box>(const Box &b) {
+  double get_maximum_bound<0, Box>(const Box& b) {
     return b.x1;
   }
   template <>
-  double get_maximum_bound<1, Box>(const Box &b) {
+  double get_maximum_bound<1, Box>(const Box& b) {
     return b.y1;
   }
 
   // Helper functions needed for 3D collision detection
   template <>
-  double get_minimum_bound<0, Box3d>(const Box3d &b) {
+  double get_minimum_bound<0, Box3d>(const Box3d& b) {
     return b.x0;
   }
   template <>
-  double get_minimum_bound<1, Box3d>(const Box3d &b) {
+  double get_minimum_bound<1, Box3d>(const Box3d& b) {
     return b.y0;
   }
   template <>
-  double get_minimum_bound<2, Box3d>(const Box3d &b) {
+  double get_minimum_bound<2, Box3d>(const Box3d& b) {
     return b.z0;
   }
   template <>
-  double get_maximum_bound<0, Box3d>(const Box3d &b) {
+  double get_maximum_bound<0, Box3d>(const Box3d& b) {
     return b.x1;
   }
   template <>
-  double get_maximum_bound<1, Box3d>(const Box3d &b) {
+  double get_maximum_bound<1, Box3d>(const Box3d& b) {
     return b.y1;
   }
   template <>
-  double get_maximum_bound<2, Box3d>(const Box3d &b) {
+  double get_maximum_bound<2, Box3d>(const Box3d& b) {
     return b.z1;
   }
 
@@ -189,7 +189,7 @@ void tst_detect_3d() {
   std::cout << "OK" << std::endl;
 }
 
-int main(int argc, char const *argv[]) {
+int main(int argc, char const* argv[]) {
   tst_detect_2d();
   tst_detect_3d();
 

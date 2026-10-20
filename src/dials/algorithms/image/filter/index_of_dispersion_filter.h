@@ -39,7 +39,7 @@ namespace dials { namespace algorithms {
      * @param image The image to filter
      * @param size Size of the filter kernel (2 * size + 1)
      */
-    IndexOfDispersionFilter(const af::const_ref<FloatType, af::c_grid<2> > &image,
+    IndexOfDispersionFilter(const af::const_ref<FloatType, af::c_grid<2> >& image,
                             int2 size) {
       // Get the mean and variance maps
       MeanAndVarianceFilter<FloatType> filter(image, size);
@@ -105,8 +105,8 @@ namespace dials { namespace algorithms {
      * @param size Size of the filter kernel (2 * size + 1)
      * @param min_count The minimum counts under the filter to include the pixel
      */
-    IndexOfDispersionFilterMasked(const af::const_ref<FloatType, af::c_grid<2> > &image,
-                                  const af::const_ref<int, af::c_grid<2> > &mask,
+    IndexOfDispersionFilterMasked(const af::const_ref<FloatType, af::c_grid<2> >& image,
+                                  const af::const_ref<int, af::c_grid<2> >& mask,
                                   int2 size,
                                   int min_count) {
       // Get the mean and variance maps

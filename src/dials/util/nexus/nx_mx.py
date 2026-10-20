@@ -248,9 +248,9 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
     # Make up some fake stuff
     if scan is not None:
-        nx_detector[
-            "timestamp"
-        ] = scan.get_epochs().as_numpy_array()  # FIXME non-standard
+        nx_detector["timestamp"] = (
+            scan.get_epochs().as_numpy_array()
+        )  # FIXME non-standard
         nx_detector["frame_time"] = scan.get_exposure_times().as_numpy_array()
         nx_detector["frame_time"].attrs["units"] = "s"
         # Optional so don't try
@@ -278,7 +278,6 @@ def dump_detector(entry, detector, beam, imageset, scan):
 
     # Loop through all the panels
     for i, panel in enumerate(detector):
-
         # Get some panel attributes
         pixel_size = panel.get_pixel_size()
         image_size = panel.get_image_size()
@@ -644,7 +643,7 @@ def load_crystal(entry):
     nx_sample = get_nx_sample(entry, "sample")
 
     # Set the space group
-    space_group_symbol = nx_sample["unit_cell_group"][()]
+    space_group_symbol = h5str(nx_sample["unit_cell_group"][()])
 
     # Get depends on
     if h5str(nx_sample["depends_on"][()]) != ".":
@@ -690,7 +689,9 @@ def load_crystal(entry):
     assert orientation_matrix.all()[2] == 3
 
     # Construct the crystal model
-    crystal = Crystal(real_space_a, real_space_b, real_space_c, space_group_symbol)
+    crystal = Crystal(
+        real_space_a, real_space_b, real_space_c, "Hall: " + space_group_symbol
+    )
 
     # Sort out scan points
     if unit_cell.all()[0] > 1:
@@ -733,7 +734,6 @@ def dump(entry, experiments, params):
 
     # Get the experiment
     for index, experiment in enumerate(experiments):
-
         # Create the entry
         assert ("experiment_%d" % index) not in entry
         nxmx = entry.create_group("experiment_%d" % index)
@@ -851,12 +851,11 @@ def load(entry, exp_index):
 
     assert len(entries) == len(exp_index)
     for nxmx, name in zip(entries, exp_index):
-        assert np.string_(nxmx.name) == name, (nxmx.name, name)
+        assert np.bytes_(nxmx.name) == name, (nxmx.name, name)
 
     index = []
     rotations = []
     for name in exp_index:
-
         # Get the entry
         nxmx = entry.file[name]
 

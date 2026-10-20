@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import re
 from math import isclose
+from typing import Tuple
 
 from cctbx import crystal, miller
 from cctbx.eltbx import chemical_elements
@@ -67,21 +68,50 @@ def export_shelx(scaled_data, experiment_list, params):
         scaled_data["intensity." + intensity_choice + ".variance"],
     )
     assert variances.all_gt(0)
-    i_obs = miller.array(miller_set, data=intensities)
-    i_obs.set_observation_type_xray_intensity()
-    i_obs.set_sigmas(flex.sqrt(variances))
+
+    # and a stub of an .ins file with information from the .expt file
+    _write_ins(
+        experiment_list,
+        best_unit_cell=params.mtz.best_unit_cell,
+        composition=params.small_molecule.composition or "CH",
+        ins_file=params.shelx.ins,
+    )
+
+    logger.info(f"Written {params.shelx.ins}")
 
     # If requested scale up data to maximise use of scale_range
+    scale = None
+    sigmas = flex.sqrt(variances)
     if params.shelx.scale:
-        max_val = max(
-            i_obs.data().min_max_mean().max, i_obs.sigmas().min_max_mean().max
-        )
-        min_val = min(
-            i_obs.data().min_max_mean().min, i_obs.sigmas().min_max_mean().min
-        )
+        max_val = max(max(sigmas), max(intensities))
+        min_val = min(min(sigmas), min(intensities))
+
         min_scale = params.shelx.scale_range[0] / min_val
         max_scale = params.shelx.scale_range[1] / max_val
         scale = min(min_scale, max_scale)
+
+    if experiment_list.all_laue() or experiment_list.all_tof():
+        sigmas = flex.sqrt(variances)
+        if scale is not None:
+            intensities *= scale
+            sigmas *= scale
+        batch_numbers = _generate_laue_batch_numbers(scaled_data)
+        return _export_as_shelx_hklf2(
+            filename=params.shelx.hklout,
+            miller_indices=scaled_data["miller_index"],
+            intensities=intensities,
+            sigmas=sigmas,
+            wavelengths=scaled_data["wavelength_cal"],
+            batch_numbers=batch_numbers,
+            normalise_if_format_overflow=True,
+            scale_range=params.shelx.scale_range,
+            scale_factor=scale,
+        )
+
+    i_obs = miller.array(miller_set, data=intensities)
+    i_obs.set_observation_type_xray_intensity()
+    i_obs.set_sigmas(flex.sqrt(variances))
+    if params.shelx.scale:
         i_obs = i_obs.apply_scaling(factor=scale)
 
     # write the SHELX HKL file
@@ -94,69 +124,213 @@ def export_shelx(scaled_data, experiment_list, params):
         )
     logger.info(f"Written {i_obs.size()} reflections to {hkl_file}")
 
-    # and a stub of an .ins file with information from the .expt file
-    _write_ins(
-        experiment_list,
-        best_unit_cell=params.mtz.best_unit_cell,
-        composition=params.shelx.composition,
-        ins_file=params.shelx.ins,
+
+def _generate_laue_batch_numbers(reflections: flex.reflection_table) -> flex.int:
+    if "imageset_id" in reflections:
+        idx_id = reflections["imageset_id"]
+    else:
+        idx_id = reflections["id"]
+
+    return idx_id
+
+
+def _export_as_shelx_hklf2(
+    filename: str,
+    miller_indices: flex.miller_index,
+    intensities: flex.double,
+    sigmas: flex.double,
+    batch_numbers: flex.int,
+    wavelengths: flex.double,
+    normalise_if_format_overflow: bool = False,
+    full_dynamic_range: bool = False,
+    scale_range: Tuple[float, float] | None = None,
+    scale_factor: float | None = None,
+) -> None:
+    """
+    Writes an HKL file using the HKLF 2 format:
+    H | K | L | Fo2 | σ(Fo2) | Batch | λ
+    """
+
+    ## Formatters to ensure .hkl file has correct columns
+
+    def fmt_3i4(h: int, k: int, l: int) -> str:
+        result = f"{int(h):4d}{int(k):4d}{int(l):4d}"
+        if len(result) != 12:
+            raise RuntimeError(f"SHELXL hkl file 3I4 format overflow: {result}")
+        return result
+
+    def fmt_f8(v: float) -> str:
+        result = f"{v:8.2f}"
+        if len(result) != 8:
+            result = f"{v:8.1f}"
+            if len(result) != 8:
+                result = f"{round(v):7d}."
+        return result
+
+    def fmt_fullrange_data(v: float) -> str:
+        if v < 0.0:
+            if abs(v) < 1.0:
+                result = f"{v:8.5f}"
+            else:
+                result = f"{v:8.6g}"
+                if "." not in result:
+                    result = f"{round(v):7d}."
+        else:
+            if v < 1.0:
+                result = f"{v:8.6f}"
+            else:
+                result = f"{v:8.7g}"
+            if "." not in result:
+                result = f"{round(v):7d}."
+        return result
+
+    def fmt_fullrange_sigma(v: float) -> str:
+        if abs(v) >= 1.0:
+            result = f"{v:8.7g}"
+            if "." not in result:
+                result = f"{round(v):7d}."
+        elif abs(v) < 1e-5:
+            result = f"{0.00001:8.5g}"
+        else:
+            result = f"{v:8.6g}"
+        return result
+
+    ## Sanity check
+
+    assert len(intensities) == len(sigmas)
+    assert len(intensities) == len(miller_indices)
+    assert len(intensities) == len(batch_numbers)
+    assert len(intensities) == len(wavelengths)
+
+    ## Scaling (same approach as cctbx miller_array_export_as_shelx_hklf)
+    # https://github.com/cctbx/cctbx_project/blob/09bc17a40132e4204b1142a093baed33929f6212/iotbx/shelx/hklf.py#L7
+    if scale_factor is not None:
+        intensities *= scale_factor
+        sigmas *= scale_factor
+
+    min_val = min(min(intensities), min(sigmas))
+    max_val = max(max(intensities), max(sigmas))
+    min_sc = 1.0
+    max_sc = 1.0
+    scale = 1.0
+
+    if full_dynamic_range:
+        # Use same values as miller_array_export_as_shelx_hklf
+        max_abs = 999999.0
+        max_val = max(abs(max_val), abs(min_val))
+        if max_val > max_abs:
+            scale = max_abs / max_val
+    else:
+        if scale_range is None:
+            # Use same values as miller_array_export_as_shelx_hklf
+            scale_range = (-999999.0, 9999999.0)
+        if min_val < scale_range[0]:
+            if not normalise_if_format_overflow:
+                raise RuntimeError(f"SHELX hkl file F8.2 format overflow: {min_val}")
+            min_sc = scale_range[0] / min_val
+        if max_val > scale_range[1]:
+            if not normalise_if_format_overflow:
+                raise RuntimeError(f"SHELX hkl file F8.2 format overflow: {max_val}")
+            max_sc = scale_range[1] / max_val
+        scale = min(min_sc, max_sc)
+
+    ## Write file
+
+    with open(filename, "w") as g:
+        for hkl, I, s, b, wl in zip(
+            miller_indices, intensities, sigmas, batch_numbers, wavelengths
+        ):
+            h, k, l = hkl
+            I_scaled = I * scale
+            s_scaled = s * scale
+
+            if full_dynamic_range:
+                line = (
+                    fmt_3i4(h, k, l)
+                    + fmt_fullrange_data(I_scaled)
+                    + fmt_fullrange_sigma(s_scaled)
+                )
+            else:
+                line = fmt_3i4(h, k, l) + fmt_f8(I_scaled) + fmt_f8(s_scaled)
+
+            line += f"{int(b):4d}{float(wl):8.4f}\n"
+            g.write(line)
+
+        g.write(f"{0:4d}{0:4d}{0:4d}{0.0:8.2f}{0.0:8.2f}{0:4d}{0.0:8.4f}\n")
+
+
+def single_wavelength(experiment_list):
+    """Return the wavelength shared by all experiments.
+
+    Raises ValueError if the experiments do not share a single wavelength."""
+
+    wavelengths = []
+    for exp in experiment_list:
+        wl = exp.beam.get_wavelength()
+        if not any(isclose(wl, w, abs_tol=1e-4) for w in wavelengths):
+            wavelengths.append(wl)
+    if len(wavelengths) > 1:
+        raise ValueError("Experiments have more than one wavelength")
+    return wavelengths[0]
+
+
+def unit_cell_and_esds(experiment_list, best_unit_cell=None):
+    """Determine the unit cell to report for an experiment list, along with its
+    standard uncertainties where these are meaningful.
+
+    A user-supplied best_unit_cell, or a cell determined from experiments that
+    do not share a common cell, has no associated esds. Returns a tuple of the
+    unit cell and either a 6-tuple of esds or None."""
+
+    # if user has supplied best_unit_cell use it
+    if best_unit_cell is not None:
+        return best_unit_cell, None
+
+    unit_cells = [
+        exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
+        for exp in experiment_list
+    ]
+    if len({uc.parameters() for uc in unit_cells}) > 1:
+        # have different cells so no esds
+        return determine_best_unit_cell(experiment_list), None
+
+    # identical (recalculated?) unit cell with esds
+    crystal = experiment_list[0].crystal
+    uc = crystal.get_recalculated_unit_cell() or crystal.get_unit_cell()
+    uc_sd = (
+        crystal.get_recalculated_cell_parameter_sd() or crystal.get_cell_parameter_sd()
     )
-    logger.info(f"Written {params.shelx.ins}")
+    return uc, (uc_sd or None)
+
+
+def unit_cell_volume_esd(experiment_list):
+    """Return the standard uncertainty of the unit cell volume of the first
+    experiment, or None if this is not available."""
+
+    crystal = experiment_list[0].crystal
+    for sd in (
+        crystal.get_recalculated_cell_volume_sd(),
+        crystal.get_cell_volume_sd(),
+    ):
+        # unset values are reported as 0.0 or -1.0 depending on the accessor
+        if sd > 0:
+            return sd
+    return None
 
 
 def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
     sg = experiment_list[0].crystal.get_space_group()
-    unit_cells = []
-    wavelengths = []
 
-    # Check for single wavelength
-    for exp in experiment_list:
-        wl = exp.beam.get_wavelength()
-        if not any([isclose(wl, w, abs_tol=1e-4) for w in wavelengths]):
-            wavelengths.append(wl)
-    if len(wavelengths) > 1:
-        raise ValueError("Experiments have more than one wavelength")
+    if experiment_list.all_laue() or experiment_list.all_tof():
+        wl = 1.0
     else:
-        wl = wavelengths[0]
+        wl = single_wavelength(experiment_list)
 
-    # if user has supplied best_unit_cell use it
-    if best_unit_cell is not None:
-        uc = best_unit_cell
-        uc_sd = None
-    else:
-        for exp in experiment_list:
-            unit_cells.append(
-                exp.crystal.get_recalculated_unit_cell() or exp.crystal.get_unit_cell()
-            )
-
-        if len(unit_cells) > 1:
-            if (
-                len({uc.parameters() for uc in unit_cells}) > 1
-            ):  # have different cells so no esds
-                uc = determine_best_unit_cell(experiment_list)
-                uc_sd = None
-            else:  # identical (recalculated?) unit cell with esds
-                uc = (
-                    experiment_list[0].crystal.get_recalculated_unit_cell()
-                    or experiment_list[0].crystal.get_unit_cell()
-                )
-                uc_sd = (
-                    experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
-                    or experiment_list[0].crystal.get_cell_parameter_sd()
-                )
-        else:  # single unit cell
-            uc = (
-                experiment_list[0].crystal.get_recalculated_unit_cell()
-                or experiment_list[0].crystal.get_unit_cell()
-            )
-            uc_sd = (
-                experiment_list[0].crystal.get_recalculated_cell_parameter_sd()
-                or experiment_list[0].crystal.get_cell_parameter_sd()
-            )
+    uc, uc_sd = unit_cell_and_esds(experiment_list, best_unit_cell)
 
     with open(ins_file, "w") as f:
         f.write(
-            f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ','')}\n"
+            f"TITL {sg.type().number()} in {sg.type().lookup_symbol().replace(' ', '')}\n"
         )
         f.write(
             "CELL {:7.5f} {:9.5f} {:9.5f} {:9.5f} {:8.4f} {:8.4f} {:8.4f}\n".format(
@@ -173,7 +347,7 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
         logger.info(
             f"Using composition {composition} to write SFAC & UNIT instructions"
         )
-        sorted_composition = _parse_compound(composition)
+        sorted_composition = parse_compound(composition)
         f.write("SFAC %s\n" % " ".join(sorted_composition))
         f.write(
             "UNIT %s\n"
@@ -185,7 +359,11 @@ def _write_ins(experiment_list, best_unit_cell, composition, ins_file):
         f.write("END\n")
 
 
-def _parse_compound(composition):
+def parse_compound(composition):
+    """Parse a chemical composition such as C3H7NO2S into an ordered dict of
+    element counts, with C first. A composition given as a bare list of
+    elements results in counts of zero."""
+
     elements = chemical_elements.proper_caps_list()[:94]
     m = re.findall(r"([A-Z][a-z]?)(\d*)", composition)
     if all(e[1] == "" for e in m):

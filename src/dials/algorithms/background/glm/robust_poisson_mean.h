@@ -41,7 +41,7 @@ namespace dials { namespace algorithms {
      * @param tolerance The stopping criteria
      * @param max_iter The maximum number of iterations
      */
-    RobustPoissonMean(const af::const_ref<double> &Y,
+    RobustPoissonMean(const af::const_ref<double>& Y,
                       double mean0,
                       double c,
                       double tolerance,
@@ -86,7 +86,7 @@ namespace dials { namespace algorithms {
     }
 
   private:
-    void compute(const af::const_ref<double> &Y) {
+    void compute(const af::const_ref<double>& Y) {
       // Number of observations and coefficients
       std::size_t n_obs = Y.size();
 

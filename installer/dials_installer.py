@@ -13,8 +13,8 @@ installer_path = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 libtbx_path = os.path.join(installer_path, "lib")
 if libtbx_path not in sys.path:
     sys.path.append(libtbx_path)
-from libtbx.auto_build import install_distribution
-from libtbx.auto_build import installer_utils
+from libtbx.auto_build import install_distribution  # noqa: E402
+from libtbx.auto_build import installer_utils  # noqa: E402
 
 
 class installer(install_distribution.installer):
@@ -22,7 +22,7 @@ class installer(install_distribution.installer):
     product_name = "DIALS"
     dest_dir_prefix = "dials"
     make_apps = []
-    configure_modules = ["dials", "xia2", "iota", "prime"]
+    configure_modules = ["dials", "xia2"]
     include_gui_packages = True
     base_package_options = ["--dials"]
     installer_dir = installer_path
@@ -40,8 +40,6 @@ class installer(install_distribution.installer):
         "dxtbx",
         "dials",
         "xia2",
-        "iota",
-        "prime",
     ]
     flags = list(install_distribution.installer.flags)
     try:
@@ -80,7 +78,7 @@ class installer(install_distribution.installer):
             traceback.print_exc()
             print("\n")
             sys.exit(
-                "Please report this installation error to dials-support@lists.sourceforge.net"
+                "Please report this installation error at https://github.com/dials/dials/issues"
             )
 
     def reconfigure_as_libtbx_does(self, log):

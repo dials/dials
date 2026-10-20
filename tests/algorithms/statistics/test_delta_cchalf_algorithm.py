@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from dxtbx.model import Crystal, Experiment, ExperimentList, Goniometer, Scan
 
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials
 from dials.array_family import flex
@@ -25,6 +25,7 @@ def generated_exp(n=1):
         experiments.append(
             Experiment(
                 scan=Scan(image_range=[1, 25], oscillation=[0.0, 1.0]),
+                goniometer=Goniometer(),
                 crystal=Crystal.from_dict(exp_dict),
                 identifier=str(i),
             )
@@ -98,6 +99,8 @@ def test_exclusion_in_CCHalfFromDials():
             },
             "dataset_removal": {"cutoff_value": -1.0},
         }
+        algo.cchalf_i = {0: 80.0, 1: 85.0, 2: 78.0, 3: 79.0}
+        algo.delta_cchalf_i = {0: 0.0, 1: 5.0, 2: -2.0, 3: -1.0}
         return algo
 
     with mock.patch(
@@ -106,6 +109,8 @@ def test_exclusion_in_CCHalfFromDials():
     ):
         script = CCHalfFromDials(params, expts, refls)
         script.run()
+        table = script.get_table(True)
+        assert table
 
         assert script.datasetid_to_groups == {"0": [], "1": [2]}  # all but 3 removed
         expts = script.experiments

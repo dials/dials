@@ -34,4 +34,8 @@ namespace dials { namespace af { namespace boost_python {
       .def("npanals", &ShoeboxExtractor::npanels);
   }
 
+  void export_shoebox_extract() {
+    def("ShoeboxExtractFromData", &ShoeboxExtractFromData);
+  }
+
 }}}  // namespace dials::af::boost_python

@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import numpy as np
+
 from cctbx.array_family import flex
+from dxtbx import flumpy
 from iotbx.data_plots import table_data
 from libtbx import phil
 
 from dials.util import resolution_analysis
+from dials.util.plotly_utils import round_for_json
 from dials_pychef_ext import ChefStatistics, Observations
 
 __all__ = [
@@ -110,7 +114,6 @@ class Statistics:
     def __init__(
         self, intensities, dose, n_bins=8, range_min=None, range_max=None, range_width=1
     ):
-
         if isinstance(dose, flex.double):
             sorted_dose = flex.sorted(dose)
             dd = sorted_dose[1:] - sorted_dose[:-1]
@@ -195,7 +198,6 @@ class Statistics:
         self.rd = chef_stats.rd()
 
     def completeness_vs_dose_str(self):
-
         anomalous = self.intensities.anomalous_flag()
 
         title = "Completeness vs. dose:"
@@ -205,7 +207,7 @@ class Statistics:
             column_labels = (
                 ["Dose"]
                 + [
-                    "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
+                    "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
                     for i in range(self.n_bins)
                 ]
                 + ["I+", "I-", "I", "dI"]
@@ -224,7 +226,7 @@ class Statistics:
             column_labels = (
                 ["Dose"]
                 + [
-                    "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
+                    "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
                     for i in range(self.n_bins)
                 ]
                 + ["I"]
@@ -267,7 +269,7 @@ class Statistics:
         column_labels = (
             ["Dose"]
             + [
-                "%.2f-%.2f(A)" % self.binner.bin_d_range(i + 1)
+                "{:.2f}-{:.2f}(A)".format(*self.binner.bin_d_range(i + 1))
                 for i in range(self.n_bins)
             ]
             + [thing]
@@ -331,7 +333,7 @@ class Statistics:
         scp_data.append(
             {
                 "x": x,
-                "y": list(self.scp),
+                "y": round_for_json(self.scp, ndigits=4),
                 "type": "scatter",
                 "name": "Scp overall",
                 "line": {"width": 3},
@@ -340,19 +342,26 @@ class Statistics:
         rcp_data.append(
             {
                 "x": x,
-                "y": list(self.rcp),
+                "y": round_for_json(self.rcp, ndigits=4),
                 "type": "scatter",
                 "name": "Rcp overall",
                 "line": {"width": 3},
             }
         )
-        rd_data.append({"x": x, "y": list(self.rd), "type": "scatter", "name": "Rd"})
+        rd_data.append(
+            {
+                "x": x,
+                "y": round_for_json(self.rd, ndigits=4),
+                "type": "scatter",
+                "name": "Rd",
+            }
+        )
 
         anomalous = self.intensities.anomalous_flag()
         completeness_data.append(
             {
                 "x": x,
-                "y": list(self.ieither_comp_overall),
+                "y": round_for_json(self.ieither_comp_overall, ndigits=4),
                 "type": "scatter",
                 "name": "I",
                 "line": {"width": 3},
@@ -362,7 +371,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iboth_comp_overall),
+                    "y": round_for_json(self.iboth_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "dI",
                     "line": {"width": 3},
@@ -371,7 +380,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iplus_comp_overall),
+                    "y": round_for_json(self.iplus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I+",
                     "line": {"width": 3},
@@ -380,7 +389,7 @@ class Statistics:
             completeness_data.append(
                 {
                     "x": x,
-                    "y": list(self.iminus_comp_overall),
+                    "y": round_for_json(self.iminus_comp_overall, ndigits=4),
                     "type": "scatter",
                     "name": "I-",
                     "line": {"width": 3},
@@ -389,11 +398,15 @@ class Statistics:
 
         if self.binner.n_bins_used() > 1:
             for j in range(self.binner.n_bins_used()):
-                bin_range_suffix = " (%.2f-%.2f A)" % self.binner.bin_d_range(j + 1)
+                bin_range_suffix = " ({:.2f}-{:.2f} A)".format(
+                    *self.binner.bin_d_range(j + 1)
+                )
                 scp_data.append(
                     {
                         "x": x,
-                        "y": list(self.scp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.scp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Scp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -402,7 +415,9 @@ class Statistics:
                 rcp_data.append(
                     {
                         "x": x,
-                        "y": list(self.rcp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.rcp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "Rcp" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -412,7 +427,9 @@ class Statistics:
                 completeness_data.append(
                     {
                         "x": x,
-                        "y": list(self.ieither_comp_bins[j : j + 1, :].as_1d()),
+                        "y": round_for_json(
+                            self.ieither_comp_bins[j : j + 1, :].as_1d(), ndigits=4
+                        ),
                         "type": "scatter",
                         "name": "I" + bin_range_suffix,
                         "line": {"width": 1, "dash": "dot"},
@@ -458,14 +475,21 @@ class Statistics:
 
 def batches_to_dose(batches, params):
     if len(params.batch):
-        dose = flex.double(batches.size(), -1)
+        batches = flumpy.to_numpy(batches)
+        mapping = {}
         for batch in params.batch:
             start = batch.dose_start
             step = batch.dose_step
             for i in range(batch.range[0], batch.range[1] + 1):
-                # inclusive range
-                dose.set_selected(batches == i, start + step * (i - batch.range[0]))
-        dose = dose.iround()
+                mapping[i] = start + step * (i - batch.range[0])
+
+        # Get unique values (sorted) + inverse indices (index into unique vals of original)
+        unique_vals, inverse = np.unique(batches, return_inverse=True)
+        # Build a small lookup table aligned with unique_vals
+        lookup = np.array([mapping[v] for v in unique_vals])
+        # Apply the mapping
+        dose = lookup[inverse]
+        dose = flumpy.from_numpy(dose)
     elif params.remove_gaps:
         dose = remove_batch_gaps(batches)
     else:

@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Sequence
-from typing import Iterator, List, Optional, TypeVar
+from collections.abc import Iterator, Sequence
+from typing import TypeVar
 
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx import phil
@@ -13,8 +13,8 @@ from libtbx.phil import parse
 import dials.util
 from dials.array_family import flex
 from dials.util import log
-from dials.util.combine_experiments import CombineWithReference  # noqa
 from dials.util.combine_experiments import (
+    CombineWithReference,  # noqa
     combine_experiments,
     combine_experiments_no_reflections,
     do_unit_cell_clustering,
@@ -182,6 +182,12 @@ phil_scope = parse(
       .help = "If not None, throw out any experiment with more than this"
               "many reflections"
 
+    sort_by_imageset_path_and_image_index = False
+      .type = bool
+      .expert_level = 2
+      .help = "If True, sort the experiments and reflections first by path"
+              "then by image number (for composite files like HDF5)"
+
     include scope dials.algorithms.integration.stills_significance_filter.phil_scope
   }
 """,
@@ -197,16 +203,15 @@ def _split_equal_parts_of_length(a: Sequence[T], n: int) -> Iterator[Sequence[T]
 def save_combined_experiments(
     experiments,
     clustering: phil.scope_extract,
-    reflections: Optional[flex.reflection_table] = None,
+    reflections: flex.reflection_table | None = None,
     max_batch_size: int = None,
     experiments_filename="combined.expt",
     reflections_filename="combined.refl",
 ):
-
-    output_experiments_list: List[ExperimentList] = []
-    output_reflections_list: List[flex.reflection_table] = []
-    expt_names_list: List[str] = []
-    refl_names_list: List[str] = []
+    output_experiments_list: list[ExperimentList] = []
+    output_reflections_list: list[flex.reflection_table] = []
+    expt_names_list: list[str] = []
+    refl_names_list: list[str] = []
 
     # cluster the resulting experiments if requested
     if clustering.use and len(experiments) > 1:
@@ -332,6 +337,22 @@ def _save_experiments_and_reflections(
                 batch_refls.as_file(ref_filename)
 
 
+def _sort_experiments_and_reflections(expts, refls):
+    print("Sorting %d experiments by imageset path and image index" % (len(expts)))
+    assert {len(iset) for iset in expts.imagesets()} == {1}
+    keys = [(expt.imageset.paths()[0], expt.imageset.indices()[0]) for expt in expts]
+    indices = [i[0] for i in sorted(enumerate(keys), key=lambda x: x[1])]
+
+    expts = ExperimentList([expts[indices[i]] for i in range(len(expts))])
+    if refls:
+        refls = flex.reflection_table.concat(
+            [refls.select(refls["id"] == indices[i]) for i in range(len(expts))]
+        )
+    print("Sorted")
+
+    return expts, refls
+
+
 @dials.util.show_mail_handle_errors()
 def run(args=None) -> None:
     usage = (
@@ -378,10 +399,10 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
             )
 
     # we want a list of experiment lists and list of experiment tables (one per input file)
-    experiment_lists: List[ExperimentList] = [
+    experiment_lists: list[ExperimentList] = [
         ExperimentList(o.data) for o in params.input.experiments
     ]
-    reflection_tables: List[flex.reflection_table] = [
+    reflection_tables: list[flex.reflection_table] = [
         o.data for o in params.input.reflections
     ]
     if reflection_tables:
@@ -389,6 +410,8 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
     else:
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
+    if params.output.sort_by_imageset_path_and_image_index:
+        expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
         expts,
         params.clustering,

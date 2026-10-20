@@ -16,7 +16,11 @@ from dials.algorithms.profile_model.gaussian_rs.calculator import (
 )
 from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
-from dials.command_line.integrate import filter_reference_pixels, process_reference
+from dials.command_line.integrate import (
+    filter_reference_pixels,
+    process_reference,
+    split_for_scan_range,
+)
 from dials.extensions.simple_background_ext import SimpleBackgroundExt
 from dials.extensions.simple_centroid_ext import SimpleCentroidExt
 from dials.model.data import make_image
@@ -29,6 +33,11 @@ logger = logging.getLogger("dials.command_line.simple_integrate")
 
 phil_scope = parse(
     """
+scan_range = None
+.type = ints(size=2)
+.help = "Explicitly specify the images to be processed. Only applicable"
+        "when experiment list contains a single imageset."
+.multiple = True
 output {
 reflections = 'simple_integrated.refl'
     .type = str
@@ -56,7 +65,6 @@ $ dev.dials.simple_integrate.py refined.expt refined.refl
 
 
 def run():
-
     """
     Input setup
     """
@@ -94,13 +102,17 @@ def run():
 
 
 def run_simple_integrate(params, experiments, reflections):
-
-    experiment = experiments[0]
-
     # Remove bad reflections (e.g. those not indexed)
     reflections, _ = process_reference(reflections)
     # Mask neighbouring pixels to shoeboxes
     reflections = filter_reference_pixels(reflections, experiments)
+
+    # Modify experiment list if scan range is set.
+    experiments, reflections = split_for_scan_range(
+        experiments, reflections, params.scan_range
+    )
+
+    experiment = experiments[0]
 
     """
     Predict reflections using experiment crystal
@@ -178,13 +190,23 @@ def run_simple_integrate(params, experiments, reflections):
     )
 
     # Get actual shoebox values and the reflections for each image
-    shoebox_processor = ShoeboxProcessor(
-        predicted_reflections,
-        len(experiment.detector),
-        0,
-        len(experiment.imageset),
-        False,
-    )
+    if params.scan_range:
+        scan_start, scan_end = params.scan_range[0]
+        shoebox_processor = ShoeboxProcessor(
+            predicted_reflections,
+            len(experiment.detector),
+            scan_start,
+            scan_end,
+            False,
+        )
+    else:
+        shoebox_processor = ShoeboxProcessor(
+            predicted_reflections,
+            len(experiment.detector),
+            0,
+            len(experiment.imageset),
+            False,
+        )
 
     for i in range(len(experiment.imageset)):
         image = experiment.imageset.get_corrected_data(i)

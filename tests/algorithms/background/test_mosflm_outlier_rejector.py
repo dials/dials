@@ -1,25 +1,23 @@
 from __future__ import annotations
 
+import bz2
 import math
-import os
 import pickle
 from pathlib import Path
 
 
-def test_run(dials_regression: Path):
+def test_run(dials_data):
     from dials.algorithms.background.simple import (
         Linear2dModeller,
         MosflmOutlierRejector,
     )
 
     # The directory path
-    path = os.path.join(
-        dials_regression, "integration_test_data", "i04-weak-data", "jmp_mosflm_test"
-    )
+    data_dir = Path(dials_data("misc_regression"))
 
     # The input files
-    reflection_filename = os.path.join(path, "mosflm_reflections.pickle")
-    shoebox_filename = os.path.join(path, "shoeboxes.pickle")
+    reflection_filename = str(data_dir / "mosflm-outlier-rejection.refl")
+    shoebox_filename = str(data_dir / "mosflm-outlier-rejection-shoeboxes.pickle.bz2")
     fraction = 1.0
     n_sigma = 4
     outlier_rejector = MosflmOutlierRejector(fraction, n_sigma)
@@ -28,13 +26,20 @@ def test_run(dials_regression: Path):
     from dials.algorithms.shoebox import MaskCode
     from dials.array_family import flex
 
-    print(shoebox_filename)
     # Read the data
     rtable = flex.reflection_table.from_file(reflection_filename)
-    with open(shoebox_filename, "rb") as fh:
+    with bz2.open(shoebox_filename, "rb") as fh:
         shoeboxes, masks = pickle.load(fh, encoding="bytes")
     assert len(rtable) == len(shoeboxes)
     assert len(rtable) == len(masks)
+
+    # Convert masks from flex.int to flex.uint8
+    new_masks = []
+    for mask in masks:
+        m = flex.uint8(list(mask))
+        m.reshape(mask.accessor())
+        new_masks.append(m)
+    masks = new_masks
 
     # Compute the background for each reflection and check against the values
     # read from the mosflm.lp file. Currently this fails for 1 strange
@@ -54,7 +59,7 @@ def test_run(dials_regression: Path):
         data.reshape(flex.grid(1, *data.all()))
         mask.reshape(flex.grid(1, *mask.all()))
         outlier_rejector(data, mask)
-        mask2 = (mask.as_1d() & int(MaskCode.BackgroundUsed)) != 0
+        mask2 = (mask.as_1d().as_int() & int(MaskCode.BackgroundUsed)) != 0
         mask2.reshape(flex.grid(*mask.all()))
         model = linear_modeller.create(data, mask2)
         assert len(model.params()) == 3

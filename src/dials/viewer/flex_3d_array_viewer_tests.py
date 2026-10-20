@@ -11,7 +11,6 @@ if __name__ == "__main__":
     lst_flex_norm = []
 
     for size_xyz in range(8, 6, -1):
-
         size_x = size_xyz * 2
 
         data_xyz_flex = flex.double(flex.grid(size_xyz, size_xyz, size_x), 15)

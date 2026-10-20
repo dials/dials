@@ -4,7 +4,7 @@ from dials.command_line import missing_reflections
 
 
 def test_l_cysteine_4_sweeps_scaled(dials_data, capsys):
-    data = dials_data("l_cysteine_4_sweeps_scaled", pathlib=True)
+    data = dials_data("l_cysteine_4_sweeps_scaled")
     missing_reflections.run(
         args=[str(data / "scaled_30.expt"), str(data / "scaled_30.refl")]
     )
@@ -16,7 +16,7 @@ def test_l_cysteine_4_sweeps_scaled(dials_data, capsys):
 
 
 def test_vmxi_proteinase_k_sweeps_integrated(dials_data, capsys):
-    data = dials_data("vmxi_proteinase_k_sweeps", pathlib=True)
+    data = dials_data("vmxi_proteinase_k_sweeps")
     missing_reflections.run(
         args=[
             str(data / "experiments_0.expt"),
@@ -34,7 +34,7 @@ def test_vmxi_proteinase_k_sweeps_integrated(dials_data, capsys):
 
 
 def test_insulin_scaled(dials_data, capsys):
-    data = dials_data("insulin_processed", pathlib=True)
+    data = dials_data("insulin_processed")
     missing_reflections.run(args=[str(data / "scaled.expt"), str(data / "scaled.refl")])
     captured = capsys.readouterr()
     assert "Resolution range: 55.2195 1.45064" in captured.out
@@ -49,7 +49,7 @@ def test_insulin_scaled(dials_data, capsys):
 
 
 def test_insulin_scaled_d_min_d_max(dials_data, capsys):
-    data = dials_data("insulin_processed", pathlib=True)
+    data = dials_data("insulin_processed")
     missing_reflections.run(
         args=[
             str(data / "scaled.expt"),

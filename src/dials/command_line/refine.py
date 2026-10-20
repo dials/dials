@@ -14,7 +14,6 @@ Examples::
   dials.refine indexed.expt indexed.refl scan_varying=(False/True/Auto)
 """
 
-
 from __future__ import annotations
 
 import copy
@@ -130,7 +129,7 @@ def write_centroids_table(refiner, filename):
 
     matches = refiner.get_matches()
 
-    header = "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\t" "Y_calc\tPhi_calc"
+    header = "H\tK\tL\tFrame_obs\tX_obs\tY_obs\tPhi_obs\tX_calc\tY_calc\tPhi_calc"
     msg_temp = "%d\t%d\t%d\t%d\t%5.3f\t%5.3f\t%9.6f\t%5.3f\t%5.3f\t%9.6f"
     has_del_psi = "delpsical.rad" in matches
     if has_del_psi:
@@ -257,7 +256,6 @@ def run_macrocycle(params, reflections, experiments):
 
 
 def _find_disjoint_sets(experiments):
-
     # Extract parameterisable models from the experiments
     models = []
     for experiment in experiments:
@@ -541,8 +539,12 @@ def run_dials_refine(experiments, reflections, params):
     return experiments, reflections, refiner, history
 
 
+# The script usage
+usage = "dials.refine [options] [param.phil] models.expt observations.refl"
+
+
 @dials.util.show_mail_handle_errors()
-def run(args=None, phil=working_phil):
+def run(args=None, phil=working_phil, usage=usage, epilog=__doc__):
     """
     Set up refinement from command line options, files and PHIL parameters.
     Run refinement and save output files as specified.
@@ -557,11 +559,6 @@ def run(args=None, phil=working_phil):
         None
     """
 
-    # The script usage
-    usage = (
-        "usage: dials.refine [options] [param.phil] " "models.expt observations.refl"
-    )
-
     # Create the parser
     parser = ArgumentParser(
         usage=usage,
@@ -569,7 +566,7 @@ def run(args=None, phil=working_phil):
         read_reflections=True,
         read_experiments=True,
         check_format=False,
-        epilog=__doc__,
+        epilog=epilog,
     )
 
     # Parse the command line

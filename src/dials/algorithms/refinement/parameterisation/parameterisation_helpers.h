@@ -22,20 +22,20 @@ namespace dials { namespace refinement {
   using scitbx::math::r3_rotation::axis_and_angle_as_matrix;
 
   af::shared<mat3<double> > selected_multi_panel_compose(
-    const af::const_ref<vec3<double> > &initial_state,
-    const af::const_ref<double> &params_vals,
-    const af::const_ref<vec3<double> > &params_axes,
-    Detector &detector,
-    const af::const_ref<int> &selection,
-    const af::const_ref<vec3<double> > &offsets,
-    const af::const_ref<vec3<double> > &dir1s,
-    const af::const_ref<vec3<double> > &dir2s,
-    const mat3<double> &Tau1,
-    const mat3<double> &dTau1_dtau1,
-    const mat3<double> &Tau2,
-    const mat3<double> &dTau2_dtau2,
-    const mat3<double> &Tau3,
-    const mat3<double> &dTau3_dtau3) {
+    const af::const_ref<vec3<double> >& initial_state,
+    const af::const_ref<double>& params_vals,
+    const af::const_ref<vec3<double> >& params_axes,
+    Detector& detector,
+    const af::const_ref<int>& selection,
+    const af::const_ref<vec3<double> >& offsets,
+    const af::const_ref<vec3<double> >& dir1s,
+    const af::const_ref<vec3<double> >& dir2s,
+    const mat3<double>& Tau1,
+    const mat3<double>& dTau1_dtau1,
+    const mat3<double>& Tau2,
+    const mat3<double>& dTau2_dtau2,
+    const mat3<double>& Tau3,
+    const mat3<double>& dTau3_dtau3) {
     af::shared<mat3<double> > ret(6 * selection.size(),
                                   af::init_functor_null<mat3<double> >());
 
@@ -390,19 +390,19 @@ namespace dials { namespace refinement {
   }
 
   af::shared<mat3<double> > multi_panel_compose(
-    const af::const_ref<vec3<double> > &initial_state,
-    const af::const_ref<double> &params_vals,
-    const af::const_ref<vec3<double> > &params_axes,
-    Detector &detector,
-    const af::const_ref<vec3<double> > &offsets,
-    const af::const_ref<vec3<double> > &dir1s,
-    const af::const_ref<vec3<double> > &dir2s,
-    const mat3<double> &Tau1,
-    const mat3<double> &dTau1_dtau1,
-    const mat3<double> &Tau2,
-    const mat3<double> &dTau2_dtau2,
-    const mat3<double> &Tau3,
-    const mat3<double> &dTau3_dtau3) {
+    const af::const_ref<vec3<double> >& initial_state,
+    const af::const_ref<double>& params_vals,
+    const af::const_ref<vec3<double> >& params_axes,
+    Detector& detector,
+    const af::const_ref<vec3<double> >& offsets,
+    const af::const_ref<vec3<double> >& dir1s,
+    const af::const_ref<vec3<double> >& dir2s,
+    const mat3<double>& Tau1,
+    const mat3<double>& dTau1_dtau1,
+    const mat3<double>& Tau2,
+    const mat3<double>& dTau2_dtau2,
+    const mat3<double>& Tau3,
+    const mat3<double>& dTau3_dtau3) {
     af::shared<int> selection;
     selection.reserve(detector.size());
     for (int i = 0; i < detector.size(); i++) {
@@ -431,12 +431,12 @@ namespace dials { namespace refinement {
    */
   class PanelGroupCompose {
   public:
-    PanelGroupCompose(const vec3<double> &initial_d1,
-                      const vec3<double> &initial_d2,
-                      const vec3<double> &initial_dn,
-                      const vec3<double> &initial_gp_offset,
-                      const af::const_ref<double> &param_vals,
-                      const af::const_ref<vec3<double> > &param_axes)
+    PanelGroupCompose(const vec3<double>& initial_d1,
+                      const vec3<double>& initial_d2,
+                      const vec3<double>& initial_dn,
+                      const vec3<double>& initial_gp_offset,
+                      const af::const_ref<double>& param_vals,
+                      const af::const_ref<vec3<double> >& param_axes)
         : id1(initial_d1),
           id2(initial_d2),
           idn(initial_dn),
@@ -712,16 +712,16 @@ namespace dials { namespace refinement {
       // dorg = Tau321 * dsv - Tau32 * P0 + P0
 
       // derivative wrt dist
-      vec3<double> &dP0_ddist = dist_axis;
-      vec3<double> &ddsv_ddist = dP0_ddist;
+      vec3<double>& dP0_ddist = dist_axis;
+      vec3<double>& ddsv_ddist = dP0_ddist;
       ddorg_ddist = Tau321 * ddsv_ddist - Tau32 * dP0_ddist + dP0_ddist;
 
       // derivative wrt shift1
-      vec3<double> &ddsv_dshift1 = shift1_axis;
+      vec3<double>& ddsv_dshift1 = shift1_axis;
       ddorg_dshift1 = Tau321 * ddsv_dshift1;
 
       // derivative wrt shift2
-      vec3<double> &ddsv_dshift2 = shift2_axis;
+      vec3<double>& ddsv_dshift2 = shift2_axis;
       ddorg_dshift2 = Tau321 * ddsv_dshift2;
 
       // derivative wrt tau1
@@ -866,13 +866,13 @@ namespace dials { namespace refinement {
    */
   class CrystalOrientationCompose {
   public:
-    CrystalOrientationCompose(const mat3<double> &U0,
+    CrystalOrientationCompose(const mat3<double>& U0,
                               double phi1,
-                              const vec3<double> &phi1_axis,
+                              const vec3<double>& phi1_axis,
                               double phi2,
-                              const vec3<double> &phi2_axis,
+                              const vec3<double>& phi2_axis,
                               double phi3,
-                              const vec3<double> &phi3_axis) {
+                              const vec3<double>& phi3_axis) {
       // convert angles from mrad to radians
       phi1 /= 1000.;
       phi2 /= 1000.;
@@ -925,8 +925,8 @@ namespace dials { namespace refinement {
   // An extension of the scope of the intersection_i_seqs method that does not
   // require that the arrays are sorted first.
   boost::python::tuple intersection_i_seqs_unsorted(
-    const af::const_ref<std::size_t> &left,
-    const af::const_ref<std::size_t> &right) {
+    const af::const_ref<std::size_t>& left,
+    const af::const_ref<std::size_t>& right) {
     std::unordered_map<std::size_t, std::size_t> lookup(left.size());
     for (std::size_t i_a = 0; i_a < left.size(); ++i_a) {
       lookup.insert({left[i_a], i_a});

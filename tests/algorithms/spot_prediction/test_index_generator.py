@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import os
 
-
-def test(dials_regression):
+def test(dials_data):
     import numpy as np
 
     from iotbx.xds import integrate_hkl, xparm
@@ -13,10 +11,8 @@ def test(dials_regression):
     from dials.util import ioutil
 
     # The XDS files to read from
-    integrate_filename = os.path.join(
-        dials_regression, "data", "sim_mx", "INTEGRATE.HKL"
-    )
-    gxparm_filename = os.path.join(dials_regression, "data", "sim_mx", "GXPARM.XDS")
+    integrate_filename = str(dials_data("misc_regression") / "sim_mx-INTEGRATE.HKL")
+    gxparm_filename = str(dials_data("misc_regression") / "sim_mx-GXPARM.XDS")
 
     # Read the XDS files
     integrate_handle = integrate_hkl.reader()

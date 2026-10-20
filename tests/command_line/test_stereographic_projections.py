@@ -13,7 +13,7 @@ def test_stereographic_projection(dials_data, tmp_path):
     result = subprocess.run(
         (
             shutil.which("dials.stereographic_projection"),
-            dials_data("centroid_test_data", pathlib=True) / "experiments.json",
+            dials_data("centroid_test_data") / "experiments.json",
             "hkl_limit=4",
             "plot.filename=proj.png",
             "json.filename=proj.json",
@@ -35,7 +35,7 @@ def test_stereographic_projection(dials_data, tmp_path):
 def test_labels(dials_data, tmp_path):
     output_file = tmp_path / "proj.json"
     experiments = sorted(
-        dials_data("multi_crystal_proteinase_k", pathlib=True).glob("experiments*.json")
+        dials_data("multi_crystal_proteinase_k").glob("experiments*.json")
     )
     args = [str(e) for e in experiments] + [
         f"plot.labels={' '.join(str(i) for i in range(len(experiments)))}",

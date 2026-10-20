@@ -59,8 +59,8 @@ namespace dials { namespace algorithms {
      *  2^N < numeric_limits<RealType>::max
      */
     template <typename RealType>
-    RealType cdf_small(const kolmogorov_smirnov_one_sided_distribution<RealType> &dist,
-                       const RealType &x) {
+    RealType cdf_small(const kolmogorov_smirnov_one_sided_distribution<RealType>& dist,
+                       const RealType& x) {
       int n = (int)dist.n();
       int m = (int)std::floor(n * (1.0 - x));
       RealType s = 0.0;
@@ -81,8 +81,8 @@ namespace dials { namespace algorithms {
      * calculate log of the binomial coefficients
      */
     template <typename RealType>
-    RealType cdf_large(const kolmogorov_smirnov_one_sided_distribution<RealType> &dist,
-                       const RealType &x) {
+    RealType cdf_large(const kolmogorov_smirnov_one_sided_distribution<RealType>& dist,
+                       const RealType& x) {
       int n = (int)dist.n();
       int m = (int)std::floor(n * (1.0 - x));
       RealType s = 0.0;
@@ -190,8 +190,8 @@ namespace dials { namespace algorithms {
    * @returns The value of the CDF at x
    */
   template <typename RealType>
-  RealType cdf(const kolmogorov_smirnov_one_sided_distribution<RealType> &dist,
-               const RealType &x) {
+  RealType cdf(const kolmogorov_smirnov_one_sided_distribution<RealType>& dist,
+               const RealType& x) {
     DIALS_ASSERT(x >= 0 && x <= 1.0);
     DIALS_ASSERT(dist.n() > 0);
     if (x == 0.0) {

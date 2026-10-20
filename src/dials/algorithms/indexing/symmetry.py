@@ -24,26 +24,17 @@ def metric_supergroup(group):
 
 
 def groups_cache(fn):
-    class MultiClassCache(object):
-
-        "A set of caches for different bravais types"
-
-        instances = {}
-
-        def __new__(cls, classname):
-            if classname not in cls.instances:
-                cls.instances[classname] = {}
-            return cls.instances[classname]
+    _cache = {}
 
     def wrapped_calc(group_info: sgtbx.space_group_info, bravais_t: str):
-        cache = MultiClassCache(bravais_t)
-        info_str = group_info.type().lookup_symbol()
+        group = group_info.group()
+        key = (bravais_t, group)
         try:
-            result = cache[info_str]
+            return _cache[key]
         except KeyError:
             result = fn(group_info, bravais_t)
-            cache[info_str] = result
-        return result
+            _cache[key] = result
+            return result
 
     return wrapped_calc
 
@@ -120,7 +111,6 @@ def find_matching_symmetry(
     for acentric_subgroup, acentric_supergroup, cb_op_minimum_ref in zip(
         acentric_subgroups, acentric_supergroups, cb_ops
     ):
-
         # Make symmetry object: unit-cell + space-group
         # The unit cell is potentially modified to be exactly compatible
         # with the space group symmetry.
@@ -181,7 +171,6 @@ def find_matching_symmetry(
 
 class SymmetryHandler:
     def __init__(self, unit_cell=None, space_group=None, max_delta=5):
-
         self._max_delta = max_delta
         self.target_symmetry_primitive = None
         self.target_symmetry_reference_setting = None
@@ -193,10 +182,9 @@ class SymmetryHandler:
             target_space_group = target_space_group.build_derived_patterson_group()
 
         if unit_cell is not None:
-
-            assert (
-                space_group
-            ), "space_group must be provided in combination with unit_cell"
+            assert space_group, (
+                "space_group must be provided in combination with unit_cell"
+            )
 
             self.target_symmetry_inp = crystal.symmetry(
                 unit_cell=unit_cell, space_group=target_space_group
@@ -226,9 +214,7 @@ class SymmetryHandler:
                 space_group=target_space_group.change_basis(self.cb_op_inp_ref)
             )
 
-        cb_op_reference_to_primitive = (
-            self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
-        )
+        cb_op_reference_to_primitive = self.target_symmetry_reference_setting.change_of_basis_op_to_primitive_setting()
         if unit_cell:
             self.target_symmetry_primitive = (
                 self.target_symmetry_reference_setting.change_basis(

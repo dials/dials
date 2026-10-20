@@ -213,7 +213,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         # d_min control
 
         self.d_min_ctrl = floatspin.FloatSpin(
-            parent=self, increment=0.05, min_val=0, digits=2
+            parent=self, size=(150, -1), increment=0.05, min_val=0, digits=2
         )
         self.d_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -226,7 +226,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.d_min_ctrl)
 
         self.z_min_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, min_val=0, digits=0
+            parent=self, size=(150, -1), increment=1, min_val=0, digits=0
         )
         self.z_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -239,7 +239,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.z_min_ctrl)
 
         self.z_max_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, min_val=0, digits=0
+            parent=self, size=(150, -1), increment=1, min_val=0, digits=0
         )
         self.z_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -255,7 +255,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         # file - will be ignored if not in file
 
         self.n_min_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, min_val=0, digits=0
+            parent=self, size=(150, -1), increment=1, min_val=0, digits=0
         )
         self.n_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -268,7 +268,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.n_min_ctrl)
 
         self.n_max_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, min_val=0, digits=0
+            parent=self, size=(150, -1), increment=1, min_val=0, digits=0
         )
         self.n_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -283,7 +283,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         # end new control
 
         self.partiality_min_ctrl = floatspin.FloatSpin(
-            parent=self, increment=0.01, digits=3, min_val=0, max_val=1
+            parent=self, size=(150, -1), increment=0.01, digits=3, min_val=0, max_val=1
         )
         self.partiality_min_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -298,7 +298,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         )
 
         self.partiality_max_ctrl = floatspin.FloatSpin(
-            parent=self, increment=0.01, digits=3, min_val=0, max_val=1
+            parent=self, size=(150, -1), increment=0.01, digits=3, min_val=0, max_val=1
         )
         self.partiality_max_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -347,7 +347,7 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         self.Bind(wx.EVT_CHECKBOX, self.OnChangeSettings, self.crystal_frame_ctrl)
 
         self.beam_panel_ctrl = floatspin.FloatSpin(
-            parent=self, min_val=0, increment=1, digits=0
+            parent=self, size=(150, -1), min_val=0, increment=1, digits=0
         )
         self.beam_panel_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
@@ -359,26 +359,32 @@ class SettingsWindow(wxtbx.utils.SettingsPanel):
         box.Add(self.beam_panel_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_panel_ctrl)
 
-        self.beam_fast_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+        self.beam_fast_ctrl = floatspin.FloatSpin(
+            parent=self, size=(150, -1), increment=0.01, digits=2
+        )
         self.beam_fast_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.beam_fast_ctrl.SetBackgroundColour(self.GetBackgroundColour())
-        box = wx.BoxSizer(wx.HORIZONTAL)
-        self.panel_sizer.Add(box)
+        # box = wx.BoxSizer(wx.HORIZONTAL)
+        grid = wx.FlexGridSizer(cols=2, rows=2, vgap=0, hgap=0)
+        self.panel_sizer.Add(grid)
         label = wx.StaticText(self, -1, "Beam centre (mm)")
-        box.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
-        box.Add(self.beam_fast_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(label, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(self.beam_fast_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_fast_ctrl)
 
-        self.beam_slow_ctrl = floatspin.FloatSpin(parent=self, increment=0.01, digits=2)
+        self.beam_slow_ctrl = floatspin.FloatSpin(
+            parent=self, size=(150, -1), increment=0.01, digits=2
+        )
         self.beam_slow_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa
             self.beam_slow_ctrl.SetBackgroundColour(self.GetBackgroundColour())
-        box.Add(self.beam_slow_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+        grid.Add(wx.StaticText(self, -1, ""), 0, wx.EXPAND)
+        grid.Add(self.beam_slow_ctrl, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
         self.Bind(floatspin.EVT_FLOATSPIN, self.OnChangeSettings, self.beam_slow_ctrl)
 
         self.marker_size_ctrl = floatspin.FloatSpin(
-            parent=self, increment=1, digits=0, min_val=1
+            parent=self, size=(150, -1), increment=1, digits=0, min_val=1
         )
         self.marker_size_ctrl.Bind(wx.EVT_SET_FOCUS, lambda evt: None)
         if wx.VERSION >= (2, 9):  # XXX FloatSpin bug in 2.9.2/wxOSX_Cocoa

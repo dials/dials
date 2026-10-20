@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from io import StringIO
-from typing import Type
 
 import numpy as np
 from scipy.optimize import least_squares
@@ -21,6 +20,8 @@ from mmtbx.scaling import printed_output
 from mmtbx.scaling.absolute_scaling import expected_intensity, scattering_information
 from mmtbx.scaling.matthews import matthews_rupp
 from scitbx.array_family import flex
+
+from dials.util.plotly_utils import round_for_json
 
 logger = logging.getLogger("dials")
 
@@ -72,7 +73,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
                 (
                     {
                         "x": reduced_batches,
-                        "y": scales_vs_b,
+                        "y": round_for_json(scales_vs_b),
                         "type": "scatter",
                         "name": "Scale",
                         "opacity": 0.75,
@@ -83,7 +84,7 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
                 ),
                 {
                     "x": reduced_batches,
-                    "y": rmerge_vs_b,
+                    "y": round_for_json(rmerge_vs_b),
                     "yaxis": "y2",
                     "type": "scatter",
                     "name": "R<sub>merge</sub>",
@@ -109,7 +110,6 @@ def scale_rmerge_vs_batch_plot(batch_manager, rmerge_vs_b, scales_vs_b=None):
 
 
 def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
-
     reduced_batches = batch_manager.reduced_batches
     shapes, annotations, text = batch_manager.batch_plot_shapes_and_annotations()
     if len(annotations) > 30:
@@ -121,7 +121,7 @@ def i_over_sig_i_vs_batch_plot(batch_manager, i_sig_i_vs_batch):
             "data": [
                 {
                     "x": reduced_batches,
-                    "y": i_sig_i_vs_batch,
+                    "y": round_for_json(i_sig_i_vs_batch),
                     "type": "scatter",
                     "name": "I/sigI vs batch",
                     "opacity": 0.75,
@@ -152,7 +152,7 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
     )
     nonzeros = np.nonzero(H)
     z = np.empty(H.shape)
-    z[:] = np.NAN
+    z[:] = np.nan
     z[nonzeros] = H[nonzeros]
     key = f"i_over_sig_i_vs_i_{label}" if label is not None else "i_over_sig_i_vs_i"
     title = "I/σ(I) vs I"
@@ -161,9 +161,9 @@ def i_over_sig_i_vs_i_plot(intensities, sigmas, label=None):
         key: {
             "data": [
                 {
-                    "x": xedges.tolist(),
-                    "y": yedges.tolist(),
-                    "z": z.transpose().tolist(),
+                    "x": round_for_json(xedges.tolist()),
+                    "y": round_for_json(yedges.tolist()),
+                    "z": [round_for_json(e) for e in z.transpose().tolist()],
                     "type": "heatmap",
                     "name": "Isigma distribution",
                     "colorbar": {
@@ -229,7 +229,6 @@ class _xtriage_output(printed_output):
 
 
 def xtriage_output(xanalysis):
-
     with StringIO() as xs:
         xout = _xtriage_output(xs)
         try:
@@ -407,14 +406,14 @@ class IntensityStatisticsPlots:
                 "data": (
                     [
                         {
-                            "x": list(dstarsq),
-                            "y": list(observed),
+                            "x": round_for_json(dstarsq),
+                            "y": round_for_json(observed),
                             "type": "scatter",
                             "name": "Observed",
                         },
                         {
-                            "x": list(dstarsq),
-                            "y": list(mean_I_obs_theory),
+                            "x": round_for_json(dstarsq),
+                            "y": round_for_json(mean_I_obs_theory),
                             "type": "scatter",
                             "name": "Expected",
                         },
@@ -440,24 +439,24 @@ class IntensityStatisticsPlots:
             "cumulative_intensity_distribution": {
                 "data": [
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.ac_obs),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.ac_obs),
                         "type": "scatter",
                         "name": "Acentric observed",
                         "mode": "lines",
                         "line": {"color": "rgb(31, 119, 180)"},
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.c_obs),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.c_obs),
                         "type": "scatter",
                         "name": "Centric observed",
                         "mode": "lines",
                         "line": {"color": "rgb(255, 127, 14)"},
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.ac_untwinned),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.ac_untwinned),
                         "type": "scatter",
                         "name": "Acentric theory",
                         "mode": "lines",
@@ -465,8 +464,8 @@ class IntensityStatisticsPlots:
                         "opacity": 0.8,
                     },
                     {
-                        "x": list(nz_test.z),
-                        "y": list(nz_test.c_untwinned),
+                        "x": round_for_json(nz_test.z),
+                        "y": round_for_json(nz_test.c_untwinned),
                         "type": "scatter",
                         "name": "Centric theory",
                         "mode": "lines",
@@ -490,16 +489,16 @@ class IntensityStatisticsPlots:
             "l_test": {
                 "data": [
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul_untwinned),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul_untwinned),
                         "type": "scatter",
                         "name": "Untwinned",
                         "mode": "lines",
                         "line": {"color": "rgb(31, 119, 180)", "dash": "dashdot"},
                     },
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul_perfect_twin),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul_perfect_twin),
                         "type": "scatter",
                         "name": "Perfect twin",
                         "mode": "lines",
@@ -507,8 +506,8 @@ class IntensityStatisticsPlots:
                         "opacity": 0.8,
                     },
                     {
-                        "x": list(l_test.l_values),
-                        "y": list(l_test.l_cumul),
+                        "x": round_for_json(l_test.l_values),
+                        "y": round_for_json(l_test.l_cumul),
                         "type": "scatter",
                         "name": "Observed",
                         "mode": "lines",
@@ -524,7 +523,6 @@ class IntensityStatisticsPlots:
         }
 
     def second_moments_plot(self):
-
         acentric = self.merged_intensities.select_acentric()
         centric = self.merged_intensities.select_centric()
         if acentric.size():
@@ -558,10 +556,10 @@ class IntensityStatisticsPlots:
                 "data": [
                     (
                         {
-                            "x": list(
+                            "x": round_for_json(
                                 second_moments_acentric.binner.bin_centers(2)
                             ),  # d_star_sq
-                            "y": second_moments_acentric.data[1:-1],
+                            "y": round_for_json(second_moments_acentric.data[1:-1]),
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> acentric",
                         }
@@ -570,10 +568,10 @@ class IntensityStatisticsPlots:
                     ),
                     (
                         {
-                            "x": list(
+                            "x": round_for_json(
                                 second_moments_centric.binner.bin_centers(2)
                             ),  # d_star_sq
-                            "y": second_moments_centric.data[1:-1],
+                            "y": round_for_json(second_moments_centric.data[1:-1]),
                             "type": "scatter",
                             "name": "<I<sup>2</sub>> centric",
                         }
@@ -606,8 +604,8 @@ class ResolutionPlotsAndStats:
 
     def __init__(
         self,
-        dataset_statistics: Type[dataset_statistics],
-        anomalous_dataset_statistics: Type[dataset_statistics],
+        dataset_statistics: type[dataset_statistics],
+        anomalous_dataset_statistics: type[dataset_statistics],
         is_centric=False,
     ):
         self.dataset_statistics = dataset_statistics
@@ -619,6 +617,8 @@ class ResolutionPlotsAndStats:
         self.d_star_sq_tickvals, self.d_star_sq_ticktext = d_star_sq_to_d_ticks(
             self.d_star_sq_bins, nticks=5
         )
+        self.d_star_sq_tickvals = round_for_json(self.d_star_sq_tickvals, ndigits=6)
+
         self.is_centric = is_centric
 
     def make_all_plots(self, cc_one_half_method=None):
@@ -629,6 +629,152 @@ class ResolutionPlotsAndStats:
         d.update(self.multiplicity_vs_resolution_plot())
         d.update(self.r_pim_plot())
         d.update(self.additional_stats_plot())
+        d.update(self.weighted_stats_plot())
+        return d
+
+    def weighted_stats_plot(self):
+        d = {}
+        if not hasattr(self.dataset_statistics, "weighted_cc_data"):
+            return d
+        if self.dataset_statistics.weighted_cc_data:
+            wcc_data = self.dataset_statistics.weighted_cc_data
+            wccanom_data = self.dataset_statistics.weighted_cc_anom_data
+            d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
+
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d.update(
+                {
+                    "cc_one_half_weighted": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=wcc_data.value_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=wccanom_data.value_binned,
+                        cc_anom_critical_values=critical_anom_vals,
+                    )
+                }
+            )
+            d["cc_one_half_weighted"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted)"
+            )
+            d["cc_one_half_weighted"]["layout"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-weighted) vs resolution"
+            )
+
+            ccst_data = self.dataset_statistics.cchalf_sigma_tau
+            if ccst_data:
+                ccst_anom_data = self.dataset_statistics.cchalf_anom_sigma_tau
+                critical_vals = ccst_data.significance_critical_values
+                ccanom_critical_vals = ccst_anom_data.significance_critical_values
+                d.update(
+                    {
+                        "cc_one_half_sigma_tau": cc_half_plot(
+                            d_star_sq=d_star_sq_bins,
+                            cc_half=ccst_data.value_binned,
+                            cc_half_fit=None,
+                            d_min=None,
+                            cc_half_critical_values=critical_vals,
+                            cc_anom=ccst_anom_data.value_binned,
+                            cc_anom_critical_values=ccanom_critical_vals,
+                        )
+                    }
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                    "CC<sub>½</sub>(\u03c3-\u03c4)"
+                )
+                d["cc_one_half_sigma_tau"]["layout"]["title"] = (
+                    "CC<sub>½</sub>(\u03c3-\u03c4) vs resolution"
+                )
+        if self.dataset_statistics.weighted_cchalf_sigma_tau:
+            wcc_data = self.dataset_statistics.weighted_cchalf_sigma_tau
+            wccanom_data = self.dataset_statistics.weighted_cchalf_anom_sigma_tau
+            d_star_sq_bins = []
+            critical_vals = wcc_data.significance_critical_values
+            critical_anom_vals = wccanom_data.significance_critical_values
+
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d.update(
+                {
+                    "cc_one_half_weighted_sigma_tau": cc_half_plot(
+                        d_star_sq=d_star_sq_bins,
+                        cc_half=wcc_data.value_binned,
+                        cc_half_fit=None,
+                        d_min=None,
+                        cc_half_critical_values=critical_vals,
+                        cc_anom=wccanom_data.value_binned,
+                        cc_anom_critical_values=critical_anom_vals,
+                    )
+                }
+            )
+            d["cc_one_half_weighted_sigma_tau"]["layout"]["yaxis"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted)"
+            )
+            d["cc_one_half_weighted_sigma_tau"]["layout"]["title"] = (
+                "CC<sub>½</sub>(\u03c3-\u03c4)(\u03c3-weighted) vs resolution"
+            )
+
+        if self.dataset_statistics.weighted_r_split:
+            d_star_sq_bins = []
+            for bin in self.dataset_statistics.binner.range_used():
+                d_max_min = self.dataset_statistics.binner.bin_d_range(bin)
+                d_star_sq_bins.append(
+                    0.5
+                    * (
+                        uctbx.d_as_d_star_sq(d_max_min[0])
+                        + uctbx.d_as_d_star_sq(d_max_min[1])
+                    )
+                )
+            d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(
+                d_star_sq_bins, nticks=5
+            )
+
+            d.update(
+                {
+                    "r_split_weighted": {
+                        "data": [
+                            {
+                                "x": d_star_sq_bins,  # d_star_sq
+                                "y": self.dataset_statistics.weighted_r_split.value_binned,
+                                "type": "scatter",
+                                "name": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            }
+                        ],
+                        "layout": {
+                            "title": "R<sub>split</sub>(\u03c3-weighted) vs resolution",
+                            "xaxis": {
+                                "title": "Resolution (Å)",
+                                "tickvals": d_star_sq_tickvals,
+                                "ticktext": d_star_sq_ticktext,
+                            },
+                            "yaxis": {
+                                "title": "R<sub>split</sub>(\u03c3-weighted)",
+                                "rangemode": "tozero",
+                            },
+                        },
+                    }
+                }
+            )
         return d
 
     def additional_stats_plot(self):
@@ -654,14 +800,15 @@ class ResolutionPlotsAndStats:
             d_star_sq_bins, nticks=5
         )
         if self.dataset_statistics.r_split:
-
             d.update(
                 {
                     "r_split": {
                         "data": [
                             {
-                                "x": d_star_sq_bins,  # d_star_sq
-                                "y": self.dataset_statistics.r_split_binned,
+                                "x": round_for_json(d_star_sq_bins),  # d_star_sq
+                                "y": round_for_json(
+                                    self.dataset_statistics.r_split.value_binned
+                                ),
                                 "type": "scatter",
                                 "name": "R<sub>split</sub> vs resolution",
                             }
@@ -670,7 +817,9 @@ class ResolutionPlotsAndStats:
                             "title": "R<sub>split</sub> vs resolution",
                             "xaxis": {
                                 "title": "Resolution (Å)",
-                                "tickvals": d_star_sq_tickvals,
+                                "tickvals": round_for_json(
+                                    d_star_sq_tickvals, ndigits=6
+                                ),
                                 "ticktext": d_star_sq_ticktext,
                             },
                             "yaxis": {
@@ -688,15 +837,19 @@ class ResolutionPlotsAndStats:
 
         if method == "sigma_tau":
             cc_one_half_bins = [
-                bin_stats.cc_one_half_sigma_tau
-                if bin_stats.cc_one_half_sigma_tau
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau
+                    if bin_stats.cc_one_half_sigma_tau
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_sigma_tau_critical_value
-                if bin_stats.cc_one_half_sigma_tau_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_sigma_tau_critical_value
+                    if bin_stats.cc_one_half_sigma_tau_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         else:
@@ -705,9 +858,11 @@ class ResolutionPlotsAndStats:
                 for bin_stats in self.dataset_statistics.bins
             ]
             cc_one_half_critical_value_bins = [
-                bin_stats.cc_one_half_critical_value
-                if bin_stats.cc_one_half_critical_value
-                else 0.0
+                (
+                    bin_stats.cc_one_half_critical_value
+                    if bin_stats.cc_one_half_critical_value
+                    else 0.0
+                )
                 for bin_stats in self.dataset_statistics.bins
             ]
         cc_anom_bins = [
@@ -715,9 +870,11 @@ class ResolutionPlotsAndStats:
             for bin_stats in self.dataset_statistics.bins
         ]
         cc_anom_critical_value_bins = [
-            bin_stats.cc_anom_critical_value
-            if bin_stats.cc_anom_critical_value
-            else 0.0
+            (
+                bin_stats.cc_anom_critical_value
+                if bin_stats.cc_anom_critical_value
+                else 0.0
+            )
             for bin_stats in self.dataset_statistics.bins
         ]
 
@@ -727,9 +884,9 @@ class ResolutionPlotsAndStats:
                 cc_half=cc_one_half_bins,
                 cc_anom=cc_anom_bins if not self.is_centric else None,
                 cc_half_critical_values=cc_one_half_critical_value_bins,
-                cc_anom_critical_values=cc_anom_critical_value_bins
-                if not self.is_centric
-                else None,
+                cc_anom_critical_values=(
+                    cc_anom_critical_value_bins if not self.is_centric else None
+                ),
                 cc_half_fit=None,
                 d_min=None,
             )
@@ -745,8 +902,8 @@ class ResolutionPlotsAndStats:
             "i_over_sig_i": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": i_over_sig_i_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(i_over_sig_i_bins),
                         "type": "scatter",
                         "name": "I/sigI vs resolution",
                     }
@@ -771,8 +928,8 @@ class ResolutionPlotsAndStats:
             "r_pim": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,  # d_star_sq
-                        "y": r_pim_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(r_pim_bins),
                         "type": "scatter",
                         "name": "R<sub>pim</sub> vs resolution",
                     }
@@ -804,15 +961,15 @@ class ResolutionPlotsAndStats:
             "completeness": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,
-                        "y": completeness_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(completeness_bins),
                         "type": "scatter",
                         "name": "Completeness",
                     },
                     (
                         {
-                            "x": self.d_star_sq_bins,
-                            "y": anom_completeness_bins,
+                            "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                            "y": round_for_json(anom_completeness_bins),
                             "type": "scatter",
                             "name": "Anomalous completeness",
                         }
@@ -847,15 +1004,15 @@ class ResolutionPlotsAndStats:
             "multiplicity_vs_resolution": {
                 "data": [
                     {
-                        "x": self.d_star_sq_bins,
-                        "y": multiplicity_bins,
+                        "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                        "y": round_for_json(multiplicity_bins),
                         "type": "scatter",
                         "name": "Multiplicity",
                     },
                     (
                         {
-                            "x": self.d_star_sq_bins,
-                            "y": anom_multiplicity_bins,
+                            "x": round_for_json(self.d_star_sq_bins),  # d_star_sq
+                            "y": round_for_json(anom_multiplicity_bins),
                             "type": "scatter",
                             "name": "Anomalous multiplicity",
                         }
@@ -876,7 +1033,6 @@ class ResolutionPlotsAndStats:
         }
 
     def merging_statistics_table(self, cc_half_method=None):
-
         headers = [
             "Resolution (Å)",
             "N(obs)",
@@ -894,12 +1050,19 @@ class ResolutionPlotsAndStats:
         if not self.is_centric:
             headers.append("CC<sub>ano</sub>")
         r_split_vals = []
+        weighted_cc_data = None
+        weighted_cc_anom_data = None
         if (
             hasattr(self.dataset_statistics, "r_split")
-            and self.dataset_statistics.r_split_binned
+            and self.dataset_statistics.r_split
         ):
             headers.insert(-2, "R<sub>split</sub>")
-            r_split_vals = self.dataset_statistics.r_split_binned
+            r_split_vals = self.dataset_statistics.r_split.value_binned
+            weighted_cc_data = self.dataset_statistics.weighted_cc_data
+            headers.append("CC<sub>½</sub>(σ-w)")
+            if not self.is_centric:
+                headers.append("CC<sub>ano</sub>(σ-w)")
+                weighted_cc_anom_data = self.dataset_statistics.weighted_cc_anom_data
         rows = []
 
         def safe_format(format_str, item):
@@ -921,18 +1084,17 @@ class ResolutionPlotsAndStats:
             ]
             if r_split_vals:
                 row.append(f"{r_split_vals[i]:.3f}")
+
             if cc_half_method == "sigma_tau":
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half_sigma_tau,
                         "*" if bin_stats.cc_one_half_sigma_tau_significance else "",
                     )
                 )
             else:
                 row.append(
-                    "%.3f%s"
-                    % (
+                    "{:.3f}{}".format(
                         bin_stats.cc_one_half,
                         "*" if bin_stats.cc_one_half_significance else "",
                     )
@@ -940,8 +1102,29 @@ class ResolutionPlotsAndStats:
 
             if not self.is_centric:
                 row.append(
-                    "%.3f%s"
-                    % (bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else "")
+                    "{:.3f}{}".format(
+                        bin_stats.cc_anom, "*" if bin_stats.cc_anom_significance else ""
+                    )
+                )
+            if weighted_cc_data:
+                row.append(
+                    "{:.3f}{}".format(
+                        weighted_cc_data.value_binned[i]
+                        if weighted_cc_data.value_binned[i]
+                        else 0.000,
+                        "*" if weighted_cc_data.significance_critical_values[i] else "",
+                    )
+                )
+            if weighted_cc_anom_data:
+                row.append(
+                    "{:.3f}{}".format(
+                        weighted_cc_anom_data.value_binned[i]
+                        if weighted_cc_anom_data.value_binned[i]
+                        else 0.000,
+                        "*"
+                        if weighted_cc_anom_data.significance_critical_values[i]
+                        else "",
+                    )
                 )
             rows.append(row)
 
@@ -951,7 +1134,6 @@ class ResolutionPlotsAndStats:
         return merging_stats_table
 
     def overall_statistics_table(self, cc_half_method=None):
-
         headers = ["", "Overall", "Low resolution", "High resolution"]
 
         stats = (
@@ -977,9 +1159,9 @@ class ResolutionPlotsAndStats:
             and self.dataset_statistics.r_split is not None
         ):
             rsplits = (
-                self.dataset_statistics.r_split,
-                self.dataset_statistics.r_split_binned[0],
-                self.dataset_statistics.r_split_binned[-1],
+                self.dataset_statistics.r_split.value,
+                self.dataset_statistics.r_split.value_binned[0],
+                self.dataset_statistics.r_split.value_binned[-1],
             )
             rows.append(["R<sub>split</sub>"] + [f"{rs:.3f}" for rs in rsplits])
 
@@ -1010,12 +1192,12 @@ class ResolutionPlotsAndStats:
         if self.anomalous_dataset_statistics:
             o_anom = self.anomalous_dataset_statistics.overall
             h_anom = self.anomalous_dataset_statistics.bins[-1]
-            data[
-                "Anomalous completeness (%)"
-            ] = f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
-            data[
-                "Anomalous multiplicity"
-            ] = f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+            data["Anomalous completeness (%)"] = (
+                f"{(o_anom.anom_completeness * 100):.2f} ({(h_anom.anom_completeness * 100):.2f})"
+            )
+            data["Anomalous multiplicity"] = (
+                f"{o_anom.mean_redundancy:.2f} ({h_anom.mean_redundancy:.2f})"
+            )
         else:
             data["Anomalous completeness (%)"] = "-"
             data["Anomalous multiplicity"] = "-"
@@ -1062,7 +1244,6 @@ class AnomalousPlotter:
         return d
 
     def del_anom_correlation_ratio(self, unmerged_intensities):
-
         acentric = unmerged_intensities.select_acentric()
         centric = unmerged_intensities.select_centric()
         correl_ratios_acentric, correl_ratios_centric = ([], [])
@@ -1129,8 +1310,8 @@ class AnomalousPlotter:
                 "data": [
                     (
                         {
-                            "x": list(d_star_sq_acentric),
-                            "y": correl_ratios_acentric,
+                            "x": round_for_json(d_star_sq_acentric, ndigits=6),
+                            "y": round_for_json(correl_ratios_acentric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (acentric)",
                         }
@@ -1139,8 +1320,8 @@ class AnomalousPlotter:
                     ),
                     (
                         {
-                            "x": list(d_star_sq_centric),
-                            "y": correl_ratios_centric,
+                            "x": round_for_json(d_star_sq_centric, ndigits=6),
+                            "y": round_for_json(correl_ratios_centric),
                             "type": "lines",
                             "name": "Anomalous correlation ratio (centric)",
                         }
@@ -1152,7 +1333,7 @@ class AnomalousPlotter:
                     "title": "Anomalous R.M.S. correlation ratio (acentric reflections)",
                     "xaxis": {
                         "title": "Resolution (Å)",
-                        "tickvals": tickvals,
+                        "tickvals": round_for_json(tickvals, ndigits=6),
                         "ticktext": ticktext,
                     },
                     "yaxis": {"anchor": "x", "title": "rms correlation ratio"},
@@ -1197,8 +1378,8 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": list(dano1.data()),
-                        "y": list(dano2.data()),
+                        "x": round_for_json(dano1.data()),
+                        "y": round_for_json(dano2.data()),
                         "type": "scatter",
                         "mode": "markers",
                         "size": 1,
@@ -1249,7 +1430,7 @@ https://doi.org/10.1107/S0907444905036693
         H, xedges, yedges = np.histogram2d(x, y, bins=(200, 200))
         nonzeros = np.nonzero(H)
         z = np.empty(H.shape)
-        z[:] = np.NAN
+        z[:] = np.nan
         z[nonzeros] = H[nonzeros]
 
         # also make a histogram
@@ -1275,9 +1456,9 @@ https://doi.org/10.1107/S0907444905036693
             plotname: {
                 "data": [
                     {
-                        "x": xedges.tolist(),
-                        "y": yedges.tolist(),
-                        "z": z.transpose().tolist(),
+                        "x": round_for_json(xedges.tolist(), ndigits=4),
+                        "y": round_for_json(yedges.tolist(), ndigits=4),
+                        "z": [round_for_json(e) for e in z.transpose().tolist()],
                         "type": "heatmap",
                         "name": "normalised deviations",
                         "colorbar": {
@@ -1332,14 +1513,15 @@ def cc_half_plot(
     d_min=None,
 ):
     d_star_sq_tickvals, d_star_sq_ticktext = d_star_sq_to_d_ticks(d_star_sq, nticks=5)
+    d_star_sq_tickvals = round_for_json(d_star_sq_tickvals, ndigits=6)
     min_y = min([cc if cc is not None else 0 for cc in cc_half] + [0])
     if cc_anom:
         min_y = min([min_y, min([cc if cc is not None else 0 for cc in cc_anom])])
     return {
         "data": [
             {
-                "x": list(d_star_sq),
-                "y": list(cc_half),
+                "x": round_for_json(d_star_sq, ndigits=6),
+                "y": round_for_json(cc_half),
                 "type": "scatter",
                 "name": "CC<sub>½</sub>",
                 "mode": "lines",
@@ -1347,8 +1529,8 @@ def cc_half_plot(
             },
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_half_critical_values),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_half_critical_values),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> critical value (p=0.01)",
                     "line": {"color": "rgb(31, 119, 180)", "dash": "dot"},
@@ -1358,8 +1540,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_anom),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_anom),
                     "type": "scatter",
                     "name": "CC-anom",
                     "mode": "lines",
@@ -1370,8 +1552,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_anom_critical_values),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_anom_critical_values),
                     "type": "scatter",
                     "name": "CC-anom critical value (p=0.01)",
                     "mode": "lines",
@@ -1382,8 +1564,8 @@ def cc_half_plot(
             ),
             (
                 {
-                    "x": list(d_star_sq),
-                    "y": list(cc_half_fit),
+                    "x": round_for_json(d_star_sq, ndigits=6),
+                    "y": round_for_json(cc_half_fit),
                     "type": "scatter",
                     "name": "CC<sub>½</sub> fit",
                     "line": {"color": "rgb(47, 79, 79)"},
@@ -1408,7 +1590,7 @@ def cc_half_plot(
             "title": "CC<sub>½</sub> vs resolution",
             "xaxis": {
                 "title": "Resolution (Å)",
-                "tickvals": d_star_sq_tickvals,
+                "tickvals": round_for_json(d_star_sq_tickvals, ndigits=6),
                 "ticktext": d_star_sq_ticktext,
             },
             "yaxis": {

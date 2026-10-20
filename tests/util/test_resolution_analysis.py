@@ -51,10 +51,7 @@ def test_tanh_fit():
 
 @pytest.fixture
 def merging_stats(dials_data):
-    mtz = str(
-        dials_data("x4wide_processed", pathlib=True)
-        / "AUTOMATIC_DEFAULT_scaled_unmerged.mtz"
-    )
+    mtz = str(dials_data("x4wide_processed") / "AUTOMATIC_DEFAULT_scaled_unmerged.mtz")
     i_obs, _ = resolution_analysis.miller_array_from_mtz(mtz)
     return iotbx.merging_statistics.dataset_statistics(
         i_obs=i_obs,

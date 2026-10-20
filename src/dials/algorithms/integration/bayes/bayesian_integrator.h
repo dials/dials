@@ -41,9 +41,9 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    BayesianIntegrator(const af::const_ref<FloatType> &signal,
-                       const af::const_ref<FloatType> &background,
-                       const af::const_ref<int> &mask) {
+    BayesianIntegrator(const af::const_ref<FloatType>& signal,
+                       const af::const_ref<FloatType>& background,
+                       const af::const_ref<uint8_t>& mask) {
       init(signal, background, mask);
     }
 
@@ -53,9 +53,9 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<2> > &signal,
-                       const af::const_ref<FloatType, af::c_grid<2> > &background,
-                       const af::const_ref<int, af::c_grid<2> > &mask) {
+    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<2> >& signal,
+                       const af::const_ref<FloatType, af::c_grid<2> >& background,
+                       const af::const_ref<uint8_t, af::c_grid<2> >& mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
 
@@ -65,9 +65,9 @@ namespace dials { namespace algorithms {
      * @param background The background array
      * @param mask The mask array
      */
-    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<3> > &signal,
-                       const af::const_ref<FloatType, af::c_grid<3> > &background,
-                       const af::const_ref<int, af::c_grid<3> > &mask) {
+    BayesianIntegrator(const af::const_ref<FloatType, af::c_grid<3> >& signal,
+                       const af::const_ref<FloatType, af::c_grid<3> >& background,
+                       const af::const_ref<uint8_t, af::c_grid<3> >& mask) {
       init(signal.as_1d(), background.as_1d(), mask.as_1d());
     }
 
@@ -136,15 +136,15 @@ namespace dials { namespace algorithms {
      * @param background The background to the signal
      * @param mask The mask to the signal
      */
-    void init(const af::const_ref<FloatType> &signal,
-              const af::const_ref<FloatType> &background,
-              const af::const_ref<int> &mask) {
+    void init(const af::const_ref<FloatType>& signal,
+              const af::const_ref<FloatType>& background,
+              const af::const_ref<uint8_t>& mask) {
       // Check both arrays are the same size
       DIALS_ASSERT(signal.size() == background.size());
       DIALS_ASSERT(signal.size() == mask.size());
 
       // Calculate the signal and background intensity
-      int bg_code = Valid | Background | BackgroundUsed;
+      uint8_t bg_code = Valid | Background | BackgroundUsed;
       success_ = true;
       sum_p_ = 0;
       sum_b_ = 0;

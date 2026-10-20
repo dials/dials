@@ -4,7 +4,6 @@ import http.client
 import json
 import os
 import select
-import socket as pysocket
 import sys
 import urllib.error
 import urllib.parse
@@ -31,13 +30,13 @@ def work(host, port, filename, params):
 
 def response_to_xml(d):
     if "n_spots_total" in d:
-        response = f"""<image>{d['image']}</image>
-<spot_count>{d['n_spots_total']}</spot_count>
-<spot_count_no_ice>{d['n_spots_no_ice']}</spot_count_no_ice>
-<d_min>{d['estimated_d_min']:.2f}</d_min>
-<d_min_method_1>{d['d_min_distl_method_1']:.2f}</d_min_method_1>
-<d_min_method_2>{d['d_min_distl_method_2']:.2f}</d_min_method_2>
-<total_intensity>{d['total_intensity']:.0f}</total_intensity>"""
+        response = f"""<image>{d["image"]}</image>
+<spot_count>{d["n_spots_total"]}</spot_count>
+<spot_count_no_ice>{d["n_spots_no_ice"]}</spot_count_no_ice>
+<d_min>{d["estimated_d_min"]:.2f}</d_min>
+<d_min_method_1>{d["d_min_distl_method_1"]:.2f}</d_min_method_1>
+<d_min_method_2>{d["d_min_distl_method_2"]:.2f}</d_min_method_2>
+<total_intensity>{d["total_intensity"]:.0f}</total_intensity>"""
 
     else:
         assert "error" in d
@@ -49,8 +48,9 @@ def response_to_xml(d):
             response = "\n".join(
                 [
                     response,
-                    "<unit_cell>%.6g %.6g %.6g %.6g %.6g %.6g</unit_cell>"
-                    % (crystal.get_unit_cell().parameters()),
+                    "<unit_cell>{:.6g} {:.6g} {:.6g} {:.6g} {:.6g} {:.6g}</unit_cell>".format(
+                        *crystal.get_unit_cell().parameters()
+                    ),
                 ]
             )
         response = "\n".join(
@@ -158,12 +158,12 @@ def stop(host, port, nproc):
                 stopped = stopped + 1
             else:
                 print("socket returned code", socket.getcode())
-        except (pysocket.timeout, urllib.error.HTTPError) as e:
+        except (TimeoutError, urllib.error.HTTPError) as e:
             print("error on stopping server:", e)
         except urllib.error.URLError as e:
             if e.reason.errno != 111:
                 print("error on stopping server:", e)
-        except pysocket.error:
+        except OSError:
             # Assuming this means the server killed itself before the reply left the send buffer.
             stopped = stopped + 1
         except http.client.BadStatusLine:

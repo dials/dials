@@ -28,7 +28,7 @@ namespace dials { namespace algorithms {
 
   /** Calculate the square of the value */
   template <typename T>
-  T sqr(T &a) {
+  T sqr(T& a) {
     return a * a;
   }
 
@@ -98,7 +98,7 @@ namespace dials { namespace algorithms {
      */
     vec2<double> operator()(cctbx::miller::index<> miller_index,
                             mat3<double> ub_matrix) const {
-      return operator()(ub_matrix *miller_index);
+      return operator()(ub_matrix * miller_index);
     }
 
   private:

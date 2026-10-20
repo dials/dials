@@ -40,9 +40,9 @@ namespace dials { namespace algorithms { namespace background {
      * @params shoebox The shoebox profile
      * @params mask The shoebox mask
      */
-    virtual void mark(const af::const_ref<double, af::c_grid<3> > &shoebox,
-                      af::ref<int, af::c_grid<3> > mask) const {
-      const int mask_code = shoebox::Valid | shoebox::Background;
+    virtual void mark(const af::const_ref<double, af::c_grid<3> >& shoebox,
+                      af::ref<uint8_t, af::c_grid<3> > mask) const {
+      const uint8_t mask_code = shoebox::Valid | shoebox::Background;
 
       // Ensure data is correctly sized.
       DIALS_ASSERT(shoebox.size() == mask.size());

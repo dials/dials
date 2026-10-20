@@ -1,8 +1,7 @@
-""" Classes for scaling refinement engines.
+"""Classes for scaling refinement engines.
 
 Classes are inherited from the dials.refinement engine with a few
 methods overwritten to use them with scaling code."""
-
 
 from __future__ import annotations
 
@@ -135,7 +134,7 @@ def print_step_table(refinery):
     logger.info("\nRefinement steps:")
 
     header = ["Step", "Nref"]
-    for (name, units) in zip(refinery._target.rmsd_names, refinery._target.rmsd_units):
+    for name, units in zip(refinery._target.rmsd_names, refinery._target.rmsd_units):
         header.append(name + "\n(" + units + ")")
 
     rows = []

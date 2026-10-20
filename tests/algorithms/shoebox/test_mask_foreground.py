@@ -18,7 +18,7 @@ from dials.array_family import flex
 
 def test(dials_data):
     experiment = ExperimentList.from_file(
-        dials_data("centroid_test_data", pathlib=True) / "experiments.json"
+        dials_data("centroid_test_data") / "experiments.json"
     )
 
     beam = experiment[0].beam
@@ -180,5 +180,5 @@ def generate_reflections(detector, beam, scan, experiment, num):
             index.append(i)
     rlist.del_selected(flex.size_t(index))
     rlist["shoebox"] = flex.shoebox(rlist["panel"], rlist["bbox"])
-    rlist["shoebox"].allocate_with_value(MaskCode.Valid)
+    rlist["shoebox"].allocate_data_with_value(MaskCode.Valid)
     return rlist

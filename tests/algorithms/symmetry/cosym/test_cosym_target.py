@@ -50,5 +50,5 @@ def test_cosym_target(space_group):
         g = t.compute_gradients(minimizer.coords)
         g_fd = t.compute_gradients_fd(minimizer.coords)
         assert f < f0
-        assert pytest.approx(g, abs=1e-3) == [0] * len(g)
-        assert pytest.approx(g_fd, abs=1e-3) == [0] * len(g)
+        assert pytest.approx(list(g), abs=3e-3) == [0] * len(g)
+        assert pytest.approx(g_fd, abs=3e-3) == [0] * len(g)

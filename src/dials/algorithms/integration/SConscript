@@ -40,3 +40,9 @@ env.SharedLibrary(
     source=["boost_python/kapton_ext.cc"],
     LIBS=env["LIBS"],
 )
+
+env.SharedLibrary(
+	target="#/lib/dials_algorithms_tof_integration_ext",
+    source=["tof/boost_python/tof_integration_ext.cc"],
+    LIBS=env["LIBS"],
+)

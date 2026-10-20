@@ -12,7 +12,7 @@
 #ifndef DIALS_MASK_LOW_LEVEL_H
 #define DIALS_MASK_LOW_LEVEL_H
 #define PX_SCALE 85
-//#define DST_BTW_LIN 14
+// #define DST_BTW_LIN 14
 #define DST_BTW_LIN 43
 #include <iostream>
 #include <string>

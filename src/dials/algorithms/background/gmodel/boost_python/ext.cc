@@ -20,7 +20,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
   using namespace boost::python;
 
   struct StaticBackgroundModelPickleSuite : boost::python::pickle_suite {
-    static boost::python::tuple getstate(const StaticBackgroundModel &obj) {
+    static boost::python::tuple getstate(const StaticBackgroundModel& obj) {
       boost::python::list data;
       for (std::size_t i = 0; i < obj.size(); ++i) {
         data.append(obj.data(i));
@@ -28,7 +28,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
       return boost::python::make_tuple(data);
     }
 
-    static void setstate(StaticBackgroundModel &obj, boost::python::tuple state) {
+    static void setstate(StaticBackgroundModel& obj, boost::python::tuple state) {
       DIALS_ASSERT(boost::python::len(state) == 1);
       boost::python::list data = boost::python::extract<boost::python::list>(state[0]);
       for (std::size_t i = 0; i < boost::python::len(data); ++i) {
@@ -45,7 +45,7 @@ namespace dials { namespace algorithms { namespace background { namespace boost_
       .def("mask", &PolarTransformResult::mask);
 
     class_<PolarTransform>("PolarTransform", no_init)
-      .def(init<const BeamBase &, const Panel &, const Goniometer &>())
+      .def(init<const BeamBase&, const Panel&, const Goniometer&>())
       .def("image_xmap", &PolarTransform::image_xmap)
       .def("image_ymap", &PolarTransform::image_ymap)
       .def("discontinuity", &PolarTransform::discontinuity)

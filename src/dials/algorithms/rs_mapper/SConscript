@@ -14,4 +14,4 @@ env_etc.dials_rs_mapper_common_includes = [
 
 env_etc.include_registry.append(env=env, paths=env_etc.dials_rs_mapper_common_includes)
 
-env.SharedLibrary(target="#lib/recviewer_ext", source=["ext.cpp"], LIBS=env["LIBS"])
+env.SharedLibrary(target="#lib/recviewer_ext", source=["ext.cpp"], LIBS=env["LIBS"] + ["boost_thread"])

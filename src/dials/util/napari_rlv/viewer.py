@@ -98,7 +98,6 @@ class ReciprocalLatticeViewer(Render3d):
 
     @magicgui(auto_call=True)
     def rlv_geometry(self, invert_rotation_axis: bool, crystal_frame: bool):
-
         # Set values
         self.settings.reverse_phi = invert_rotation_axis
         self.settings.crystal_frame = crystal_frame
@@ -394,7 +393,6 @@ class ReciprocalLatticeViewer(Render3d):
     def load_models(self, experiments, reflections):
         Render3d.load_models(self, experiments, reflections)
         if self.settings.beam_centre is not None:
-
             pass
         if self.settings.marker_size is Auto:
             max_radius = max(self.reflections["rlp"].norms())

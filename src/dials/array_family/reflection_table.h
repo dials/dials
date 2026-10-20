@@ -27,6 +27,7 @@ inline cctbx::miller::index<> dxtbx::af::init_zero<cctbx::miller::index<> >() {
 
 namespace dials { namespace af {
 
+  using model::FrameSlicedShoebox;
   using model::Shoebox;
   using scitbx::mat3;
   using scitbx::vec2;
@@ -43,7 +44,8 @@ namespace dials { namespace af {
                                          mat3<double>,
                                          int6,
                                          cctbx::miller::index<>,
-                                         Shoebox<> >
+                                         Shoebox<>,
+                                         FrameSlicedShoebox<> >
     reflection_table_type_generator;
 
   typedef reflection_table_type_generator::type reflection_table_types;
@@ -105,8 +107,8 @@ namespace dials { namespace af {
     ForegroundIncludesBadPixels = (1 << 14),
     BackgroundIncludesBadPixels = (1 << 15),
     IncludesBadPixels = ForegroundIncludesBadPixels | BackgroundIncludesBadPixels,
-    BadShoebox =
-      Overloaded | OverlappedBg | OverlappedFg | InPowderRing | IncludesBadPixels,
+    BadShoebox = Overloaded | OverlappedBg | OverlappedFg | InPowderRing
+      | IncludesBadPixels,
 
     // Bad spot
     BadSpot = BadShoebox,
@@ -133,11 +135,13 @@ namespace dials { namespace af {
 
     // Excluded by refinement
     ExcludedForRefinement = (1 << 25),
-    BadForRefinement = ExcludedForRefinement | CentroidOutlier,
+    NotSuitableForRefinement =
+      (1 << 27),  // For handling xds imported data when we don't have an xyzobs
+    BadForRefinement = ExcludedForRefinement | CentroidOutlier
+      | NotSuitableForRefinement,
 
     // Scaled flag indicates good reflections after scaling
     Scaled = (1 << 26),
-
   };
 
 }}  // namespace dials::af

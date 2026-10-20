@@ -3,6 +3,8 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+from dxtbx.util import ersatz_uuid4
+
 
 def test(tmp_path):
     from dials.array_family import flex
@@ -11,6 +13,8 @@ def test(tmp_path):
     table["hkl"] = flex.miller_index(360)
     table["id"] = flex.int(360)
     table["intensity.sum.value"] = flex.double(360)
+    for id in set(table["id"]):
+        table.experiment_identifiers()[id] = ersatz_uuid4()
     table.as_file(tmp_path / "temp1.refl")
     table.as_file(tmp_path / "temp2.refl")
 

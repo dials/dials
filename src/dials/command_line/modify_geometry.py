@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List
+import warnings
 
 import libtbx.phil
 from dxtbx.model import ExperimentList
@@ -27,7 +27,6 @@ output {
 def update(
     experiments: ExperimentList, new_params: libtbx.phil.scope_extract
 ) -> ExperimentList:
-
     """
     Modify detector, beam, goniometer and scan in experiments with the values in new_params
     """
@@ -47,8 +46,7 @@ def update(
 
 
 @dials.util.show_mail_handle_errors()
-def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
-
+def run(args: list[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
     usage = "dials.modify_geometry [options] models.expt"
 
     parser = ArgumentParser(
@@ -75,4 +73,9 @@ def run(args: List[str] = None, phil: libtbx.phil.scope = phil_scope) -> None:
 
 
 if __name__ == "__main__":
+    warnings.warn(
+        "dials.modify_geometry is deprecated, please use dials.modify_experiments instead.\n",
+        DeprecationWarning,
+        stacklevel=1,
+    )
     run()

@@ -9,7 +9,9 @@ def version():
     from dials.util.version import dials_version
 
     print(dials_version())
-    print("Python {0.major}.{0.minor}.{0.micro}".format(sys.version_info))
+    print(
+        f"Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
     print(f"Installed in: {os.path.split(dials.__file__)[0]}")
 
 

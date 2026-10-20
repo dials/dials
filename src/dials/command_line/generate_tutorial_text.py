@@ -53,7 +53,7 @@ def generate_processing_detail_text_thaumatin(options):
     runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     df = dials_data.download.DataFetcher()
-    runcmd(["dials.import", df("thaumatin_i04", pathlib=True) / "th_8_2_0*cbf"])
+    runcmd(["dials.import", df("thaumatin_i04") / "th_8_2_0*cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
     runcmd(["dials.index", "imported.expt", "strong.refl"])
     runcmd(["dials.refine_bravais_settings", "indexed.expt", "indexed.refl"])
@@ -96,7 +96,7 @@ def generate_processing_detail_text_mpro_x0692(options):
     # into the main release, have a DLS default or otherwise let it be
     # specified via an environment variable.
     df = dials_data.download.DataFetcher()
-    runcmd(["dials.import", df("mpro_x0692", pathlib=True) / "Mpro-x0692_1_0*.cbf"])
+    runcmd(["dials.import", df("mpro_x0692") / "Mpro-x0692_1_0*.cbf"])
     runcmd(["dials.find_spots", "imported.expt", "nproc=4"])
     runcmd(["dials.index", "imported.expt", "strong.refl"])
     # Because it's hard to robustly extract the *final* unindexed count
@@ -229,12 +229,8 @@ def generate_multi_crystal_symmetry_and_scaling(options):
     runcmd = functools.partial(_command_runner, output_directory=outdir, cwd=tmpdir)
 
     df = dials_data.download.DataFetcher()
-    experiment_files = sorted(
-        df("vmxi_proteinase_k_sweeps", pathlib=True).glob("experiments_*.expt")
-    )
-    reflection_files = sorted(
-        df("vmxi_proteinase_k_sweeps", pathlib=True).glob("reflections_*.refl")
-    )
+    experiment_files = sorted(df("vmxi_proteinase_k_sweeps").glob("experiments_*.expt"))
+    reflection_files = sorted(df("vmxi_proteinase_k_sweeps").glob("reflections_*.refl"))
     input_files = []
     for src in experiment_files + reflection_files:
         dst = tmpdir / src.name

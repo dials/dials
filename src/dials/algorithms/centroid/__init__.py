@@ -24,7 +24,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         return tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error)
 
     pixel_size = panel.get_pixel_size()
-    if scan is None:
+    if scan is None or not scan.has_property("oscillation"):
         oscillation = (0, 0)
     else:
         oscillation = scan.get_oscillation(deg=False)
@@ -36,7 +36,7 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         x, y, z = position
         xy_mm = panel.pixel_to_millimeter((x, y))
 
-        if scan is None:
+        if scan is None or not scan.has_property("oscillation"):
             z_rad = 0
         else:
             z_rad = scan.get_angle_from_array_index(z, deg=False)
@@ -49,12 +49,11 @@ def centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         sd_error_mm = [sde * s for sde, s in zip(sd_error, scale2)]
 
     else:
-
         # Convert Pixel coordinate into mm/rad
         x, y, z = position.parts()
         xy_mm = panel.pixel_to_millimeter(flex.vec2_double(x, y))
 
-        if scan is None:
+        if scan is None or not scan.has_property("oscillation"):
             z_rad = flex.double(z.size(), 0)
         else:
             z_rad = scan.get_angle_from_array_index(z, deg=False)
@@ -98,7 +97,6 @@ def tof_centroid_px_to_mm_panel(panel, scan, position, variance, sd_error):
         sd_error_mm = [sde * s for sde, s in zip(sd_error, scale2)]
 
     else:
-
         # Convert Pixel coordinate into mm/tof
         x, y, z = position.parts()
         xy_mm = panel.pixel_to_millimeter(flex.vec2_double(x, y))

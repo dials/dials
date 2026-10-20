@@ -19,16 +19,16 @@ The output formats currently supported are:
 
 MTZ format exports the files as an unmerged mtz file, ready for input to
 downstream programs such as Pointless and Aimless. For exporting integrated,
-but unscaled data, the required input is a models.expt file and an
+but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
-models.expt file and a scaled.refl file, also passing the option
-intensity=scale.
+scaled.expt file and a scaled.refl file, in which case the intensity=scale
+flag will be set implicitly.
 
-NXS format exports the files as an NXmx file. The required input is a
-models.expt file and an integrated.refl file.
+NXS format exports the files as an NXmx file. The required input is an
+integrated.expt file and an integrated.refl file.
 
-MMCIF format exports the files as an mmcif file. The required input is a
-models.expt file and an integrated.refl file.
+MMCIF format exports the files as an mmcif file. The required input is an
+integrated.expt file and an integrated.refl file.
 
 XDS_ASCII format exports intensity data and the experiment metadata in the
 same format as used by the output of XDS in the CORRECT step - output can
@@ -42,7 +42,7 @@ MOSFLM format exports the files as an index.mat mosflm-format matrix file and a
 mosflm.in file containing basic instructions for input to mosflm. The required
 input is an models.expt file.
 
-XDS format exports a models.expt file as XDS.INP and XPARM.XDS files. If a
+XDS format exports experiment files as XDS.INP and XPARM.XDS files. If a
 reflection file is given it will be exported as a SPOT.XDS file.
 
 SHELX format exports intensity data in HKLF 4 format for use in the SHELX suite
@@ -54,40 +54,53 @@ PETS format exports intensity data and diffraction data in the CIF format
 used by PETS. This is primarily intended to produce files suitable for
 dynamic diffraction refinement using Jana2020, which requires this format.
 
+CIF format exports intensity data along with the unit cell, symmetry and data
+reduction metadata as a small molecule (core) CIF file, ready for structure
+solution in programs such as Olex2. Unlike SHELX format, the intensities are
+not rescaled to fit a fixed-width field. For electron diffraction the relevant
+items of the electron diffraction extension to the core dictionary are written
+too, and metadata that a data reduction cannot know can be added with
+cif.extra.
+
 Examples::
 
   # Export to mtz
-  dials.export models.expt integrated.refl
-  dials.export models.expt integrated.refl mtz.hklout=integrated.mtz
-  dials.export models.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
+  dials.export integrated.expt integrated.refl
+  dials.export integrated.expt integrated.refl mtz.hklout=integrated.mtz
+  dials.export scaled.expt scaled.refl
+  dials.export scaled.expt scaled.refl intensity=scale mtz.hklout=scaled.mtz
 
   # Export to nexus
-  dials.export models.expt integrated.refl format=nxs
-  dials.export models.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
+  dials.export integrated.expt integrated.refl format=nxs
+  dials.export integrated.expt integrated.refl format=nxs nxs.hklout=integrated.nxs
 
   # Export to mmcif
-  dials.export models.expt integrated.refl format=mmcif
-  dials.export models.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
-
-  # Export to mosflm
-  dials.export models.expt integrated.refl format=mosflm
+  dials.export integrated.expt integrated.refl format=mmcif
+  dials.export integrated.expt integrated.refl format=mmcif mmcif.hklout=integrated.mmcif
 
   # Export to xds
   dials.export strong.refl format=xds
   dials.export indexed.refl format=xds
-  dials.export models.expt format=xds
-  dials.export models.expt indexed.refl format=xds
+  dials.export indexed.expt indexed.refl format=xds
 
   # Export to shelx
   dials.export scaled.expt scaled.refl format=shelx
   dials.export scaled.expt scaled.refl format=shelx shelx.hklout=dials.hkl
   dials.export scaled.expt scaled.refl format=shelx composition=C3H7NO2S
+
+  # Export to CIF
+  dials.export scaled.expt scaled.refl format=cif
+  dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
+  dials.export scaled.expt scaled.refl format=cif composition=C3H7NO2S
+  dials.export scaled.expt scaled.refl format=cif \\
+      "cif.extra=_diffrn_source_type=LaB6 gun" \\
+      cif.extra=_diffrn_precession_semi_angle=1.0
 """
 
 phil_scope = parse(
     """
 
-  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets
+  format = *mtz sadabs nxs mmcif mosflm xds xds_ascii json shelx pets cif
     .type = choice
     .help = "The output file format"
 
@@ -220,6 +233,14 @@ phil_scope = parse(
               "mmcif file should comply with. v5_next adds support for"
               "recording unmerged data as well as additional scan metadata"
               "and statistics, however writing can be slow for large datasets."
+    scale = True
+      .type = bool
+      .help = "If True, apply a scale such that the minimum intensity is greater"
+              "than (less negative than) the mmcif.min_scale value below."
+    min_scale = -999999.0
+      .type = float
+      .help = "If mmcif.scale is True, scale all negative intensities such that"
+              "they are less negative than this value."
   }
 
   mosflm {
@@ -251,6 +272,19 @@ phil_scope = parse(
 
   }
 
+  small_molecule {
+
+    composition = None
+      .type = str
+      .help = "The chemical composition of the asymmetric unit, e.g. C3H7NO2S."
+              "Used by both format=shelx and format=cif. For format=shelx this"
+              "gives the SFAC & UNIT instructions, defaulting to CH if not"
+              "given. For format=cif it gives _chemical_formula_sum,"
+              "_chemical_formula_weight and _cell_formula_units_Z, which are"
+              "omitted if this is not given."
+
+  }
+
   shelx {
 
     hklout = dials.hkl
@@ -259,15 +293,37 @@ phil_scope = parse(
     ins = dials.ins
       .type = path
       .help = "The output ins file"
-    composition = CH
-      .type = str
-      .help = "The chemical composition of the asymmetric unit"
     scale = True
       .type = bool
       .help = "Scale reflections to maximise output precision in SHELX 8.2f format"
     scale_range = -9999.0, 9999.0
       .type = floats(size=2, value_min=-999999., value_max=9999999.)
       .help = "minimum or maximum intensity value after scaling."
+
+  }
+
+  cif {
+
+    hklout = dials.cif
+      .type = path
+      .help = "The output CIF file"
+    scale_group_code = False
+      .type = bool
+      .help = "Write _diffrn_refln_scale_group_code from the experiment"
+              "identifier. Olex2 turns this into the SHELX batch number, so"
+              "leave it off unless you intend to refine per-sweep scale factors."
+    datablock = dials
+      .type = str
+      .help = "The name of the CIF data block"
+    extra = None
+      .type = str
+      .multiple = True
+      .help = "An extra '_data_name=value' pair to write, which overrides any"
+              "value DIALS would write for that data name. Repeat to write"
+              "more than one. Useful for the experimental metadata that a data"
+              "reduction cannot know, such as the electron diffraction items"
+              "_diffrn_source_type, _diffrn_precession_semi_angle or"
+              "_diffrn_radiation_illumination_mode."
 
   }
 
@@ -351,6 +407,12 @@ def export_mtz(params, experiments, reflections):
 
     from dials.util.export_mtz import export_mtz
 
+    # Temporary guard to provide a more useful error to the user for time-of-flight data
+    if experiments.all_tof():
+        raise NotImplementedError(
+            "Time-of-flight Laue data cannot be exported as .mtz. Run with format=shelx to export as .hkl"
+        )
+
     # Handle case where user has passed data before integration
     if (
         "intensity.sum.value" not in reflections[0]
@@ -418,7 +480,7 @@ def export_xdsascii(params, experiments, reflections):
     :param reflections: The reflection tables
     """
 
-    _check_input(experiments, reflections, params=params, check_intensities=True)
+    _check_input(experiments, reflections, params=params, check_intensities=False)
 
     from dials.util.export_xds_ascii import export_xds_ascii
 
@@ -562,6 +624,29 @@ def export_shelx(params, experiments, reflections):
     export_shelx(reflections[0], experiments, params)
 
 
+def export_cif(params, experiments, reflections):
+    """
+    Export data in small molecule (core) CIF format
+
+    :param params: The phil parameters
+    :param experiments: The experiment list
+    :param reflections: The reflection tables
+    """
+
+    _check_input(experiments, reflections, params=params)
+
+    # check for a single intensity choice, as the reflection loop has a single
+    # intensity_net column
+    if len(params.intensity) > 1:
+        raise ValueError(
+            "Only 1 intensity option can be exported in this format, please choose a single intensity option e.g. intensity=profile"
+        )
+
+    from dials.util.export_cif import export_cif
+
+    export_cif(reflections[0], experiments, params)
+
+
 def export_pets(params, experiments, reflections):
     """
     Export reflections in PETS CIF format
@@ -628,8 +713,7 @@ def run(args=None):
 
     try:
         template_list = {
-            str(e.imageset.get_template())
-            + ":{0}:{1}".format(*e.scan.get_image_range())
+            str(e.imageset.get_template()) + ":{}:{}".format(*e.scan.get_image_range())
             for e in experiments
         }
     except AttributeError:
@@ -674,16 +758,13 @@ def run(args=None):
         "json": export_json,
         "shelx": export_shelx,
         "pets": export_pets,
+        "cif": export_cif,
     }.get(params.format)
     if not exporter:
         sys.exit(f"Unknown format: {params.format}")
 
     # Export the data
-    try:
-        exporter(params, experiments, reflections)
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        sys.exit(1)
+    exporter(params, experiments, reflections)
 
 
 if __name__ == "__main__":

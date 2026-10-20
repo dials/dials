@@ -9,7 +9,6 @@ from dials.algorithms.scaling.model.components.scale_components import (
 
 
 class AnalyticalComponent(ScaleComponentBase):
-
     null_parameter_value = 1.0
 
     def __init__(self, initial_values, parameter_esds=None):

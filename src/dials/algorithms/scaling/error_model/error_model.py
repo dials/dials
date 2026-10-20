@@ -84,6 +84,34 @@ phil_scope = phil.parse(
 )
 
 
+def extract_error_model_groups(params, n_tables) -> list[list[int]]:
+    if params.grouping == "combined":
+        minimisation_groups = [list(range(n_tables))]
+    elif params.grouping == "individual":
+        minimisation_groups = [[i] for i in range(n_tables)]
+    else:
+        groups = params.error_model_group
+        if not groups:
+            logger.info(
+                """No error model groups defined, defaulting to combined error model optimisation"""
+            )
+            minimisation_groups = [list(range(n_tables))]
+        else:
+            all_datasets = list(range(n_tables))
+            # groups are defined in terms of sweeps (1,2,3,...), but here
+            # need to convert to dataset number (0, 1, 2,...)
+            explicitly_grouped = [i - 1 for j in groups for i in j]
+            if -1 in explicitly_grouped:  # sweeps provided indexed from 0
+                explicitly_grouped = [i for j in groups for i in j]
+                minimisation_groups = [list(g) for g in groups]
+            else:
+                minimisation_groups = [[i - 1 for i in g] for g in groups]
+            others = set(all_datasets).difference(set(explicitly_grouped))
+            if others:
+                minimisation_groups += [list(others)]
+    return minimisation_groups
+
+
 def calc_sigmaprime(x, Ih_table) -> np.array:
     """Calculate the error from the model."""
     sigmaprime = (
@@ -103,7 +131,6 @@ def calc_deltahl(Ih_table, n_h, sigmaprime) -> np.array:
 
 
 class ErrorModelRegressionAPM:
-
     """Parameter manager for error model minimisation using the linear
     regression method.
 
@@ -171,7 +198,6 @@ class ErrorModelRegressionAPM:
 
 
 class ErrorModelA_APM:
-
     """Parameter manager for minimising A component with individual minimizer"""
 
     def __init__(self, model):
@@ -192,7 +218,6 @@ class ErrorModelA_APM:
 
 
 class ErrorModelB_APM:
-
     """Parameter manager for minimising Bcomponent with individual minimizer"""
 
     def __init__(self, model):
@@ -215,7 +240,6 @@ class ErrorModelB_APM:
 
 
 class ErrorModelBinner:
-
     """A binner for the error model data.
 
     Data are binned based on Ih, and methods are available for
@@ -284,7 +308,7 @@ class ErrorModelBinner:
             sel2 = Ih > minimum
             sel = sel1 & sel2
             # isel = sel.iselection()
-            n_in_bin = np.count_nonzero(sel)  # isel.size()
+            n_in_bin = int(np.count_nonzero(sel))  # isel.size()
             if n_in_bin < min_per_bin:  # need more in this bin
                 m = n_cumul + min_per_bin
                 if m < n:  # still some refl left to use
@@ -294,7 +318,7 @@ class ErrorModelBinner:
                     minimum = self.binning_info["bin_boundaries"][i + 1]
                     sel = sel1 & (Ih > minimum)
                     # isel = sel.iselection()
-                    n_in_bin = np.count_nonzero(sel)  # isel.size()
+                    n_in_bin = int(np.count_nonzero(sel))  # isel.size()
             self.binning_info["refl_per_bin"] = np.append(
                 self.binning_info["refl_per_bin"], [n_in_bin]
             )
@@ -361,7 +385,6 @@ class ErrorModelBinner:
 
 
 class BComponent:
-
     """The basic error model B parameter component"""
 
     def __init__(self, initial_value=0.02):
@@ -370,7 +393,6 @@ class BComponent:
 
 
 class AComponent:
-
     """The basic error model A parameter component"""
 
     def __init__(self, initial_value=1.00):
@@ -379,7 +401,6 @@ class AComponent:
 
 
 class BasicErrorModel:
-
     """Definition of a basic two-parameter error model."""
 
     min_reflections_required = 250
@@ -387,7 +408,6 @@ class BasicErrorModel:
     id_ = "basic"
 
     def __init__(self, a=None, b=None, basic_params=None):
-
         """
         A basic two-parameter error model s'^2 = a^2(s^2 + (bI)^2)
 
@@ -548,13 +568,13 @@ class BasicErrorModel:
                 "  Type: basic",
                 f"  Parameters: a = {a:.5f}, b = {b:.5f}",
                 "  Error model formula: "
-                + "\u03C3"
+                + "\u03c3"
                 + "'"
                 + "\xb2"
                 + " = a"
                 + "\xb2"
                 + "("
-                + "\u03C3\xb2"
+                + "\u03c3\xb2"
                 " + (bI)" + "\xb2" + ")",
                 "  estimated I/sigma asymptotic limit: %s" % ISa,
                 "",
@@ -634,8 +654,7 @@ def filter_unsuitable_reflections_stills(
 
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table
 
@@ -674,8 +693,7 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     n_h = Ih_table.calc_nh()
     # now make sure any left also have n > 1
@@ -707,7 +725,6 @@ def filter_unsuitable_reflections(
     n = Ih_table.size
     if n < min_reflections_required:
         raise ValueError(
-            "Insufficient reflections (%s < %s) to perform error modelling."
-            % (n, min_reflections_required)
+            f"Insufficient reflections ({n} < {min_reflections_required}) to perform error modelling."
         )
     return Ih_table

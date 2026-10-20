@@ -15,6 +15,7 @@ from cctbx.array_family import flex
 from scitbx import matrix
 
 import dials.util
+from dials.util.plotly_utils import round_for_json
 
 help_message = """
 
@@ -357,7 +358,7 @@ def plot_projections(
         epochs = flex.double(epochs)
         epochs -= flex.min(epochs)
         epochs /= flex.max(epochs)
-        cmap = matplotlib.cm.get_cmap(colour_map)
+        cmap = matplotlib.colormaps[colour_map]
         colours = [cmap(e) for e in epochs]
     elif colours is None or len(colours) == 0:
         colours = ["b"] * len(projections_all)
@@ -419,8 +420,8 @@ def projections_as_dict(projections, labels):
     x, y = projections_all.parts()
     data.append(
         {
-            "x": list(x),
-            "y": list(y),
+            "x": round_for_json(list(x)),
+            "y": round_for_json(list(y)),
             "mode": "markers",
             "type": "scatter",
             "name": "stereographic_projections",
