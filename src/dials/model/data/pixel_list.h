@@ -265,23 +265,35 @@ namespace dials { namespace model {
      * Label the pixels in 3D
      */
     af::shared<int> labels_3d() const {
-      // Adjacency list type
-      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-        AdjacencyList;
+      return labels(true);
+    }
 
+    /**
+     * Label the pixels in 2D
+     */
+    af::shared<int> labels_2d() const {
+      return labels(false);
+    }
+
+  private:
+    /**
+     * Label connected pixels using union-find, which needs a few bytes per
+     * pixel, compared with hundreds for a boost::adjacency_list.
+     */
+    af::shared<int> labels(bool threed) const {
       if (coords_.size() == 0) {
         return af::shared<int>();
       }
 
-      // Calculate the coordinate indices
-      for (std::size_t i = 0; i < coords_.size(); ++i) {
-        if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
-        }
+      // Check the coordinates are sorted
+      for (std::size_t i = 1; i < coords_.size(); ++i) {
+        DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
       }
 
-      // Create a graph of coordinates
-      AdjacencyList graph(coords_.size());
+      // Each pixel starts in its own set
+      algorithms::DisjointSets sets(coords_.size());
+
+      // Join neighbouring pixels
       std::size_t i1 = 0, i2 = 0, i3 = 0;
       for (; i1 < coords_.size() - 1; ++i1) {
         vec3<int> a0 = coords_[i1];
@@ -289,80 +301,28 @@ namespace dials { namespace model {
         vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
         vec3<int> a3(a0[0] + 1, a0[1], a0[2]);
         if (coords_[i1 + 1] == a1) {
-          boost::add_edge(i1, i1 + 1, graph);
+          sets.join(i1, i1 + 1);
         }
         if (a0[1] < size_[0] - 1) {
           for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
             ;
           if (coords_[i2] == a2) {
-            boost::add_edge(i1, i2, graph);
+            sets.join(i1, i2);
           }
         }
-        if (a0[0] < last_frame_ - 1) {
+        if (threed && a0[0] < last_frame_ - 1) {
           if (i2 > i3) i3 = i2;
           for (; detail::lessthan(coords_[i3], a3) && i3 < coords_.size() - 1; ++i3)
             ;
           if (coords_[i3] == a3) {
-            boost::add_edge(i1, i3, graph);
+            sets.join(i1, i3);
           }
         }
       }
 
-      // Do the connected components
-      af::shared<int> labels(num_vertices(graph), af::init_functor_null<int>());
-      DIALS_ASSERT(labels.size() == coords_.size());
-      int num = boost::connected_components(graph, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
+      return sets.labels();
     }
 
-    /**
-     * Label the pixels in 2D
-     */
-    af::shared<int> labels_2d() const {
-      // Adjacency list type
-      typedef boost::adjacency_list<boost::listS, boost::vecS, boost::undirectedS>
-        AdjacencyList;
-
-      if (coords_.size() == 0) {
-        return af::shared<int>();
-      }
-
-      // Calculate the coordinate indices
-      for (std::size_t i = 0; i < coords_.size(); ++i) {
-        if (i > 0) {
-          DIALS_ASSERT(detail::lessthan(coords_[i - 1], coords_[i]));
-        }
-      }
-
-      // Create a graph of coordinates
-      AdjacencyList graph(coords_.size());
-      std::size_t i1 = 0, i2 = 0;
-      for (; i1 < coords_.size() - 1; ++i1) {
-        vec3<int> a0 = coords_[i1];
-        vec3<int> a1(a0[0], a0[1], a0[2] + 1);
-        vec3<int> a2(a0[0], a0[1] + 1, a0[2]);
-        if (coords_[i1 + 1] == a1) {
-          boost::add_edge(i1, i1 + 1, graph);
-        }
-        if (a0[1] < size_[0] - 1) {
-          for (; detail::lessthan(coords_[i2], a2) && i2 < coords_.size() - 1; ++i2)
-            ;
-          if (coords_[i2] == a2) {
-            boost::add_edge(i1, i2, graph);
-          }
-        }
-      }
-
-      // Do the connected components
-      af::shared<int> labels(num_vertices(graph));
-      DIALS_ASSERT(labels.size() == coords_.size());
-      int num = boost::connected_components(graph, &labels[0]);
-      DIALS_ASSERT(num <= labels.size());
-      return labels;
-    }
-
-  private:
     int2 size_;
     int first_frame_;
     int last_frame_;
