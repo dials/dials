@@ -65,9 +65,9 @@ namespace dials { namespace model { namespace boost_python {
       int6 b = v.trim_bbox(bbox[i]);
 
       // Get the data arrays
-      af::versa<FloatType, af::c_grid<3> > data = v.extract_data(b);
-      af::versa<FloatType, af::c_grid<3> > bgrd = v.extract_background(b);
-      af::versa<uint8_t, af::c_grid<3> > mask = v.extract_mask(b, i);
+      af::versa<FloatType, af::c_grid<3>> data = v.extract_data(b);
+      af::versa<FloatType, af::c_grid<3>> bgrd = v.extract_background(b);
+      af::versa<uint8_t, af::c_grid<3>> mask = v.extract_mask(b, i);
 
       // Compute numbers of pixels
       std::size_t num1 = 0;
@@ -138,6 +138,44 @@ namespace dials { namespace model { namespace boost_python {
   void image_volume_wrapper(const char* name) {
     typedef ImageVolume<FloatType> Class;
 
+    struct IVPickleSuite : pickle_suite {
+      // The mask is pickled as a flex_grid array, as the c_grid<3> conversions for
+      // uint8_t are only registered once dials.array_family.flex has been imported
+      typedef af::versa<uint8_t, af::flex_grid<>> flex_mask_type;
+
+      static tuple getinitargs(const Class& obj) {
+        af::c_grid<3> grid = obj.accessor();
+        return make_tuple(obj.frame0(), obj.frame1(), grid[1], grid[2]);
+      }
+
+      static tuple getstate(const Class& obj) {
+        af::versa<uint8_t, af::c_grid<3>> mask = obj.mask();
+        af::versa<Label, af::c_grid<3>> label = obj.label1();
+        af::versa<int, af::c_grid<3>> label_first(label.accessor());
+        af::versa<int, af::c_grid<3>> label_second(label.accessor());
+        for (std::size_t i = 0; i < label.size(); ++i) {
+          label_first[i] = label[i].first;
+          label_second[i] = label[i].second;
+        }
+        return make_tuple(obj.data(),
+                          obj.background(),
+                          flex_mask_type(mask, mask.accessor().as_flex_grid()),
+                          label_first,
+                          label_second);
+      }
+
+      static void setstate(Class& obj, tuple state) {
+        DIALS_ASSERT(len(state) == 5);
+        const flex_mask_type& mask = extract<const flex_mask_type&>(state[2]);
+        obj.set_state(extract<af::const_ref<FloatType, af::c_grid<3>>>(state[0]),
+                      extract<af::const_ref<FloatType, af::c_grid<3>>>(state[1]),
+                      af::const_ref<uint8_t, af::c_grid<3>>(
+                        mask.begin(), af::c_grid<3>(mask.accessor())),
+                      extract<af::const_ref<int, af::c_grid<3>>>(state[3]),
+                      extract<af::const_ref<int, af::c_grid<3>>>(state[4]));
+      }
+    };
+
     class_<Class>(name, no_init)
       .def(init<int, int, std::size_t, std::size_t>())
       .def("frame0", &Class::frame0)
@@ -151,12 +189,30 @@ namespace dials { namespace model { namespace boost_python {
       .def("is_consistent", &Class::is_consistent)
       .def("extract_data", &Class::extract_data)
       .def("extract_background", &Class::extract_background)
-      .def("extract_mask", &Class::extract_mask);
+      .def("extract_mask", &Class::extract_mask)
+      .def_pickle(IVPickleSuite());
   }
 
   template <typename FloatType>
   void multi_panel_image_volume_wrapper(const char* name) {
     typedef MultiPanelImageVolume<FloatType> Class;
+
+    struct MPIVPickleSuite : pickle_suite {
+      static tuple getstate(const Class& obj) {
+        list volumes;
+        for (std::size_t i = 0; i < obj.size(); ++i) {
+          volumes.append(obj.get(i));
+        }
+        return tuple(volumes);
+      }
+
+      static void setstate(Class& obj, tuple state) {
+        DIALS_ASSERT(obj.size() == 0);
+        for (std::size_t i = 0; i < len(state); ++i) {
+          obj.add(extract<const ImageVolume<FloatType>&>(state[i]));
+        }
+      }
+    };
 
     class_<Class>(name)
       .def("frame0", &Class::frame0)
@@ -167,7 +223,8 @@ namespace dials { namespace model { namespace boost_python {
       .def("set_image", &Class::template set_image<double>)
       .def("update_reflection_info",
            &MultiPanelImageVolume_update_reflection_info<FloatType>)
-      .def("__len__", &Class::size);
+      .def("__len__", &Class::size)
+      .def_pickle(MPIVPickleSuite());
   }
 
   void export_image_volume() {

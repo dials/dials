@@ -1,0 +1,1 @@
+``dials.model_background``: fix the smoothing of the background model next to azimuth zero, where pixels from the wrong part of the detector were used.

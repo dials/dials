@@ -52,6 +52,22 @@ class FinalizeModel:
             experiment.beam, experiment.detector[0], experiment.goniometer
         )
 
+    def __getstate__(self):
+        # The transform cannot be pickled, so recreate it from the experiment
+        state = self.__dict__.copy()
+        del state["transform"]
+        return state
+
+    def __setstate__(self, state):
+        from dials.algorithms.background.gmodel import PolarTransform
+
+        self.__dict__.update(state)
+        self.transform = PolarTransform(
+            self.experiment.beam,
+            self.experiment.detector[0],
+            self.experiment.goniometer,
+        )
+
     def finalize(self, data, mask):
         """
         Finalize the model
