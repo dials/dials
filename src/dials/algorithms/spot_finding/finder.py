@@ -8,7 +8,6 @@ import logging
 import math
 import pickle
 from collections import defaultdict
-from collections.abc import Iterable
 from copy import deepcopy
 
 import numpy as np
@@ -269,21 +268,27 @@ class ExtractSpotsParallelTask:
 
 def pixel_list_to_shoeboxes(
     imageset: ImageSet,
-    pixel_labeller: Iterable[PixelListLabeller],
+    pixel_labeller: list[PixelListLabeller],
     min_spot_size: int,
     max_spot_size: int,
     write_hot_pixel_mask: bool,
 ) -> tuple[flex.shoebox, tuple[flex.size_t, ...]]:
-    """Convert a pixel list to shoeboxes"""
+    """Convert a pixel list to shoeboxes
+
+    To save memory, each labeller is removed from the pixel_labeller list as
+    soon as its shoeboxes have been made. The list is left holding None.
+    """
     # Extract the pixel lists into a list of reflections
-    shoeboxes = flex.shoebox()
+    shoeboxes = None
     spotsizes = flex.size_t()
     hotpixels = tuple(flex.size_t() for i in range(len(imageset.get_detector())))
     if isinstance(imageset, ImageSequence):
         twod = imageset.get_scan().is_still()
     else:
         twod = True
-    for i, (p, hp) in enumerate(zip(pixel_labeller, hotpixels)):
+    for i, hp in enumerate(hotpixels):
+        p = pixel_labeller[i]
+        pixel_labeller[i] = None
         if p.num_pixels() > 0:
             creator = flex.PixelListShoeboxCreator(
                 p,
@@ -294,9 +299,17 @@ def pixel_list_to_shoeboxes(
                 max_spot_size,  # max_pixels
                 write_hot_pixel_mask,
             )
-            shoeboxes.extend(creator.result())
+            # Avoid a copy of every shoebox in the common case of one panel
+            if shoeboxes is None:
+                shoeboxes = creator.result()
+            else:
+                shoeboxes.extend(creator.result())
             spotsizes.extend(creator.spot_size())
             hp.extend(creator.hot_pixels())
+            del creator
+        del p
+    if shoeboxes is None:
+        shoeboxes = flex.shoebox()
     logger.info(f"\nExtracted {len(shoeboxes)} spots")
 
     # Get the unallocated spots and print some info
@@ -340,7 +353,7 @@ def shoeboxes_to_reflection_table(
 
 def pixel_list_to_reflection_table(
     imageset: ImageSet,
-    pixel_labeller: Iterable[PixelListLabeller],
+    pixel_labeller: list[PixelListLabeller],
     filter_spots,
     min_spot_size: int,
     max_spot_size: int,

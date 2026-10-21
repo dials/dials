@@ -105,13 +105,14 @@ def export_cif(scaled_data, experiment_list, params):
 
     _write_audit(block)
     _write_chemical(block, params.small_molecule.composition, space_group)
-    _write_cell(block, experiment_list, params, scaled_data, wavelength)
+    _write_cell(block, experiment_list, params, wavelength)
     _write_symmetry(block, space_group)
     _write_experiment(block, experiment_list, wavelength)
     _write_reflection_statistics(block, i_obs, scaled_data, wavelength)
     _write_absorption(block, experiment_list, params)
     # written last, so that a user-supplied value wins over a derived one
     _write_extra(block, params.cif.extra)
+    _report_missing_cell_measurement(block)
     _write_reflections(block, scaled_data, intensities, sigmas, params)
 
     options = gemmi.cif.WriteOptions()
@@ -171,7 +172,7 @@ def _constrained_angles(space_group, unit_cell):
     return flags
 
 
-def _write_cell(block, experiment_list, params, reflections, wavelength):
+def _write_cell(block, experiment_list, params, wavelength):
     uc, uc_sd = unit_cell_and_esds(experiment_list, params.mtz.best_unit_cell)
     space_group = experiment_list[0].crystal.get_space_group()
     fixed = (False, False, False) + tuple(_constrained_angles(space_group, uc))
@@ -203,16 +204,82 @@ def _write_cell(block, experiment_list, params, reflections, wavelength):
             format_float_with_standard_uncertainty(uc.volume(), volume_sd),
         )
 
-    # The cell was refined against all the reflections being exported
-    d = reflections["d"]
-    block.set_pair("_cell_measurement_reflns_used", str(reflections.size()))
-    block.set_pair(
-        "_cell_measurement_theta_min", f"{_theta_from_d(max(d), wavelength):.4f}"
-    )
-    block.set_pair(
-        "_cell_measurement_theta_max", f"{_theta_from_d(min(d), wavelength):.4f}"
-    )
+    # _cell_measurement_reflns_used and _cell_measurement_theta_min/max describe
+    # only the reflections used to determine the cell, which is not the set of
+    # reflections being exported, so they cannot be derived here. They can be
+    # supplied from a dials.two_theta_refine CIF (cif.combine) or by cif.extra.
+    if params.cif.combine:
+        _combine_cell_measurement(block, params.cif.combine, uc)
     block.set_pair("_cell_measurement_wavelength", f"{wavelength:.5f}")
+
+
+CELL_MEASUREMENT_ITEMS = (
+    "_cell_measurement_reflns_used",
+    "_cell_measurement_theta_min",
+    "_cell_measurement_theta_max",
+)
+
+
+def _combine_cell_measurement(block, filename, unit_cell):
+    """Copy the _cell_measurement items from a CIF written by
+    dials.two_theta_refine. Its _diffrn_reflns items are deliberately not
+    copied: they describe the reflections used for the cell, whereas in this
+    CIF they describe all the measured reflections."""
+
+    try:
+        doc = gemmi.cif.read_file(str(filename))
+    except (OSError, ValueError, RuntimeError) as e:
+        raise Sorry(f"Cannot read cif.combine={filename}: {e}") from e
+    source = doc.find_block("two_theta_refine")
+    if source is None:
+        if len(doc) != 1:
+            raise Sorry(
+                f"cif.combine={filename} has no data block named two_theta_refine "
+                "and more than one other block"
+            )
+        source = doc.sole_block()
+
+    values = {}
+    for name in CELL_MEASUREMENT_ITEMS:
+        value = source.find_value(name)
+        if value is None or value in ("?", "."):
+            raise Sorry(f"cif.combine={filename} does not contain {name}")
+        values[name] = value
+
+    # Guard against combining with a CIF from a different crystal or dataset
+    names = ("a", "b", "c", "alpha", "beta", "gamma")
+    for i, (name, ref) in enumerate(zip(names, unit_cell.parameters())):
+        value = source.find_value(f"_cell_{'length' if i < 3 else 'angle'}_{name}")
+        tol = 0.005 if i < 3 else 0.05
+        if value is not None and abs(gemmi.cif.as_number(value) - ref) > tol:
+            logger.warning(
+                "The cell in cif.combine=%s differs from the exported cell "
+                "(_cell_%s is %s, expected %.4f). Is it from the same dataset?",
+                filename,
+                f"{'length' if i < 3 else 'angle'}_{name}",
+                value,
+                ref,
+            )
+            break
+
+    reflns_used, *thetas = CELL_MEASUREMENT_ITEMS
+    block.set_pair(reflns_used, str(int(gemmi.cif.as_number(values[reflns_used]))))
+    for name in thetas:
+        block.set_pair(name, f"{gemmi.cif.as_number(values[name]):.4f}")
+    logger.info("Took the cell measurement items from %s", filename)
+
+
+def _report_missing_cell_measurement(block):
+    missing = [
+        name for name in CELL_MEASUREMENT_ITEMS if block.find_value(name) is None
+    ]
+    if missing:
+        logger.info(
+            "The CIF has no %s, which describe the reflections used to determine "
+            "the cell. These are not known to dials.export. Supply them with "
+            "cif.combine=<CIF written by dials.two_theta_refine> or with cif.extra.",
+            ", ".join(missing),
+        )
 
 
 def _theta_from_d(d, wavelength):

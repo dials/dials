@@ -209,6 +209,79 @@ def test_mtz_multi_wavelength(dials_data, tmp_path):
     assert wavelengths == [0, 0.5, 1.0]  # base, dataset1, dataset2
 
 
+def test_mtz_tof(dials_data, tmp_path):
+    """Test export of time-of-flight Laue data, with a wavelength per reflection"""
+    data_dir = dials_data("isis_sxd_nacl_processed")
+    reflections = flex.reflection_table.from_msgpack_file(data_dir / "refined.refl")
+    reflections = reflections.select(
+        reflections.get_flags(reflections.flags.indexed)
+        & (reflections["intensity.sum.variance"] > 0)
+    )
+    reflections.set_flags(
+        flex.bool(len(reflections), True), reflections.flags.integrated_sum
+    )
+    reflections.as_file(tmp_path / "integrated.refl")
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            data_dir / "refined.expt",
+            tmp_path / "integrated.refl",
+            "intensity=sum",
+            "mtz.partiality_threshold=0",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    assert (tmp_path / "integrated.mtz").is_file()
+
+    m = gemmi.read_mtz_file(str(tmp_path / "integrated.mtz"))
+    labels = m.column_labels()
+    for label in ("I", "SIGI", "BATCH", "XDET", "YDET", "ROT", "PANEL", "LAMBDA"):
+        assert label in labels
+    assert m.nreflections == len(reflections)
+
+    # One batch for the single orientation, and no rotation
+    assert len(m.batches) == 1
+    assert m.batches[0].number == 1
+    assert m.batches[0].ints[14] == 3  # LDTYPE Laue
+    assert set(m.column_with_label("BATCH").array) == {1}
+    assert set(m.column_with_label("ROT").array) == {0}
+
+    # The dataset wavelength is the mean, each reflection has its own
+    wavelengths = reflections["wavelength_cal"]
+    assert m.datasets[1].wavelength == pytest.approx(flex.mean(wavelengths), abs=1e-5)
+    lambdas = m.column_with_label("LAMBDA").array
+    assert min(lambdas) == pytest.approx(flex.min(wavelengths), abs=1e-5)
+    assert max(lambdas) == pytest.approx(flex.max(wavelengths), abs=1e-5)
+    assert set(m.column_with_label("PANEL").array) == set(reflections["panel"])
+
+
+@pytest.mark.parametrize(
+    "export_format",
+    ["sadabs", "nxs", "mmcif", "mosflm", "xds", "xds_ascii", "json", "pets", "cif"],
+)
+def test_tof_unsupported_format(dials_data, tmp_path, export_format):
+    """Formats that need a single wavelength refuse polychromatic data cleanly"""
+    data_dir = dials_data("isis_sxd_nacl_processed")
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            data_dir / "refined.expt",
+            data_dir / "refined.refl",
+            f"format={export_format}",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert result.returncode
+    assert b"Polychromatic" in result.stderr
+    assert b"Traceback" not in result.stderr
+    # Nothing was written apart from the log
+    assert {p.name for p in tmp_path.iterdir()} <= {"dials.export.log"}
+
+
 def test_mtz_primitive_cell(dials_data, tmp_path):
     scaled_expt = dials_data("insulin_processed") / "scaled.expt"
     scaled_refl = dials_data("insulin_processed") / "scaled.refl"
@@ -716,6 +789,15 @@ def test_cif(dials_data, tmp_path):
     # unlike format=shelx, intensities are not rescaled to fit a fixed width
     assert max_intensity > 9999.0
 
+    # the reflections used to determine the cell are not known to the exporter,
+    # and the exported reflections are not a substitute
+    for name in (
+        "_cell_measurement_reflns_used",
+        "_cell_measurement_theta_min",
+        "_cell_measurement_theta_max",
+    ):
+        assert block.find_value(name) is None
+
     # no composition was given
     assert block.find_value("_chemical_formula_sum") is None
     # nor a scale group code
@@ -769,6 +851,106 @@ def test_cif_extra(dials_data, tmp_path):
     # the CIF special value for "unknown" is only meaningful unquoted
     assert block.find_value("_exptl_crystal_colour") == "?"
     assert block.find_value("_diffrn_detector_type") == "'ASI Timepix'"
+
+
+@pytest.fixture
+def two_theta_cif(dials_data, tmp_path):
+    """Run dials.two_theta_refine on the same data as _export_cif"""
+    location = dials_data("l_cysteine_4_sweeps_scaled")
+    result = subprocess.run(
+        [
+            shutil.which("dials.two_theta_refine"),
+            location / "scaled_20_25.expt",
+            location / "scaled_20_25.refl",
+            "output.experiments=refined_cell.expt",
+            "output.cif=cell.cif",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+    return tmp_path / "refined_cell.expt", tmp_path / "cell.cif"
+
+
+def test_cif_combine(dials_data, tmp_path, two_theta_cif):
+    expt, cif = two_theta_cif
+    source = gemmi.cif.read_file(str(cif)).sole_block()
+    block = _export_cif(dials_data, tmp_path, f"cif.combine={cif}", expt=expt)
+
+    used = block.find_value("_cell_measurement_reflns_used")
+    assert used == source.find_value("_cell_measurement_reflns_used")
+    assert int(used) > 0
+    theta_min = float(block.find_value("_cell_measurement_theta_min"))
+    theta_max = float(block.find_value("_cell_measurement_theta_max"))
+    assert 0 < theta_min < theta_max < 90
+    assert theta_min == pytest.approx(
+        float(source.find_value("_cell_measurement_theta_min")), abs=1e-4
+    )
+
+    # the other items from the two_theta_refine CIF describe the reflections it
+    # used, not the exported data, so must not have been copied
+    n_exported = len(block.find("_diffrn_refln_", ["index_h", "index_k", "index_l"]))
+    assert int(block.find_value("_diffrn_reflns_number")) == n_exported
+    assert block.find_value("_diffrn_reflns_number") != source.find_value(
+        "_diffrn_reflns_number"
+    )
+
+
+def test_cif_combine_extra_takes_precedence(dials_data, tmp_path, two_theta_cif):
+    expt, cif = two_theta_cif
+    block = _export_cif(
+        dials_data,
+        tmp_path,
+        f"cif.combine={cif}",
+        "cif.extra=_cell_measurement_reflns_used=1234",
+        expt=expt,
+    )
+    assert block.find_value("_cell_measurement_reflns_used") == "1234"
+    assert block.find_value("_cell_measurement_theta_min") is not None
+
+
+def test_cif_combine_cell_mismatch_warns(dials_data, tmp_path, two_theta_cif):
+    # the unrefined experiments have a different cell to the two_theta_refine CIF
+    _, cif = two_theta_cif
+    data = dials_data("l_cysteine_4_sweeps_scaled")
+    result = subprocess.run(
+        [
+            shutil.which("dials.export"),
+            "intensity=scale",
+            "format=cif",
+            f"cif.combine={cif}",
+            data / "scaled_20_25.expt",
+            data / "scaled_20_25.refl",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode
+    assert b"differs from the exported cell" in result.stdout + result.stderr
+
+
+def test_cif_combine_bad_file(dials_data, tmp_path):
+    empty = tmp_path / "empty.cif"
+    empty.write_text("data_two_theta_refine\n_cell_length_a 5.0\n")
+    data = dials_data("l_cysteine_4_sweeps_scaled")
+    for combine, message in (
+        (empty, b"does not contain _cell_measurement_reflns_used"),
+        (tmp_path / "missing.cif", b"Cannot read cif.combine"),
+    ):
+        result = subprocess.run(
+            [
+                shutil.which("dials.export"),
+                "intensity=scale",
+                "format=cif",
+                f"cif.combine={combine}",
+                data / "scaled_20_25.expt",
+                data / "scaled_20_25.refl",
+            ],
+            cwd=tmp_path,
+            capture_output=True,
+        )
+        assert result.returncode
+        assert message in result.stdout + result.stderr
 
 
 def test_cif_extra_bad_syntax(dials_data, tmp_path):
