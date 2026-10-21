@@ -403,6 +403,7 @@ class ReflectionManagerFactory:
             scan_margin=params.scan_margin,
             outlier_detector=outlier_detector,
             weighting_strategy_override=weighting_strategy,
+            allow_experiments_with_no_reflections=params.allow_experiments_with_no_reflections,
         )
 
     @staticmethod

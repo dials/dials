@@ -1133,6 +1133,52 @@ def test_multi_lattice_multi_sweep_joint(dials_data, tmp_path):
     refls.assert_experiment_identifiers_are_consistent(expts)
 
 
+def test_joint_indexing_removes_experiment_without_reflections(dials_data, tmp_path):
+    # If one sweep has no indexed reflections, joint indexing should continue
+    # with the remaining sweeps rather than failing, and the sweep without
+    # indexed reflections should be removed from the output.
+    # See https://github.com/dials/dials/issues/2609
+    data_dir = dials_data("l_cysteine_dials_output")
+    expts = ExperimentList.from_file(data_dir / "indexed.expt", check_format=False)
+    refls = flex.reflection_table.from_file(data_dir / "strong.refl")
+
+    # Replace the spots on the last sweep with a few very close to the beam
+    # centre. These are at too low resolution to be indexed.
+    keep = refls["id"] != 3
+    bad = refls.select(~keep)[:5]
+    x0, y0 = expts[3].detector[0].get_beam_centre_px(expts[3].beam.get_s0())
+    bad["xyzobs.px.value"] = flex.vec3_double(
+        [(x0 + 3 * i, y0 - 2 * i, 0.5 + i) for i in range(len(bad))]
+    )
+    refls = refls.select(keep)
+    refls.extend(bad)
+    refls.as_file(tmp_path / "strong.refl")
+
+    result = subprocess.run(
+        [
+            shutil.which("dials.index"),
+            data_dir / "indexed.expt",
+            "strong.refl",
+            "joint_indexing=True",
+            "auto_reduction.action=fix",
+        ],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode and not result.stderr
+
+    indexed_expts = ExperimentList.from_file(
+        tmp_path / "indexed.expt", check_format=False
+    )
+    indexed_refls = flex.reflection_table.from_file(tmp_path / "indexed.refl")
+    assert len(indexed_expts) == 3
+    assert len(indexed_expts.crystals()) == 1
+    assert [e.imageset for e in indexed_expts] == expts.imagesets()[:3]
+    indexed_refls.assert_experiment_identifiers_are_consistent(indexed_expts)
+    assert set(indexed_refls["id"]) == {-1, 0, 1, 2}
+    assert set(indexed_refls["imageset_id"]) == {0, 1, 2}
+
+
 def test_rigaku_hypix_arc_150(dials_data, tmp_path):
     # This is a test of multi-sweep indexing with a three-panel Rigaku HyPix-Arc
     # 150° detector. It additionally checks successful import with the unusual
