@@ -1,0 +1,1 @@
+``dials.refine``, ``dials.stills_process``: correct the analytical gradients of predicted spot positions for stills with respect to the crystal orientation, unit cell and beam direction.
