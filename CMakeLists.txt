@@ -79,7 +79,6 @@ install(
         dials_algorithms_integration_fit_ext
         dials_algorithms_integration_integrator_ext
         dials_algorithms_integration_kapton_ext
-        dials_algorithms_integration_parallel_integrator_ext
         dials_algorithms_integration_sum_ext
         dials_algorithms_polygon_clip_ext
         dials_algorithms_polygon_ext
