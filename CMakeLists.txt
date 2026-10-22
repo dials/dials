@@ -51,6 +51,11 @@ add_compile_definitions(BOOST_BIND_GLOBAL_PLACEHOLDERS BOOST_ALLOW_DEPRECATED_HE
 add_subdirectory(src/dials)
 add_subdirectory(tests)
 
+option(DIALS_BUILD_BENCHMARKS "Build the Google Benchmark microbenchmarks" OFF)
+if(DIALS_BUILD_BENCHMARKS)
+    add_subdirectory(benchmarks)
+endif()
+
 # Install all of the DIALS extension modules
 install(
     TARGETS

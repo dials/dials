@@ -75,3 +75,32 @@ def test_masked_filter():
                     pixels = sorted(pixels)
                     value = pixels[len(pixels) // 2]
                 assert result[j, i] == pytest.approx(value, abs=eps)
+
+
+@pytest.mark.parametrize("periodic", [False, True])
+def test_masked_filter_edges(periodic):
+    from dials.algorithms.image.filter import median_filter
+
+    # Sizes that are not powers of 2, so that wrapping negative indices with
+    # unsigned arithmetic would pick the wrong pixels
+    xsize = 23
+    ysize = 37
+    kernel = (3, 2)
+
+    image = generate_image(xsize, ysize)
+    mask = generate_mask(xsize, ysize)
+    result = median_filter(image, mask, kernel, periodic=periodic)
+
+    for j in range(ysize):
+        for i in range(xsize):
+            pixels = []
+            for jj in range(j - kernel[0], j + kernel[0] + 1):
+                for ii in range(i - kernel[1], i + kernel[1] + 1):
+                    if periodic:
+                        jj, ii = jj % ysize, ii % xsize
+                    elif not (0 <= jj < ysize and 0 <= ii < xsize):
+                        continue
+                    if mask[jj, ii]:
+                        pixels.append(image[jj, ii])
+            expected = sorted(pixels)[len(pixels) // 2] if pixels else 0
+            assert result[j, i] == expected

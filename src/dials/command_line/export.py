@@ -22,7 +22,10 @@ downstream programs such as Pointless and Aimless. For exporting integrated,
 but unscaled data, the required input is an integrated.expt file and an
 integrated.refl file. For exporting scaled data, the required input is a
 scaled.expt file and a scaled.refl file, in which case the intensity=scale
-flag will be set implicitly.
+flag will be set implicitly. Polychromatic (Laue or time-of-flight) data are
+exported with one batch per experiment and the wavelength of each reflection
+in a LAMBDA column, along with the PANEL number to which XDET and YDET refer
+and, for time-of-flight data, the TOF in microseconds.
 
 NXS format exports the files as an NXmx file. The required input is an
 integrated.expt file and an integrated.refl file.
@@ -60,7 +63,10 @@ solution in programs such as Olex2. Unlike SHELX format, the intensities are
 not rescaled to fit a fixed-width field. For electron diffraction the relevant
 items of the electron diffraction extension to the core dictionary are written
 too, and metadata that a data reduction cannot know can be added with
-cif.extra.
+cif.extra. The items describing the reflections used to determine the unit cell
+(_cell_measurement_reflns_used and _cell_measurement_theta_min/max) are not
+known to dials.export. Run dials.two_theta_refine with output.cif= after
+integration or scaling and pass the CIF to cif.combine to include them.
 
 Examples::
 
@@ -92,6 +98,9 @@ Examples::
   dials.export scaled.expt scaled.refl format=cif
   dials.export scaled.expt scaled.refl format=cif cif.hklout=dials.cif
   dials.export scaled.expt scaled.refl format=cif composition=C3H7NO2S
+  dials.two_theta_refine scaled.expt scaled.refl output.cif=cell.cif
+  dials.export refined_cell.expt scaled.refl format=cif cif.combine=cell.cif
+
   dials.export scaled.expt scaled.refl format=cif \\
       "cif.extra=_diffrn_source_type=LaB6 gun" \\
       cif.extra=_diffrn_precession_semi_angle=1.0
@@ -315,6 +324,13 @@ phil_scope = parse(
     datablock = dials
       .type = str
       .help = "The name of the CIF data block"
+    combine = None
+      .type = path
+      .help = "A CIF written by dials.two_theta_refine (output.cif=) from which"
+              "to take _cell_measurement_reflns_used, _cell_measurement_theta_min"
+              "and _cell_measurement_theta_max. These describe the reflections"
+              "used to determine the unit cell, which dials.export does not"
+              "know, so they are otherwise omitted. cif.extra takes precedence."
     extra = None
       .type = str
       .multiple = True
@@ -406,12 +422,6 @@ def export_mtz(params, experiments, reflections):
     _check_input(experiments, reflections)
 
     from dials.util.export_mtz import export_mtz
-
-    # Temporary guard to provide a more useful error to the user for time-of-flight data
-    if experiments.all_tof():
-        raise NotImplementedError(
-            "Time-of-flight Laue data cannot be exported as .mtz. Run with format=shelx to export as .hkl"
-        )
 
     # Handle case where user has passed data before integration
     if (
@@ -710,6 +720,18 @@ def run(args=None):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+
+    # Laue and time-of-flight data have no single wavelength, which only the
+    # mtz and shelx exporters understand
+    if (
+        experiments
+        and (experiments.all_laue() or experiments.all_tof())
+        and params.format not in ("mtz", "shelx")
+    ):
+        sys.exit(
+            f"Polychromatic (Laue or time-of-flight) data cannot be exported as "
+            f"{params.format}. Use format=mtz or format=shelx instead."
+        )
 
     try:
         template_list = {

@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import logging
-import platform
 from time import time
 
 import dials.algorithms.integration
-from dials.algorithms.integration.processor import job
+from dials.algorithms.integration.processor import execute_parallel_task, job
 from dials.model.data import ImageVolume, MultiPanelImageVolume, make_image
-from dials.util import log
 from dials.util.log import rehandle_cached_records
 from dials.util.mp import multi_node_parallel_map
 from dials_algorithms_integration_integrator_ext import ReflectionManagerPerImage
 
 logger = logging.getLogger(__name__)
+
+
+def _execute_task(task):
+    """
+    Run a task in a worker process. The result is returned as a list, rather
+    than a tuple, so that it can be released once it has been accumulated.
+    """
+    return list(execute_parallel_task(task))
 
 
 class ProcessorImage:
@@ -61,34 +67,37 @@ class ProcessorImage:
         mp_method = self.manager.params.integration.mp.method
         mp_nproc = min(len(self.manager), self.manager.params.integration.mp.nproc)
         mp_njobs = self.manager.params.integration.mp.njobs
-        if (
-            mp_nproc > 1 and platform.system() == "Windows"
-        ):  # platform.system() forks which is bad for MPI, so don't use it unless nproc > 1
-            logger.warning(
-                "Multiprocessing is not available on windows. Setting nproc = 1\n"
-            )
-            mp_nproc = 1
         assert mp_nproc > 0, "Invalid number of processors"
         logger.info(self.manager.summary())
         logger.info(" Using %s with %d parallel job(s)\n", mp_method, mp_nproc)
         if mp_nproc > 1:
+            # Each task processes a single image, and starting a process and
+            # returning the data for each one is expensive, so give each process
+            # a single chunk of consecutive tasks
+            tasks = list(self.manager.tasks())
+            num_chunks = min(len(tasks), mp_nproc * mp_njobs)
+            chunks = [
+                TaskChunk(
+                    tasks[
+                        i * len(tasks) // num_chunks : (i + 1)
+                        * len(tasks)
+                        // num_chunks
+                    ]
+                )
+                for i in range(num_chunks)
+            ]
 
             def process_output(result):
                 rehandle_cached_records(result[1])
-                self.manager.accumulate(result[0])
-                result[0].reflections = None
-                result[0].data = None
-
-            def execute_task(task):
-                log.config_simple_cached()
-                result = task()
-                handlers = logging.getLogger("dials").handlers
-                assert len(handlers) == 1, "Invalid number of logging handlers"
-                return result, handlers[0].records
+                for task_result in result[0]:
+                    self.manager.accumulate(task_result)
+                # The parallel map holds every result until all tasks have
+                # finished, so release this one now that it is accumulated
+                result.clear()
 
             multi_node_parallel_map(
-                func=execute_task,
-                iterable=list(self.manager.tasks()),
+                func=_execute_task,
+                iterable=chunks,
                 njobs=mp_njobs,
                 nproc=mp_nproc,
                 callback=process_output,
@@ -103,6 +112,40 @@ class ProcessorImage:
         self.manager.time.user_time = end_time - start_time
         result = self.manager.result()
         return result, self.manager.time
+
+
+class TaskChunk:
+    """
+    A chunk of tasks to run in sequence in a single process. The data from all
+    the tasks, which must support +=, are summed into the first result so that
+    only a single set is returned.
+    """
+
+    def __init__(self, tasks):
+        """
+        :param tasks: The list of tasks
+        """
+        assert len(tasks) > 0
+        self.tasks = tasks
+
+    def __call__(self):
+        """
+        Do the processing.
+
+        :return: The list of results for each task
+        """
+        results = []
+        data = None
+        for task in self.tasks:
+            result = task()
+            if result.data is not None:
+                if data is None:
+                    data = result.data
+                else:
+                    data += result.data
+            results.append(result._replace(data=None))
+        results[0] = results[0]._replace(data=data)
+        return results
 
 
 class Task:
