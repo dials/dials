@@ -1,0 +1,1 @@
+``dials.integrate``: The memory estimate used to limit the number of processes is now more accurate.
