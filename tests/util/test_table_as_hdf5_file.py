@@ -3,8 +3,11 @@ from __future__ import annotations
 import os
 
 import h5py
+import hdf5plugin
 
+from dials.algorithms.shoebox import MaskCode
 from dials.array_family import flex
+from dials.model.data import Shoebox
 from dials.util.table_as_hdf5_file import HDF5TableFile
 
 
@@ -56,3 +59,49 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
 
     simple_test_equal(tables[0], split[0])
     simple_test_equal(tables[1], split[1])
+
+
+def test_table_as_hdf5_file_compression(tmp_path):
+    shoeboxes = flex.shoebox()
+    for n in range(5):
+        sbox = Shoebox(0, (0, 4, 0, 3, n, n + 2))
+        sbox.allocate_data()
+        sbox.allocate_background()
+        for i in range(sbox.data.size()):
+            sbox.data[i] = float(i % 7 + n)
+            sbox.background[i] = 1.5
+            sbox.mask[i] = MaskCode.Valid | (MaskCode.Foreground if i % 3 else 0)
+        shoeboxes.append(sbox)
+    table = flex.reflection_table()
+    table["shoebox"] = shoeboxes
+    table["id"] = flex.int(len(table), 0)
+    table["bbox"] = shoeboxes.bounding_boxes()
+    table["xyzobs.px.value"] = flex.vec3_double(len(table), (1.5, 2.5, 3.5))
+    table["flags"] = flex.size_t(len(table), 32)
+    table["entering"] = flex.bool(len(table), True)
+    table["label"] = flex.std_string(len(table), "a")
+
+    table.as_hdf5(tmp_path / "compressed.refl")
+
+    # Numeric columns and the shoebox arrays use Bitshuffle with LZ4
+    with h5py.File(tmp_path / "compressed.refl", "r") as handle:
+        group = handle["dials"]["processing"]["group_0"]
+        datasets = [group[k] for k in table.keys() if k not in ("shoebox", "label")]
+        datasets.extend(group["shoebox"].values())
+        assert len(datasets) == 10
+        for dataset in datasets:
+            assert str(hdf5plugin.BSHUF_ID) in dataset._filters, dataset.name
+
+    # and round trip exactly
+    new_table = flex.reflection_table.from_file(tmp_path / "compressed.refl")
+    assert list(new_table.keys()) == list(table.keys())
+    for new_array, array in zip(
+        new_table["shoebox"].get_shoebox_data_arrays(),
+        table["shoebox"].get_shoebox_data_arrays(),
+    ):
+        assert new_array.all_eq(array)
+    assert list(new_table["shoebox"].bounding_boxes()) == list(
+        table["shoebox"].bounding_boxes()
+    )
+    for key in ("id", "bbox", "xyzobs.px.value", "flags", "entering", "label"):
+        assert list(new_table[key]) == list(table[key]), key
