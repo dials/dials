@@ -743,9 +743,8 @@ class CentroidAnalyser:
         d.update(self.centroid_diff_z(rlist, threshold))
         if experiment_type == ExperimentType.TOF:
             print(
-                f" Analysing centroid differences vs time of flight with I/Sigma > {
-                    threshold
-                }"
+                " Analysing centroid differences vs time of flight"
+                f" with I/Sigma > {threshold}"
             )
             d.update(self.centroid_mean_diff_vs_tof(rlist, threshold))
         else:

@@ -726,9 +726,8 @@ def remove_out_of_range_reflections(
             reflections["wavelength_cal"] <= max_wavelength
         )
         logger.info(
-            f"Removing {wavelength_sel.count(False)} reflections outside of range ({
-                min_wavelength
-            }, {max_wavelength}) (A)"
+            f"Removing {wavelength_sel.count(False)} reflections outside of range"
+            f" ({min_wavelength}, {max_wavelength}) (A)"
         )
         reflections = reflections.select(wavelength_sel)
 
@@ -739,9 +738,8 @@ def remove_out_of_range_reflections(
             reflections["tof_cal"] <= max_tof
         )
         logger.info(
-            f"Removing {tof_sel.count(False)} reflections outside of range ({min_tof}, {
-                max_tof
-            }) (usec)"
+            f"Removing {tof_sel.count(False)} reflections outside of range"
+            f" ({min_tof}, {max_tof}) (usec)"
         )
         reflections = reflections.select(tof_sel)
 
@@ -955,9 +953,8 @@ def get_predicted_calculated_reflections(
     used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
     model_reflections = reflections.select(used_in_ref)
     logger.info(
-        f"Using {
-            len(model_reflections)
-        } observed reflections to calculate bounding boxes"
+        f"Using {len(model_reflections)} observed reflections"
+        " to calculate bounding boxes"
     )
 
     # Get the closest observed reflection for each calculated reflection
