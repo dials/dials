@@ -9,6 +9,7 @@ import numpy as np
 
 import libtbx.phil
 from cctbx import uctbx
+from dxtbx.model import ExperimentType
 
 import dials.util.log
 from dials.algorithms.merging.merge import MergingStatisticsData
@@ -450,7 +451,7 @@ class StrongSpotsAnalyser:
         # Set the required fields
         self.required = ["xyzobs.px.value", "panel"]
 
-    def __call__(self, rlist):
+    def __call__(self, rlist, experiment_type=None):
         """Analyse the strong spots."""
         # Check we have the required fields
         print("Analysing strong spots")
@@ -693,8 +694,13 @@ class CentroidAnalyser:
             "xyzobs.mm.value",
         ]
 
-    def __call__(self, rlist):
-        """Analyse the reflection centroids."""
+    def __call__(self, rlist, experiment_type=None):
+        """
+        Analyse the reflection centroids.
+
+        For ExperimentType.TOF, z centroids are time of flight (usec) rather
+        than rotation angle.
+        """
         # Check we have the required fields
         print("Analysing reflection centroids")
         if not ensure_required(rlist, self.required):
@@ -735,8 +741,16 @@ class CentroidAnalyser:
         d.update(self.centroid_xy_xz_zy_residuals(rlist, threshold))
         print(f" Analysing centroid differences in z with I/Sigma > {threshold}")
         d.update(self.centroid_diff_z(rlist, threshold))
-        print(f" Analysing centroid differences vs phi with I/Sigma > {threshold}")
-        d.update(self.centroid_mean_diff_vs_phi(rlist, threshold))
+        if experiment_type == ExperimentType.TOF:
+            print(
+                f" Analysing centroid differences vs time of flight with I/Sigma > {
+                    threshold
+                }"
+            )
+            d.update(self.centroid_mean_diff_vs_tof(rlist, threshold))
+        else:
+            print(f" Analysing centroid differences vs phi with I/Sigma > {threshold}")
+            d.update(self.centroid_mean_diff_vs_phi(rlist, threshold))
         return {"centroid": d}
 
     def centroid_diff_hist(self, rlist, threshold):
@@ -1034,6 +1048,130 @@ class CentroidAnalyser:
         }
         return d
 
+    def centroid_mean_diff_vs_tof(self, rlist, threshold, n_bins=50):
+        """
+        Analyse the centroid differences vs time of flight. Time of flight
+        differences are relative, as time of flight frame widths can be
+        proportional to time of flight.
+        """
+        I = rlist["intensity.sum.value"]
+        I_sig = flex.sqrt(rlist["intensity.sum.variance"])
+        I_over_S = I / I_sig
+        mask = I_over_S > threshold
+        mask &= ~rlist.get_flags(rlist.flags.not_suitable_for_refinement)
+        if mask.count(True) == 0:
+            return {}
+        rlist = rlist.select(mask)
+        assert len(rlist) > 0
+
+        xc, yc, tof_c = rlist["xyzcal.mm"].parts()
+        xo, yo, tof_o = rlist["xyzobs.mm.value"].parts()
+
+        dx = xc - xo
+        dy = yc - yo
+        dtof = (tof_c - tof_o) / tof_o
+
+        mean_residuals_x = flex.double()
+        mean_residuals_y = flex.double()
+        mean_residuals_tof = flex.double()
+        rmsd_x = flex.double()
+        rmsd_y = flex.double()
+        rmsd_tof = flex.double()
+        tof = []
+
+        # Equal width bins across the observed time of flight range
+        bin_edges = np.linspace(flex.min(tof_o), flex.max(tof_o), n_bins + 1)
+        bin_idx = np.clip(
+            np.digitize(tof_o.as_numpy_array(), bin_edges) - 1, 0, n_bins - 1
+        )
+        for i_bin in range(n_bins):
+            sel = flex.bool(bin_idx == i_bin)
+            if sel.count(True) == 0:
+                continue
+            mean_residuals_x.append(flex.mean(dx.select(sel)))
+            mean_residuals_y.append(flex.mean(dy.select(sel)))
+            mean_residuals_tof.append(flex.mean(dtof.select(sel)))
+            rmsd_x.append(math.sqrt(flex.mean_sq(dx.select(sel))))
+            rmsd_y.append(math.sqrt(flex.mean_sq(dy.select(sel))))
+            rmsd_tof.append(math.sqrt(flex.mean_sq(dtof.select(sel))))
+            tof.append((bin_edges[i_bin] + bin_edges[i_bin + 1]) / 2)
+
+        d = {
+            "centroid_mean_differences_vs_tof": {
+                "data": [
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(mean_residuals_x),
+                        "type": "scatter",
+                        "name": "mean_dx",
+                    },
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(mean_residuals_y),
+                        "type": "scatter",
+                        "name": "mean_dy",
+                        "xaxis": "x2",
+                        "yaxis": "y2",
+                    },
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(mean_residuals_tof),
+                        "type": "scatter",
+                        "name": "mean_dtof",
+                        "xaxis": "x3",
+                        "yaxis": "y3",
+                    },
+                ],
+                "layout": {
+                    "title": "Difference between observed and calculated centroids vs time of flight",
+                    "yaxis3": {"domain": [0, 0.266], "title": "dtof / tof"},
+                    "xaxis3": {"anchor": "y3", "title": "Time of flight (usec)"},
+                    "xaxis2": {"anchor": "y2"},
+                    "yaxis2": {"domain": [0.366, 0.633]},
+                    "yaxis": {"domain": [0.733, 1]},
+                },
+            },
+            "centroid_rmsd_vs_tof": {
+                "data": [
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(rmsd_x),
+                        "type": "scatter",
+                        "name": "rmsd_dx",
+                    },
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(rmsd_y),
+                        "type": "scatter",
+                        "name": "rmsd_dy",
+                        "xaxis": "x2",
+                        "yaxis": "y2",
+                    },
+                    {
+                        "x": round_for_json(tof),
+                        "y": round_for_json(rmsd_tof),
+                        "type": "scatter",
+                        "name": "rmsd_dtof",
+                        "xaxis": "x3",
+                        "yaxis": "y3",
+                    },
+                ],
+                "layout": {
+                    "title": "RMSD between observed and calculated centroids vs time of flight",
+                    "yaxis3": {
+                        "domain": [0, 0.266],
+                        "rangemode": "tozero",
+                        "title": "dtof / tof",
+                    },
+                    "xaxis3": {"anchor": "y3", "title": "Time of flight (usec)"},
+                    "xaxis2": {"anchor": "y2"},
+                    "yaxis2": {"domain": [0.366, 0.633], "rangemode": "tozero"},
+                    "yaxis": {"domain": [0.733, 1], "rangemode": "tozero"},
+                },
+            },
+        }
+        return d
+
     def centroid_xy_xz_zy_residuals(self, rlist, threshold):
         I = rlist["intensity.sum.value"]
         I_sig = flex.sqrt(rlist["intensity.sum.variance"])
@@ -1222,7 +1360,7 @@ class IntensityAnalyser:
         # Set the required fields
         self.required = ["intensity.sum.value", "intensity.sum.variance", "xyzcal.px"]
 
-    def __call__(self, rlist):
+    def __call__(self, rlist, experiment_type=None):
         """Analyse the reflection centroids."""
         # FIXME Do the same and a comparison for intensity.prf
 
@@ -1749,7 +1887,7 @@ class ReferenceProfileAnalyser:
             "profile.correlation",
         ]
 
-    def __call__(self, rlist):
+    def __call__(self, rlist, experiment_type=None):
         """Analyse the reference profiles."""
         # Check we have the required fields
         print("Analysing reference profiles")
@@ -2144,8 +2282,11 @@ class Analyser:
         json_data = {}
 
         if rlist is not None:
+            experiment_type = None
+            if experiments is not None and experiments.all_tof():
+                experiment_type = ExperimentType.TOF
             for analyse in self.analysers:
-                result = analyse(copy.deepcopy(rlist))
+                result = analyse(copy.deepcopy(rlist), experiment_type=experiment_type)
                 if result is not None:
                     json_data.update(result)
         else:
@@ -2346,17 +2487,33 @@ class Analyser:
                         )
 
             if expt.scan is not None:
-                expt_geom_table.append(
-                    (
-                        "<strong>Scan:</strong>",
-                        "Image range:",
-                        "%i, %i" % expt.scan.get_image_range(),
-                        "Oscillation:",
-                        "{:.2f}&deg;, {:+.2f}&deg;/frame".format(
-                            *expt.scan.get_oscillation()
-                        ),
+                scan_items = [("Image range:", "%i, %i" % expt.scan.get_image_range())]
+                properties = expt.scan.get_properties()
+                if "oscillation" in properties:
+                    scan_items.append(
+                        (
+                            "Oscillation:",
+                            "{:.2f}&deg;, {:+.2f}&deg;/frame".format(
+                                *expt.scan.get_oscillation()
+                            ),
+                        )
                     )
-                )
+                for key, values in properties.items():
+                    if key in ("oscillation", "oscillation_width"):
+                        # Handled above
+                        continue
+                    name = key.replace("_", " ").capitalize() + ":"
+                    first, last = (
+                        f"{v:.3f}" if isinstance(v, float) else str(v)
+                        for v in (values[0], values[-1])
+                    )
+                    scan_items.append((name, f"{first} - {last}"))
+                # Two items per row, the first row labelled "Scan:"
+                for i in range(0, len(scan_items), 2):
+                    row = ["<strong>Scan:</strong>" if i == 0 else ""]
+                    for item in scan_items[i : i + 2]:
+                        row.extend(item)
+                    expt_geom_table.append(tuple(row))
 
             if expt.goniometer is not None:
                 expt_geom_table.append(
