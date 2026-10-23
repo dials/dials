@@ -937,7 +937,7 @@ def get_predicted_calculated_reflections(
             r["imageset_id"] = cctbx.array_family.flex.int(len(r), idx)
             predicted_reflections.extend(r)
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
-    # Add predicted time of flight (usec) to xyzcal.mm, as in refinement
+    # Add predicted time of flight (usec) to xyzcal.mm
     x_cal, y_cal, _ = predicted_reflections["xyzcal.mm"].parts()
     predicted_reflections["xyzcal.mm"] = flex.vec3_double(
         x_cal, y_cal, predicted_reflections["tof_cal"]
