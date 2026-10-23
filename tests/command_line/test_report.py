@@ -65,7 +65,7 @@ def test_report_scaled_data(dials_data, tmp_path):
 
 def test_report_tof_refined_data(dials_data, tmp_path):
     """Test that dials.report works on time-of-flight refined data, with the scan
-    properties shown in place of the oscillation."""
+    properties shown in place of oscillation."""
     data_dir = dials_data("isis_sxd_nacl_processed")
     result = subprocess.run(
         [
