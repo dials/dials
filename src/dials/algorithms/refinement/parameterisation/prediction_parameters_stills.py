@@ -43,7 +43,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         self._s0u = self._s0.each_normalize()
 
         # e1 is the unit vector about which DeltaPsi rotation is defined
-        self._e1 = self._q0.cross(self._s0u).each_normalize()
+        q0_cross_s0u = self._q0.cross(self._s0u)
+        self._q0_cross_s0u_norm = q0_cross_s0u.norms()
+        self._e1 = q0_cross_s0u.each_normalize()
 
         # q1 completes an orthonormal set with q0 and e1
         self._q1 = self._q0.cross(self._e1).each_normalize()
@@ -56,6 +58,13 @@ class StillsPredictionParameterisation(PredictionParameterisation):
 
         return
 
+    def _de1_dp(self, isel, dv):
+        """Derivative of e1 = v / |v|, where v = q0 x s0u, given the derivative dv
+        of v"""
+
+        e1 = self._e1.select(isel)
+        return (dv - e1 * e1.dot(dv)) / self._q0_cross_s0u_norm.select(isel)
+
     def _beam_derivatives(self, isel, parameterisation=None, reflections=None):
         """helper function to extend the derivatives lists by derivatives of the
         beam parameterisations"""
@@ -67,6 +76,7 @@ class StillsPredictionParameterisation(PredictionParameterisation):
         r = self._r.select(isel)
         e1 = self._e1.select(isel)
         q = self._q.select(isel)
+        q0 = self._q0.select(isel)
         c0 = self._c0.select(isel)
         DeltaPsi = self._DeltaPsi.select(isel)
         D = self._D.select(isel)
@@ -97,17 +107,9 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             dDeltaPsi_dp.append(dDeltaPsi)
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            de1_dp = c0.cross(ds0u)
+            de1_dp = self._de1_dp(isel, q0.cross(ds0u))
             dr_de1 = dRq_de(DeltaPsi, e1, q)
             drde_dedp = dr_de1 * de1_dp
-
-            # dp = 1.e-8 # finite step size for the parameter
-            # del_e1 = de1_dp * dp
-            # e1f = e1 + del_e1 * 0.5
-            # rfwd = q.rotate_around_origin(e1f, DeltaPsi)
-            # e1r = e1 - del_e1 * 0.5
-            # rrev = q.rotate_around_origin(e1r, DeltaPsi)
-            # drde_dedp = (rfwd - rrev) * (1 / dp)
 
             # calculate the derivative of pv for this parameter
             dpv_dp.append(D * (ds0 + e1.cross(r) * dDeltaPsi + drde_dedp))
@@ -163,21 +165,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             # derivative of the axis e1
             q_dot_dq = q.dot(dq)
             dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-            de1_dp = dq0.cross(s0u)
+            de1_dp = self._de1_dp(isel, dq0.cross(s0u))
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            # dr_de1 = dRq_de(DeltaPsi, e1, q)
-            # drde_dedp = dr_de1 * de1_dp
-
-            # The above calculation is not correct. Instead, calculate the partial
-            # derivative of r wrt change in rotation axis e1 by finite differences
-            dp = 1.0e-8
-            del_e1 = de1_dp * dp
-            e1f = e1 + del_e1 * 0.5
-            rfwd = q.rotate_around_origin(e1f, DeltaPsi)
-            e1r = e1 - del_e1 * 0.5
-            rrev = q.rotate_around_origin(e1r, DeltaPsi)
-            drde_dedp = (rfwd - rrev) * (1 / dp)
+            dr_de1 = dRq_de(DeltaPsi, e1, q)
+            drde_dedp = dr_de1 * de1_dp
 
             # calculate the derivative of pv for this parameter
             dpv_dp.append(D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp))
@@ -231,21 +223,11 @@ class StillsPredictionParameterisation(PredictionParameterisation):
             # derivative of the axis e1
             q_dot_dq = q.dot(dq)
             dq0 = (q_scalar * dq - (q_dot_dq * q0)) / qq
-            de1_dp = dq0.cross(s0u)
+            de1_dp = self._de1_dp(isel, dq0.cross(s0u))
 
             # calculate (d[r]/d[e1])(d[e1]/dp)
-            # dr_de1 = dRq_de(DeltaPsi, e1, q)
-            # drde_dedp = dr_de1 * de1_dp
-
-            # The above calculation is not correct. Instead, calculate the partial
-            # derivative of r wrt change in rotation axis e1 by finite differences
-            dp = 1.0e-8
-            del_e1 = de1_dp * dp
-            e1f = e1 + del_e1 * 0.5
-            rfwd = q.rotate_around_origin(e1f, DeltaPsi)
-            e1r = e1 - del_e1 * 0.5
-            rrev = q.rotate_around_origin(e1r, DeltaPsi)
-            drde_dedp = (rfwd - rrev) * (1 / dp)
+            dr_de1 = dRq_de(DeltaPsi, e1, q)
+            drde_dedp = dr_de1 * de1_dp
 
             # calculate the derivative of pv for this parameter
             dpv = D * (dr + e1.cross(r) * dDeltaPsi + drde_dedp)
