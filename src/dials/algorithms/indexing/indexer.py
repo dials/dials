@@ -749,6 +749,11 @@ class Indexer:
         if self.refined_experiments is None:
             raise DialsIndexRefineError("None of the experiments could refine.")
 
+        if "xyzcal.mm" in self.refined_reflections:
+            self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+
+        self._remove_experiments_without_reflections()
+
         if len(self.refined_experiments) > 1:
             from dials.algorithms.indexing.compare_orientation_matrices import (
                 rotation_matrix_differences,
@@ -758,8 +763,62 @@ class Indexer:
                 rotation_matrix_differences(self.refined_experiments.crystals())
             )
 
-        if "xyzcal.mm" in self.refined_reflections:
-            self._xyzcal_mm_to_px(self.refined_experiments, self.refined_reflections)
+    def _remove_experiments_without_reflections(self):
+        """Remove refined experiments that have no indexed reflections.
+
+        With joint indexing, experiments that share a crystal model are refined
+        together, so one experiment may lose all of its indexed reflections
+        while the others keep theirs. Such experiments are removed, along with
+        the unindexed reflections from any imageset no longer referenced by the
+        remaining experiments. See https://github.com/dials/dials/issues/2609
+        """
+        ids_with_reflections = set(self.refined_reflections["id"])
+        to_remove = [
+            i
+            for i in range(len(self.refined_experiments))
+            if i not in ids_with_reflections
+        ]
+        if not to_remove:
+            return
+        if len(to_remove) == len(self.refined_experiments):
+            raise DialsIndexRefineError("No experiments have any indexed reflections.")
+
+        for i in reversed(to_remove):
+            logger.info("Removing experiment %d, which has no indexed reflections", i)
+            del self.refined_experiments[i]
+        self.refined_reflections.reset_ids()
+        # unindexed reflections all have id == -1, so this empties the map
+        self.unindexed_reflections.clean_experiment_identifiers_map()
+
+        # Renumber imageset_id to match the imagesets of the remaining
+        # experiments, dropping reflections from imagesets that are now unused
+        new_imagesets = self.refined_experiments.imagesets()
+        imageset_id_map = {
+            old_id: new_imagesets.index(imageset)
+            for old_id, imageset in enumerate(self.experiments.imagesets())
+            if imageset in new_imagesets
+        }
+
+        def remap_imageset_ids(reflections):
+            keep = flex.bool(len(reflections), False)
+            new_ids = flex.int(len(reflections), -1)
+            for old_id, new_id in imageset_id_map.items():
+                sel = reflections["imageset_id"] == old_id
+                keep.set_selected(sel, True)
+                new_ids.set_selected(sel, new_id)
+            reflections["imageset_id"] = new_ids
+            return reflections.select(keep)
+
+        self.refined_reflections = remap_imageset_ids(self.refined_reflections)
+        n_unindexed = len(self.unindexed_reflections)
+        self.unindexed_reflections = remap_imageset_ids(self.unindexed_reflections)
+        n_dropped = n_unindexed - len(self.unindexed_reflections)
+        if n_dropped:
+            logger.info(
+                "Removing %d unindexed reflections from imagesets with no "
+                "remaining experiments",
+                n_dropped,
+            )
 
     def _remove_id_from_reflections(self, model_id):
         sel = self.refined_reflections["id"] == model_id
@@ -1010,6 +1069,12 @@ class Indexer:
     def refine(self, experiments, reflections):
         from dials.algorithms.indexing.refinement import refine
 
+        if self.all_params.indexing.joint_indexing:
+            # Disable zero length reflection list sanity check in refinement
+            # for joint indexing, to avoid failing to index when one experiment
+            # is bad while others sharing the crystal model are good.
+            # See https://github.com/dials/dials/issues/2609 for details.
+            self.all_params.refinement.reflections.allow_experiments_with_no_reflections = True
         properties_to_save = [
             "xyzcal.mm",
             "entering",
