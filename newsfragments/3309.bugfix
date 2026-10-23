@@ -1,0 +1,1 @@
+``dials.stills_process``: raise the gain mismatch error also when the supplied gain equals the detector gain, since the two were applied multiplicatively.
