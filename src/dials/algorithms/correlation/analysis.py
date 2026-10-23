@@ -182,6 +182,10 @@ class CorrelationMatrix:
         self.cosym_analysis = CosymAnalysis(
             self.datasets, self.params, apply_sigma_correction=apply_sigma_correction
         )
+        # update labels as cosym analysis class can remove datasets if they have fewer than min_reflections.
+        self.labels = [
+            self.labels[i] for i in list(set(self.cosym_analysis.dataset_ids))
+        ]
 
     def _merge_intensities(self, datasets: list) -> list:
         """
