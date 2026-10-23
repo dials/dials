@@ -8,6 +8,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 
+import gemmi
 import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
@@ -28,6 +29,7 @@ def test(dials_data, tmp_path):
         [
             shutil.which("dials.two_theta_refine"),
             "cif=refined_cell.cif",
+            "mmcif=refined_cell.mmcif",
             "output.correlation_plot.filename=corrplot.png",
         ]
         + [str(p) for p in exp_path]
@@ -40,6 +42,18 @@ def test(dials_data, tmp_path):
     result = subprocess.run(cmd, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
     assert (tmp_path / "refined_cell.expt").is_file()
+
+    # _diffrn_reflns items describe all measured reflections, not those used
+    # for cell refinement, so should not be written (#3290)
+    for filename in ("refined_cell.cif", "refined_cell.mmcif"):
+        block = gemmi.cif.read_file(str(tmp_path / filename)).sole_block()
+        assert block.find_value("_cell_measurement_reflns_used") or block.find_value(
+            "_cell_measurement.reflns_used"
+        )
+        assert not [
+            item for item in block if item.pair and "_diffrn_reflns" in item.pair[0]
+        ]
+
     ref_exp = ExperimentListFactory.from_json_file(
         tmp_path / "refined_cell.expt", check_format=False
     )

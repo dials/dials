@@ -222,9 +222,7 @@ CELL_MEASUREMENT_ITEMS = (
 
 def _combine_cell_measurement(block, filename, unit_cell):
     """Copy the _cell_measurement items from a CIF written by
-    dials.two_theta_refine. Its _diffrn_reflns items are deliberately not
-    copied: they describe the reflections used for the cell, whereas in this
-    CIF they describe all the measured reflections."""
+    dials.two_theta_refine."""
 
     try:
         doc = gemmi.cif.read_file(str(filename))
