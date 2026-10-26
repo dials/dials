@@ -20,8 +20,15 @@ from .utils import group_vectors
 logger = logging.getLogger(__name__)
 
 
+def characteristic_grid_for(length, resolution):
+    """The search-direction step (radians) for a target cell length and spot resolution."""
+    return min(0.02, math.sqrt(2) / 4 * resolution / length)
+
+
 real_space_grid_search_phil_str = """\
 characteristic_grid = 0.02
+    .help = "Angular step of the search directions in radians. If None, it is set "
+            "automatically from the target unit cell and the resolution of the spots."
     .type = float(value_min=0)
 max_vectors = 30
     .help = "The maximum number of unique vectors to find in the grid search."
@@ -49,6 +56,7 @@ class RealSpaceGridSearch(Strategy):
 
     See:
         Gildea, R. J., Waterman, D. G., Parkhurst, J. M., Axford, D., Sutton, G., Stuart, D. I., Sauter, N. K., Evans, G. & Winter, G. (2014). Acta Cryst. D70, 2652-2666.
+        Steller, I., Bolotovsky, R. & Rossmann, M. G. (1997). J. Appl. Cryst. 30, 1036-1040.
     """
 
     phil_help = (
@@ -74,20 +82,23 @@ class RealSpaceGridSearch(Strategy):
                 "Target unit cell must be provided for real_space_grid_search"
             )
         self._target_unit_cell = target_unit_cell
-        # Precompute search vector array and flex object once — both are constant for
-        # this instance (depend only on target_unit_cell and characteristic_grid).
-        SST = SimpleSamplerTool(self._params.characteristic_grid)
-        SST.construct_hemisphere_grid(SST.incr)
-        directions = np.array(
-            [d.dvec for d in SST.angles], dtype=np.float64
-        )  # (N_dir, 3)
-        unique_dims = sorted(set(target_unit_cell.parameters()[:3]))
-        self._sv_array = np.vstack([directions * l for l in unique_dims])  # (N_sv, 3)
-        self._sv_flex = flex.vec3_double(list(map(tuple, self._sv_array)))
+        # With a fixed grid the search vectors are constant for this instance; with an
+        # automatic grid they depend on the spots and are built in find_basis_vectors.
+        if self._params.characteristic_grid is not None:
+            SST = SimpleSamplerTool(self._params.characteristic_grid)
+            SST.construct_hemisphere_grid(SST.incr)
+            directions = np.array(
+                [d.dvec for d in SST.angles], dtype=np.float64
+            )  # (N_dir, 3)
+            unique_dims = sorted(set(target_unit_cell.parameters()[:3]))
+            self._sv_array = np.vstack([directions * l for l in unique_dims])
+            self._sv_flex = flex.vec3_double(list(map(tuple, self._sv_array)))
 
     @property
     def search_directions(self):
         """Generator of the search directions (i.e. vectors with length 1)."""
+        if self._params.characteristic_grid is None:
+            raise ValueError("search_directions requires a numeric characteristic_grid")
         SST = SimpleSamplerTool(self._params.characteristic_grid)
         SST.construct_hemisphere_grid(SST.incr)
         for direction in SST.angles:
@@ -144,6 +155,22 @@ class RealSpaceGridSearch(Strategy):
         """
         used_in_indexing = flex.bool(reciprocal_lattice_vectors.size(), True)
         logger.info("Indexing from %i reflections", used_in_indexing.count(True))
+
+        if self._params.characteristic_grid is None:
+            rlv = np.array(reciprocal_lattice_vectors, dtype=np.float64)
+            with np.errstate(divide="ignore"):
+                resolution = 1 / np.percentile(np.linalg.norm(rlv, axis=1), 95)
+            search_vectors = []
+            for l in sorted(set(self._target_unit_cell.parameters()[:3])):
+                grid = characteristic_grid_for(l, resolution)
+                logger.debug("Search grid %.4f rad for length %.2f", grid, l)
+                SST = SimpleSamplerTool(grid)
+                SST.construct_hemisphere_grid(SST.incr)
+                search_vectors.append(
+                    np.array([d.dvec for d in SST.angles], dtype=np.float64) * l
+                )
+            self._sv_array = np.vstack(search_vectors)
+            self._sv_flex = flex.vec3_double(flex.double(self._sv_array.ravel()))
 
         vectors, weights = self.score_vectors(reciprocal_lattice_vectors)
 
