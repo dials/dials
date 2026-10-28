@@ -805,6 +805,10 @@ class Script:
                 n_accept = n_mod_denom < process_fractions.numerator
                 return n_accept
 
+        # Garbage is collected after every image, but what exists by now is mostly imports,
+        # live for the whole run. Freeze it, so the collector only walks later objects.
+        gc.freeze()
+
         # Process the data
         if params.mp.method == "mpi":
             if size <= 2:  # client/server only makes sense for n>2
