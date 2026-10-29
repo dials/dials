@@ -931,16 +931,12 @@ class Refiner:
         for iexp, exp in enumerate(self._experiments):
             detector = exp.detector
             px_sizes = [p.get_pixel_size() for p in detector]
-            it = iter(px_sizes)
-            px_size = next(it)
-            if not all(tst == px_size for tst in it):
-                logger.info(
-                    "The detector in experiment %d does not have the same pixel "
-                    + "sizes on each panel. Skipping...",
-                    iexp,
-                )
-                continue
-            px_per_mm = [1.0 / e for e in px_size]
+            px_per_mm = [1.0 / e for e in px_sizes[0]]
+            px_rmsds = None
+            if not all(tst == px_sizes[0] for tst in px_sizes):
+                # the panels have different pixel sizes, so convert each
+                # residual to pixels using the pixel size of its own panel
+                px_rmsds = self._rmsds_px_for_experiment(iexp, px_sizes)
 
             scan = exp.scan
             try:
@@ -957,9 +953,13 @@ class Refiner:
                 self._target.rmsd_names, self._target.rmsd_units, raw_rmsds
             ):
                 if name == "RMSD_X" and units == "mm":
-                    rmsds.append(rmsd * px_per_mm[0])
+                    rmsds.append(
+                        px_rmsds[0] if px_rmsds is not None else rmsd * px_per_mm[0]
+                    )
                 elif name == "RMSD_Y" and units == "mm":
-                    rmsds.append(rmsd * px_per_mm[1])
+                    rmsds.append(
+                        px_rmsds[1] if px_rmsds is not None else rmsd * px_per_mm[1]
+                    )
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
                 elif name == "RMSD_wavelength" and units == "frame":
@@ -970,6 +970,28 @@ class Refiner:
 
         self._exp_rmsd_table_data = (header, rows)
         return self._exp_rmsd_table_data
+
+    def _rmsds_px_for_experiment(self, iexp, px_sizes):
+        """Positional RMSDs in pixels for one experiment, where each residual is
+        converted with the pixel size of the panel it was recorded on. Needed
+        for detectors whose panels have different pixel sizes."""
+        self._target.update_matches()
+        matches = self._target._matches
+        sel = matches["id"] == iexp
+        if sel.count(True) == 0:
+            return None
+        matches = matches.select(sel)
+        inv_px_x2 = flex.double(len(matches), 0.0)
+        inv_px_y2 = flex.double(len(matches), 0.0)
+        for ipanel, (px_x, px_y) in enumerate(px_sizes):
+            psel = matches["panel"] == ipanel
+            inv_px_x2.set_selected(psel, 1.0 / px_x**2)
+            inv_px_y2.set_selected(psel, 1.0 / px_y**2)
+        n = len(matches)
+        return (
+            math.sqrt(flex.sum(matches["x_resid2"] * inv_px_x2) / n),
+            math.sqrt(flex.sum(matches["y_resid2"] * inv_px_y2) / n),
+        )
 
     def print_exp_rmsd_table(self):
         """print useful output about refinement steps in the form of a simple table"""

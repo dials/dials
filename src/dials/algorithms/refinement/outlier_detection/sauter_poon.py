@@ -24,7 +24,7 @@ class SauterPoon(CentroidOutlier):
         # ignored.
         CentroidOutlier.__init__(
             self,
-            cols=["miller_index", "xyzobs.px.value", "xyzcal.px"],
+            cols=["miller_index", "xyzobs.px.value", "xyzcal.px", "panel"],
             min_num_obs=min_num_obs,
             separate_experiments=separate_experiments,
             separate_panels=separate_panels,
@@ -33,32 +33,40 @@ class SauterPoon(CentroidOutlier):
             nproc=nproc,
         )
 
+        # px_sz is either a single (x, y) pixel size in mm applied to all panels,
+        # or a sequence of (x, y) pixel sizes, one per panel, for detectors
+        # whose panels have different pixel sizes
         self._px_sz = px_sz
         self._verbose = verbose
         self._pdf = pdf
 
         return
 
+    def _px_sz_for_panel(self, ipanel):
+        try:
+            return self._px_sz[ipanel]
+        except (TypeError, IndexError):
+            return self._px_sz
+
     def _detect_outliers(self, cols):
-        # cols is guaranteed to be a list of three flex arrays, containing miller
-        # indices, observed pixel coordinates and calculated pixel coordinates.
-        # Copy the data into matches
+        # cols is guaranteed to be a list of four flex arrays, containing miller
+        # indices, observed pixel coordinates, calculated pixel coordinates and
+        # panel ids. Copy the data into matches
         class match:
             pass
 
+        single_px_sz = len(self._px_sz) == 2 and not hasattr(self._px_sz[0], "__len__")
+
         matches = []
-        for hkl in cols[0]:
+        for hkl, obs, calc, ipanel in zip(cols[0], cols[1], cols[2], cols[3]):
             m = match()
             m.miller_index = hkl
+            px_sz = self._px_sz if single_px_sz else self._px_sz_for_panel(ipanel)
+            m.x_obs = obs[0] * px_sz[0]
+            m.y_obs = obs[1] * px_sz[1]
+            m.x_calc = calc[0] * px_sz[0]
+            m.y_calc = calc[1] * px_sz[1]
             matches.append(m)
-
-        for obs, m in zip(cols[1], matches):
-            m.x_obs = obs[0] * self._px_sz[0]
-            m.y_obs = obs[1] * self._px_sz[1]
-
-        for calc, m in zip(cols[2], matches):
-            m.x_calc = calc[0] * self._px_sz[0]
-            m.y_calc = calc[1] * self._px_sz[1]
 
         import iotbx.phil
         from rstbx.phil.phil_preferences import indexing_api_defs

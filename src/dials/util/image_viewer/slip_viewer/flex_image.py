@@ -41,6 +41,13 @@ def get_flex_image(
     )
 
 
+def get_picture_pixel_size(detector):
+    """Pitch (mm) of one pixel of the composite picture a multi-panel detector
+    is drawn on: the smallest pixel size over all panels, so that no panel is
+    downsampled when panels have different pixel sizes."""
+    return min(min(panel.get_pixel_size()) for panel in detector)
+
+
 def get_flex_image_multipanel(
     detector,
     image_data,
@@ -113,12 +120,14 @@ def get_flex_image_multipanel(
     if npanels:
         beam_center /= npanels / 1e-3
 
+    # Panels need not share a pixel size: project them all onto a picture
+    # whose pixel pitch is the finest pixel size on the detector.
+    picture_pixel_size = get_picture_pixel_size(detector)
+
     # XXX If a point is contained in two panels simultaneously, it will
     # be assigned to the panel defined first.  XXX Use a Z-buffer
     # instead?
     for i, panel in enumerate(detector):
-        # Determine the pixel size for the panel (in meters), as pixel
-        # sizes need not be identical.
         data = image_data[i]
 
         rawdata.matrix_paste_block_in_place(
@@ -154,10 +163,18 @@ def get_flex_image_multipanel(
                 origin = scitbx.matrix.col(panel.get_origin()) * 1e-3 - beam_center
 
             panel_r, panel_t = get_panel_projection_2d_from_axes(
-                panel, data, fast, slow, origin
+                panel, data, fast, slow, origin, picture_pixel_size
             )
 
-        flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
+        if hasattr(flex_image_multipanel, "add_transformation_translation_and_size"):
+            # panels may have different sizes: record this panel's own
+            # (slow, fast) readout size so picture pixels outside it are not
+            # looked up in its zero padding
+            flex_image_multipanel.add_transformation_translation_and_size(
+                panel_r, panel_t, data.focus()[0], data.focus()[1]
+            )
+        else:
+            flex_image_multipanel.add_transformation_and_translation(panel_r, panel_t)
 
     flex_image_multipanel.followup_brightness_scale()
     return flex_image_multipanel
