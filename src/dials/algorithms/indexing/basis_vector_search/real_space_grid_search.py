@@ -141,9 +141,18 @@ class RealSpaceGridSearch(Strategy):
             A tuple containing the list of search vectors and their scores.
         """
         rlv_array = np.array(reciprocal_lattice_vectors, dtype=np.float64)  # (N_rlv, 3)
-        dots = 2 * math.pi * (self._sv_array @ rlv_array.T)  # (N_sv, N_rlv)
-        scores_np = np.cos(dots).sum(axis=1)  # (N_sv,)
-        scores = flex.double(scores_np.tolist())
+        # Score in blocks of about 2**22 elements so that memory does not grow with
+        # the number of search vectors times the number of spots.
+        rows = max(1, 2**22 // max(1, len(rlv_array)))
+        scores_np = np.concatenate(
+            [
+                np.cos(2 * math.pi * (self._sv_array[i : i + rows] @ rlv_array.T)).sum(
+                    axis=1
+                )
+                for i in range(0, len(self._sv_array), rows)
+            ]
+        )  # (N_sv,)
+        scores = flex.double(scores_np)
         return self._sv_flex, scores
 
     def find_basis_vectors(self, reciprocal_lattice_vectors):
