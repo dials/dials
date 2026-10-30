@@ -194,6 +194,7 @@ namespace dials { namespace algorithms {
   public:
     PixelCorrector(const TOFGeometryContext& geometry,
                    bool apply_lorentz_correction,
+                   double lorentz_wavelength_power,  // 4.0 = the full factor
                    int n_signal,
                    int n_background,
                    const dials_scaling::TOFIncidentSpectrumParams* incident_params,
@@ -203,6 +204,7 @@ namespace dials { namespace algorithms {
                    const scitbx::af::shared<std::size_t>* n_contrib)
         : geometry_(geometry),
           apply_lorentz_correction_(apply_lorentz_correction),
+          lorentz_wavelength_power_(lorentz_wavelength_power),
           n_signal_(n_signal),
           n_background_(n_background),
           incident_params_(incident_params),
@@ -244,8 +246,19 @@ namespace dials { namespace algorithms {
         two_theta = geometry_.detector[panel].get_two_theta_at_pixel(
           geometry_.unit_s0, scitbx::vec2<double>(panel_x, panel_y));
         if (apply_lorentz_correction_) {
+          /*
+           * sin^2(theta) / lambda^p.  The exponent is a parameter because the
+           * two halves of the factor behave quite differently here: sin^2(theta)
+           * barely varies across a shoebox, while lambda^-4 applied per ToF
+           * slice reweights the inside of a peak and distorts the very profile
+           * that is about to be fitted.  The wavelength part is also degenerate
+           * with lawless's normalisation curve, which can absorb it.
+           */
           double sin_two_theta_sq = std::pow(sin(two_theta * .5), 2);
-          L = sin_two_theta_sq / std::pow(wl, 4);
+          L = sin_two_theta_sq;
+          if (lorentz_wavelength_power_ != 0.0) {
+            L /= std::pow(wl, lorentz_wavelength_power_);
+          }
         }
       }
 
@@ -338,6 +351,7 @@ namespace dials { namespace algorithms {
   private:
     const TOFGeometryContext& geometry_;
     bool apply_lorentz_correction_;
+    double lorentz_wavelength_power_;
     int n_signal_;
     int n_background_;
     const dials_scaling::TOFIncidentSpectrumParams* incident_params_;
@@ -592,7 +606,8 @@ namespace dials { namespace algorithms {
     boost::optional<dials_scaling::TOFAbsorptionParams> absorption_params,
     const bool& apply_lorentz_correction,
     int n_threads,
-    std::shared_ptr<ProfileFitter> profile_fitter = nullptr) {
+    std::shared_ptr<ProfileFitter> profile_fitter = nullptr,
+    double lorentz_wavelength_power = 4.0) {
     std::size_t n_reflections = reflection_table.size();
     TOFGeometryContext geometry(experiment, data);
 
@@ -657,6 +672,7 @@ namespace dials { namespace algorithms {
         PixelCorrector corrector(
           geometry,
           apply_lorentz_correction,
+          lorentz_wavelength_power,
           inputs.shoebox_pixel_count.n_signal,
           inputs.shoebox_pixel_count.n_background,
           incident_params.get_ptr(),
@@ -746,7 +762,8 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> projected_intensity_out,
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
-    const bool& apply_lorentz_correction) {
+    const bool& apply_lorentz_correction,
+    double lorentz_wavelength_power = 4.0) {
     // This is a slight hack to make using current interfaces easier
     // E.g. the shoebox processor
     DIALS_ASSERT(reflection.size() == 1);
@@ -786,6 +803,7 @@ namespace dials { namespace algorithms {
     PixelCorrector corrector(
       geometry,
       apply_lorentz_correction,
+      lorentz_wavelength_power,
       inputs.shoebox_pixel_count.n_signal,
       inputs.shoebox_pixel_count.n_background,
       incident_params.get_ptr(),
@@ -822,7 +840,8 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> tof_z_out,
     scitbx::af::shared<double> line_profile_out,
     const bool& apply_lorentz_correction,
-    TOFProfile1DIBIXParams& profile_params_1d_ibix) {
+    TOFProfile1DIBIXParams& profile_params_1d_ibix,
+    double lorentz_wavelength_power = 4.0) {
     boost::python::tuple result =
       calculate_line_profile_for_reflection(reflection,
                                             experiment,
@@ -915,7 +934,8 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     const bool& apply_lorentz_correction,
-    TOFProfile3DGutmannParams& profile_params_3d_gutmann) {
+    TOFProfile3DGutmannParams& profile_params_3d_gutmann,
+    double lorentz_wavelength_power = 4.0) {
     DIALS_ASSERT(reflection.size() == 1);
 
     TOFGeometryContext geometry(experiment, data);
@@ -953,6 +973,7 @@ namespace dials { namespace algorithms {
     PixelCorrector corrector(
       geometry,
       apply_lorentz_correction,
+      lorentz_wavelength_power,
       inputs.shoebox_pixel_count.n_signal,
       inputs.shoebox_pixel_count.n_background,
       incident_params.get_ptr(),
@@ -1007,7 +1028,8 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     const bool& apply_lorentz_correction,
-    TOFProfile3DICParams& profile_params_3d_ic) {
+    TOFProfile3DICParams& profile_params_3d_ic,
+    double lorentz_wavelength_power = 4.0) {
     DIALS_ASSERT(reflection.size() == 1);
 
     TOFGeometryContext geometry(experiment, data);
@@ -1045,6 +1067,7 @@ namespace dials { namespace algorithms {
     PixelCorrector corrector(
       geometry,
       apply_lorentz_correction,
+      lorentz_wavelength_power,
       inputs.shoebox_pixel_count.n_signal,
       inputs.shoebox_pixel_count.n_background,
       incident_params.get_ptr(),
@@ -1099,7 +1122,8 @@ namespace dials { namespace algorithms {
     scitbx::af::shared<double> projected_background_out,
     scitbx::af::shared<double> tof_z_out,
     const bool& apply_lorentz_correction,
-    TOFProfile3DIBIXParams& profile_params_3d_ibix) {
+    TOFProfile3DIBIXParams& profile_params_3d_ibix,
+    double lorentz_wavelength_power = 4.0) {
     DIALS_ASSERT(reflection.size() == 1);
 
     TOFGeometryContext geometry(experiment, data);
@@ -1137,6 +1161,7 @@ namespace dials { namespace algorithms {
     PixelCorrector corrector(
       geometry,
       apply_lorentz_correction,
+      lorentz_wavelength_power,
       inputs.shoebox_pixel_count.n_signal,
       inputs.shoebox_pixel_count.n_background,
       incident_params.get_ptr(),

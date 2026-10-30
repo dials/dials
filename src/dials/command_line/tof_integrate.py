@@ -113,6 +113,14 @@ corrections{
     lorentz = False
         .type = bool
         .help = "Apply the Lorentz correction to target spectrum."
+    lorentz_wavelength_power = 4.0
+        .type = float(value_min=0)
+        .help = "Exponent p in the Lorentz factor sin^2(theta) / lambda^p. The"
+                "default 4 is the full factor. 0 applies sin^2(theta) alone,"
+                "leaving the wavelength part to be absorbed by the scaling"
+                "program's normalisation curve; applied per ToF slice it"
+                "reweights the inside of a peak and distorts the profile being"
+                "fitted."
     absorption{
         incident_spectrum{
             sample_number_density = 0.0722
@@ -670,6 +678,7 @@ def integrate_reflection_table_for_experiment(
         profile_3d_gutmann_params,
         profile_3d_ic_params,
         profile_3d_ibix_params,
+        params.corrections.lorentz_wavelength_power,
     )
 
     return expt_reflections
