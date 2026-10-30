@@ -16,9 +16,7 @@
 
 /*
 Gaussian-process wavelength normalisation for Laue/ToF data, after the
-LAUE NORMGPR method of lawless (the Laue branch of aimless). The method and
-its measured justification are in the dials.lambda_norm plan; the phil .help
-of dials.lambda_norm carries the user-facing parameters.
+LAUE NORMGPR method of lawless (the Laue branch of aimless).
 */
 namespace dials_scaling {
 
