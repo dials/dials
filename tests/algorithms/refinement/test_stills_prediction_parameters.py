@@ -221,9 +221,9 @@ def test_stills_pred_param(tc):
                 ("  summary of absolute errors: %9.6f %9.6f %9.6f " + "%9.6f %9.6f")
                 % fns
             )
-            assert flex.max(flex.abs(abs_error)) < 0.0003
-            # largest absolute error found to be about 0.00025 for dY/dp of
-            # Crystal0g_param_3. Reject outlying absolute errors and test again.
+            assert flex.max(flex.abs(abs_error)) < 1.0e-5
+            # largest absolute error found to be about 2e-6 for dX/dp of
+            # Detector0Tau1. Reject outlying absolute errors and test again.
             iqr = fns[3] - fns[1]
 
             # skip further stats on errors with an iqr of near zero, e.g. dDeltaPsi_dp
@@ -243,8 +243,8 @@ def test_stills_pred_param(tc):
                     + "absolute error: {1:9.6f}"
                 ).format(n_outliers, tst_val)
             )
-            # largest absolute error now 0.000086 for dX/dp of Beam0Mu2
-            assert abs(tst_val) < 0.00009
+            # largest absolute error now about 1e-6
+            assert abs(tst_val) < 1.0e-5
 
             # Completely skip parameters with FD gradients all zero (e.g. gradients of
             # DeltaPsi for detector parameters)
@@ -260,8 +260,8 @@ def test_stills_pred_param(tc):
                 ("  summary of normalised errors: %9.6f %9.6f %9.6f " + "%9.6f %9.6f")
                 % fns
             )
-            # largest normalised error found to be about 25.7 for dY/dp of
-            # Crystal0g_param_3.
+            # largest normalised error found to be about 4.8 for dX/dp of
+            # Detector0Tau1.
             try:
                 assert flex.max(flex.abs(norm_error)) < 30
             except AssertionError as e:
@@ -280,8 +280,7 @@ def test_stills_pred_param(tc):
                 tst_val = norm_error.select(sel)[tst]
                 n_outliers = sel.count(False)
 
-                # most outliers found for for dY/dp of Crystal0g_param_3 (which had
-                # largest errors, so no surprise there).
+                # most outliers found for dDeltaPsi/dp of Beam0Mu2.
                 try:
                     assert n_outliers < 250
                 except AssertionError as e:
@@ -296,11 +295,6 @@ def test_stills_pred_param(tc):
                 )
                 # largest normalied error now about -4. for dX/dp of Detector0Tau1
                 assert abs(tst_val) < 6, f"should be < 6, not {tst_val}"
-
-
-# In comparison with FD approximations, the worst gradients by far are dX/dp
-# and dY/dp for parameter Crystal0g_param_3. Is this to do with the geometry
-# of the test case?
 
 
 def test_spherical_relp_stills_pred_param(tc):
