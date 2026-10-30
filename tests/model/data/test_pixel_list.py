@@ -175,3 +175,56 @@ def test_with_no_points():
     assert len(coords) == 0
     assert len(labels1) == 0
     assert len(labels2) == 0
+
+
+def two_spots_on_two_frames():
+    from dials.array_family import flex
+    from dials.model.data import PixelList, PixelListLabeller
+
+    size = (20, 20)
+    labeller = PixelListLabeller()
+    for frame in range(2):
+        image = flex.double(flex.grid(size), 0)
+        mask = flex.bool(flex.grid(size), False)
+        for j, i in ((2, 2), (2, 3), (3, 2), (3, 3)):
+            image[j, i] = 10 + frame
+            mask[j, i] = True
+            image[j + 8, i + 10] = 20 + frame
+            mask[j + 8, i + 10] = True
+        labeller.add(PixelList(frame, image, mask))
+    return labeller
+
+
+def check_spot_shoeboxes(shoeboxes):
+    assert len(shoeboxes) == 2
+    intensities = sorted(s.summed_intensity().observed.value for s in shoeboxes)
+    assert intensities == [4 * 10 + 4 * 11, 4 * 20 + 4 * 21]
+    for shoebox in shoeboxes:
+        assert shoebox.zsize() == 2
+        assert shoebox.is_data_allocated()
+        assert not shoebox.is_background_allocated()
+        assert shoebox.is_consistent()
+
+
+def test_pixel_list_shoeboxes_have_no_background():
+    from dials.array_family import flex
+
+    creator = flex.PixelListShoeboxCreator(
+        two_spots_on_two_frames(), min_pixels=1, max_pixels=100
+    )
+    check_spot_shoeboxes(creator.result())
+
+
+def test_combined_strong_spots_have_no_background():
+    from dials.algorithms.spot_finding import StrongSpotCombiner
+    from dials.array_family import flex
+
+    creator = flex.PixelListShoeboxCreator(
+        two_spots_on_two_frames(), twod=True, min_pixels=1, max_pixels=100
+    )
+    shoeboxes = creator.result()
+    first_frame = flex.bool(s.bbox[4] == 0 for s in shoeboxes)
+    combiner = StrongSpotCombiner()
+    combiner.add(shoeboxes.select(first_frame))
+    combiner.add(shoeboxes.select(~first_frame))
+    check_spot_shoeboxes(combiner.shoeboxes())
