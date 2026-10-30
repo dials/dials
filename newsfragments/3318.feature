@@ -1,0 +1,1 @@
+``dials.lambda_norm``: new program for time-of-flight Laue data, run between ``dials.tof_integrate`` and ``dials.scale``. It fits a smooth wavelength normalisation curve to symmetry-equivalent intensities by Gaussian-process regression, following lawless, and divides it out.
