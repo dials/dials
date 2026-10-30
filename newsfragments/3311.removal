@@ -1,0 +1,1 @@
+``dials.integrate``: Remove the experimental ``integrator=3d_threaded`` option, which was slower than the default integrator and discarded overlapped reflections.
