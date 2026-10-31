@@ -554,8 +554,21 @@ class RLVWindow(wx_viewer.show_points_and_lines_mixin):
             gl.glLineWidth(1)
             if self.colors is None:
                 self.colors = flex.vec3_double(len(self.points), (1, 1, 1))
+            # Batch all crosses into a single glBegin/glEnd block.  Over indirect
+            # GLX each begin/end pair is a protocol boundary; one block for all
+            # 6N vertices is orders of magnitude faster than N separate blocks.
+            f = 0.01 * self.settings.marker_size
+            gl.glBegin(gl.GL_LINES)
             for point, color in zip(self.points, self.colors):
-                self.draw_cross_at(point, color=color)
+                x, y, z = point
+                gl.glColor3f(*color)
+                gl.glVertex3f(x - f, y, z)
+                gl.glVertex3f(x + f, y, z)
+                gl.glVertex3f(x, y - f, z)
+                gl.glVertex3f(x, y + f, z)
+                gl.glVertex3f(x, y, z - f)
+                gl.glVertex3f(x, y, z + f)
+            gl.glEnd()
             self.points_display_list.end()
         self.points_display_list.call()
 
