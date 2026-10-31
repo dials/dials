@@ -33,6 +33,7 @@ from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
     TOFProfile1DIBIXParams,
     TOFProfile1DICParams,
+    TOFProfile1DProfilelibParams,
     TOFProfile3DGutmannParams,
     TOFProfile3DIBIXParams,
     TOFProfile3DICParams,
@@ -79,11 +80,14 @@ calculated{
     .help = "The resolution spots are integrated to when using integration_type.calculated"
 
 }
-method = *summation profile_1d_ibix profile_1d_ic profile_3d_gutmann profile_3d_ic profile_3d_ibix
+method = *summation profile_1d_ibix profile_1d_profilelib profile_1d_ic profile_3d_gutmann profile_3d_ic profile_3d_ibix
     .type = choice
     .help = "Integration method: "
             "summation: shoebox summation"
             "profile_1d_ibix: https://doi.org/10.1038/srep36628 "
+            "profile_1d_profilelib: profile_1d_ibix's model, with the shape taken "
+            "from a library measured on strong reflections, after Mantid's "
+            "IntegratePeaksProfileFitting "
             "profile_1d_ic: Ikeda-Carpenter model, "
             "https://doi.org/10.1016/0168-9002(85)90033-6"
             "profile_3d_gutmann: https://doi.org/10.1016/j.nima.2016.12.026"
@@ -177,6 +181,79 @@ profile_1d_ibix{
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
 
+}
+profile_1d_profilelib
+    .help = "Profile fitting against a library of peak shapes measured on"
+            "strong reflections, after Mantid's IntegratePeaksProfileFitting."
+            "The shape model is the same back-to-back exponential"
+            "profile_1d_ibix fits; the difference is that a weak reflection"
+            "takes the shape of the nearest strong one and fits only its"
+            "amplitude and position, rather than being asked to determine a"
+            "shape its own counts cannot support."
+{
+    init_alpha = 0.03
+        .type = float
+        .help = "Initial alpha value before optimization. Not critical: the"
+                "bounds below decide the outcome, and 0.03 against 0.005 moves"
+                "nothing measurable on MANDI."
+    init_beta = 0.03
+        .type = float
+        .help = "Initial beta value before optimization"
+    min_alpha = 1e-5
+        .type = float
+        .help = "Min alpha value for optimization. Wide enough for a"
+                "short-pulse source: MANDI peaks fit alpha near 0.005, so the"
+                "0.02 that suits a long-pulse instrument is a floor the data"
+                "cannot reach, and a parameter pinned to it gives a rising edge"
+                "far too sharp to match the peak."
+    max_alpha = 10.0
+        .type = float
+        .help = "Max alpha value for optimization"
+    min_beta = 1e-5
+        .type = float
+        .help = "Min beta value for optimization. Not zero: beta = 0 makes the"
+                "profile identically zero."
+    max_beta = 10.0
+        .type = float
+        .help = "Max beta value for optimization"
+    min_A = 1.0
+        .type = float
+        .help = "Min A value for optimization"
+    max_A = 1e4
+        .type = float
+        .help = "Max A value for optimization"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If a shape fit fails, number of additional attempts with"
+                "perturbed params"
+    library{
+        min_i_sigma = 5.0
+            .type = float(value_min=0)
+            .help = "Summation I/sigma a reflection must reach for its fitted"
+                    "shape to enter the library."
+        min_correlation = 0.5
+            .type = float(value_min=0, value_max=1)
+            .help = "Correlation a free fit must reach for its shape to enter"
+                    "the library. Looser than the threshold for accepting an"
+                    "intensity, because a shape only has to be the right shape."
+    }
+    peak_tolerance = 300.0
+        .type = float(value_min=0)
+        .help = "How far in us a shape fit's peak may sit from the tallest"
+                "channel of the data. A time rather than a number of bins, so"
+                "the tolerance does not shrink as the slices get finer. 300 us"
+                "matches the fixed three bins profile_1d_ibix uses at 101 us."
+    peak_height_smoothing = 60.0
+        .type = float(value_min=0)
+        .help = "Time in us to smooth the data over before measuring its peak"
+                "height. The tallest single channel is the maximum of as many"
+                "samples as there are bins, so on finely sliced data it sits"
+                "above the curve it is drawn from and no correct fit can reach"
+                "it. Set to 0 to compare against the raw maximum."
+    peak_height_fraction = 0.1
+        .type = float(value_min=0)
+        .help = "Allowed relative difference between a shape fit's peak height"
+                "and the height of the data."
 }
 profile_1d_ic{
     init_A = 1.0
@@ -502,6 +579,7 @@ def integrate_reflection_table_for_experiment(
 ) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
     profile_1d_ibix_params = None
+    profile_1d_profilelib_params = None
     profile_1d_ic_params = None
     profile_3d_gutmann_params = None
     profile_3d_ic_params = None
@@ -539,6 +617,40 @@ def integrate_reflection_table_for_experiment(
             n_restarts,
             True,
             show_profile_failures,
+        )
+    elif params.method == "profile_1d_profilelib":
+        p = params.profile_1d_profilelib
+        if p.min_alpha > p.max_alpha:
+            raise ValueError("profile_1d_profilelib.min_alpha > max_alpha")
+        if p.min_beta > p.max_beta:
+            raise ValueError("profile_1d_profilelib.min_beta > max_beta")
+        if p.min_A > p.max_A:
+            raise ValueError("profile_1d_profilelib.min_A > max_A")
+        logger.info(
+            "    Measuring peak shapes on reflections with I/sigma >= "
+            f"{p.library.min_i_sigma} whose fit correlates >= "
+            f"{p.library.min_correlation}, then holding them fixed elsewhere"
+        )
+        profile_1d_profilelib_params = TOFProfile1DProfilelibParams(
+            {
+                "A_min": p.min_A,
+                "A_max": p.max_A,
+                "alpha": p.init_alpha,
+                "alpha_min": p.min_alpha,
+                "alpha_max": p.max_alpha,
+                "beta": p.init_beta,
+                "beta_min": p.min_beta,
+                "beta_max": p.max_beta,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "show_profile_failures": show_profile_failures,
+                "peak_height_smoothing": p.peak_height_smoothing,
+                "trust_min_corr": p.library.min_correlation,
+                "trust_peak_tolerance": p.peak_tolerance,
+                "trust_peak_height_fraction": p.peak_height_fraction,
+                "library_min_i_sigma": p.library.min_i_sigma,
+                "library_min_corr": p.library.min_correlation,
+            }
         )
     elif params.method == "profile_1d_ic":
         p = params.profile_1d_ic
@@ -670,6 +782,7 @@ def integrate_reflection_table_for_experiment(
         profile_3d_gutmann_params,
         profile_3d_ic_params,
         profile_3d_ibix_params,
+        profile_1d_profilelib_params,
     )
 
     return expt_reflections
