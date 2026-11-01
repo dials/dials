@@ -1,1 +1,0 @@
-``dials.refine``: correct the analytical gradients of predicted spot positions and wavelengths with respect to the beam direction for Laue and time-of-flight data.
