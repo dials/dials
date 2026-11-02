@@ -51,6 +51,11 @@ def _build_filterwarnings_string() -> str:
             this_action.append(modregex.pattern)
             if line:
                 this_action.append(line)
+        # PYTHONWARNINGS separates filters with "," and fields with ":", with
+        # no escaping, so a filter containing either can't be passed on. Python
+        # would report a mangled one on stderr in every subprocess.
+        if any("," in str(x) or ":" in str(x) for x in this_action):
+            continue
         filter_parts.append(":".join(str(x) for x in this_action))
 
     return ",".join(filter_parts)
