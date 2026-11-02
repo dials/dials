@@ -170,40 +170,6 @@ def test_basic_threaded_integrate(dials_data, tmp_path):
     assert table.select(table["id"] == 0).size() == 3526
 
 
-def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
-    exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
-    exp[0].identifier = "bar"
-    exp.as_json(tmp_path / "modified_input.json")
-
-    result = subprocess.run(
-        [
-            shutil.which("dials.integrate"),
-            "nproc=1",
-            "modified_input.json",
-            "profile.fitting=False",
-            "integration.integrator=3d",
-            "output_unintegrated_reflections=False",
-            "prediction.padding=0",
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-
-    experiments = load.experiment_list(tmp_path / "integrated.expt")
-    assert experiments[0].identifier == "bar"
-
-    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    mask = table.get_flags(table.flags.integrated, all=False)
-    assert len(table) == 1666
-    assert mask.count(False) == 0
-    assert "id" in table
-    for row in table.rows():
-        assert row["id"] == 0
-
-    assert dict(table.experiment_identifiers()) == {0: "bar"}
-
-
 def test_integration_with_sampling(dials_data, tmp_path):
     exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "foo"

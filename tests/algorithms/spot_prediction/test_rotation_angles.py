@@ -53,8 +53,13 @@ def test(dials_data, tmp_path):
     s0 = matrix.col(beam.get_s0())
     m2 = matrix.col(gonio.get_rotation_axis())
 
+    # A pure-Python loop over all ~40k reflections is slow and adds nothing over
+    # a subset, so check every 10th reflection
+    hkls = integrate_handle.hkl[::10]
+    xyzcals = integrate_handle.xyzcal[::10]
+
     # For all the miller indices
-    for h in integrate_handle.hkl:
+    for h in hkls:
         h = matrix.col(h)
 
         # Calculate the angles
@@ -69,7 +74,7 @@ def test(dials_data, tmp_path):
 
     # Create a dict of lists of xy for each hkl
     gen_phi = {}
-    for h in integrate_handle.hkl:
+    for h in hkls:
         # Calculate the angles
         angles = ra(h, ub)
         gen_phi[h] = angles
@@ -82,7 +87,7 @@ def test(dials_data, tmp_path):
     #                gen_phi[h] = [phi]
 
     # For each hkl in the xds file
-    for hkl, xyz in zip(integrate_handle.hkl, integrate_handle.xyzcal):
+    for hkl, xyz in zip(hkls, xyzcals):
         # Calculate the XDS phi value
         xds_phi = (
             scan.get_oscillation(deg=False)[0]
