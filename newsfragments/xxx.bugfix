@@ -1,0 +1,1 @@
+``dials.index``: With multi-experiment indexing, an experiment that ends up with no indexed reflections no longer causes indexing to fail.
