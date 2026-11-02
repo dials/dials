@@ -7,6 +7,7 @@ from collections.abc import Iterator, Sequence
 from typing import TypeVar
 
 from dxtbx.model.experiment_list import ExperimentList
+from dxtbx.util import ersatz_uuid4
 from libtbx import phil
 from libtbx.phil import parse
 
@@ -353,6 +354,20 @@ def _sort_experiments_and_reflections(expts, refls):
     return expts, refls
 
 
+def _assign_missing_identifiers(expts, refls):
+    """Give a unique identifier to any combined experiment that lacks one.
+
+    Clustering and subsetting select experiments by identifier, so without
+    this every unidentified experiment would match every selection. The
+    combined reflection table has ids 0..n-1 in experiment order.
+    """
+    for i, expt in enumerate(expts):
+        if not expt.identifier:
+            expt.identifier = ersatz_uuid4()
+            if refls is not None:
+                refls.experiment_identifiers()[i] = expt.identifier
+
+
 @dials.util.show_mail_handle_errors()
 def run(args=None) -> None:
     usage = (
@@ -410,6 +425,7 @@ Reflection tables are needed if n_subset_method != random and n_subset is not No
     else:
         expts = combine_experiments_no_reflections(params, experiment_lists)
         refls = None
+    _assign_missing_identifiers(expts, refls)
     if params.output.sort_by_imageset_path_and_image_index:
         expts, refls = _sort_experiments_and_reflections(expts, refls)
     save_combined_experiments(
