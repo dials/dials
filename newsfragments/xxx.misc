@@ -1,0 +1,1 @@
+Tests: limit BLAS/OpenMP threads in pytest-xdist workers to avoid oversubscription, and fix the misspelt ``[tool.pytest.ini_options]`` table so the pytest configuration in ``pyproject.toml`` takes effect.
