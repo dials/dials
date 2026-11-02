@@ -87,7 +87,7 @@ class SpotPredictor:
 
         # Calculate the intersection of the detector and reflection frames
         success = ray_intersection(self.detector, self.reflections)
-        self.reflections.select(success)
+        self.reflections = self.reflections.select(success)
 
 
 @pytest.fixture(scope="session")
