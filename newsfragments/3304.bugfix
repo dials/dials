@@ -1,0 +1,1 @@
+``dials.combine_experiments`` and any other program writing a reflection file with more than 4091 experiment identifiers no longer fails with "object header message is too large": HDF5 reflection files are now written with ``libver="latest"``, which requires HDF5 >= 1.10 to read.
