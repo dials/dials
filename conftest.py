@@ -14,6 +14,15 @@ from pathlib import Path
 
 import pytest
 
+# Each pytest-xdist worker is a separate process whose BLAS/OpenMP runtime would
+# otherwise start one thread per core, so N workers oversubscribe the machine
+# N-fold (some numpy/scipy-heavy tests ran >10x slower). This must happen before
+# numpy is first imported. Explicit user settings are respected, and subprocesses
+# launched by tests inherit the limit.
+if "PYTEST_XDIST_WORKER" in os.environ:
+    for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(_var, "1")
+
 if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")
 
