@@ -18,6 +18,7 @@ __all__ = (  # noqa: F405
     "Centroid",
     "CentroidData",
     "EdgeDescriptor",
+    "FrameSlicedShoebox",
     "ImageDouble",
     "ImageInt",
     "ImageVolume",

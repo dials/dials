@@ -239,8 +239,53 @@ namespace dials { namespace model { namespace boost_python {
     return shoebox;
   }
 
+  template <typename FloatType>
+  class_<FrameSlicedShoebox<FloatType> > frame_sliced_shoebox_wrapper(
+    const char* name) {
+    typedef Shoebox<FloatType> shoebox_type;
+    typedef FrameSlicedShoebox<FloatType> frame_sliced_shoebox_type;
+
+    // The per-frame arrays are read-only, so only getters are exposed
+    class_<frame_sliced_shoebox_type> frame_sliced_shoebox(name);
+    frame_sliced_shoebox.def(init<const frame_sliced_shoebox_type&>())
+      .def(init<const shoebox_type&,
+                const cctbx::miller::index<>&,
+                double,
+                double,
+                const af::const_ref<double>&,
+                const af::const_ref<double>&,
+                const af::const_ref<mat3<double> >&,
+                const af::const_ref<vec3<double> >&,
+                int>((arg("shoebox"),
+                      arg("miller_index"),
+                      arg("phi_cal"),
+                      arg("sigma_phi"),
+                      arg("phi"),
+                      arg("phi_scan_points"),
+                      arg("UB"),
+                      arg("s0"),
+                      arg("first_frame"))))
+      .add_property("frames", &frame_sliced_shoebox_type::frames)
+      .add_property("phi", &frame_sliced_shoebox_type::phi)
+      .add_property("excitation_error", &frame_sliced_shoebox_type::excitation_error)
+      .add_property("partiality", &frame_sliced_shoebox_type::partiality)
+      .add_property("summation_intensity",
+                    &frame_sliced_shoebox_type::summation_intensity)
+      .add_property("summation_intensity_variance",
+                    &frame_sliced_shoebox_type::summation_intensity_variance)
+      .add_property("summation_intensity_valid",
+                    &frame_sliced_shoebox_type::summation_intensity_valid)
+      .def("size", &frame_sliced_shoebox_type::size)
+      .def("__len__", &frame_sliced_shoebox_type::size)
+      .def("__eq__", &frame_sliced_shoebox_type::operator==)
+      .def("__ne__", &frame_sliced_shoebox_type::operator!=);
+
+    return frame_sliced_shoebox;
+  }
+
   void export_shoebox() {
     shoebox_wrapper<ProfileFloatType>("Shoebox");
+    frame_sliced_shoebox_wrapper<ProfileFloatType>("FrameSlicedShoebox");
   }
 
 }}}  // namespace dials::model::boost_python

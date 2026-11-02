@@ -969,36 +969,12 @@ class CorrelationMatrix:
         )
 
         cluster_labels = self.cluster_labels
-        axes_labels = {
-            str(i): f"PC {i + 1} ({var:.1f}%)"
-            for i, var in enumerate(self.cosym_analysis.explained_variance_ratio * 100)
-        }
-
-        # Cosym coordinates are aligned with the principal components
-        # Note that the reduced coordinates are NOT used because want to retain information
-        # about length/angles from the original cosym procedure
-        # Instead, simply rotate the data to align with the eigenvectors
-
-        cob_mat = np.linalg.inv(np.transpose(self.cosym_analysis.pca_components))
-
-        coords = np.array([])
-        for data in self.cosym_analysis.coords:
-            rot_coord = np.matmul(cob_mat, data)
-            if coords.size == 0:
-                coords = rot_coord
-            else:
-                coords = np.vstack([coords, rot_coord])
-        if coords.shape[1] > 6:
-            coords = coords[:, 0:6]
-            dim_list = list(range(0, 6))
-        else:
-            dim_list = list(range(0, self.cosym_analysis.target.dim))
 
         self.pca_plot = plot_pca_coords(
-            coords,
-            axes_labels,
+            self.cosym_analysis.rotated_coords,
+            self.cosym_analysis.pca_axes_labels,
+            self.cosym_analysis.dim_list,
             cluster_labels,
-            dim_list,
             self.significant_clusters,
             self.outliers,
         )
@@ -1007,9 +983,10 @@ class CorrelationMatrix:
 
         self.rij_graphs.update(
             plot_coords(
-                coords[:, 0:2],
+                self.cosym_analysis.rotated_coords[:, 0:2],
                 self.cluster_labels,
                 key="cosym_coordinates_principal_components",
+                pcs=self.cosym_analysis.pca_axes_labels,
             )
         )
 
@@ -1025,15 +1002,6 @@ summarises the effect of the first two principal components.
         """
 
         self.rij_graphs["cosym_coordinates_principal_components"]["help"] = updated_help
-        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["title"] = (
-            "Cosym Coordinates Rotated by Principal Components"
-        )
-        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["xaxis"][
-            "title"
-        ] = axes_labels["0"]
-        self.rij_graphs["cosym_coordinates_principal_components"]["layout"]["yaxis"][
-            "title"
-        ] = axes_labels["1"]
         self.rij_graphs["cosym_coordinates_principal_components"]["layout"][
             "hovermode"
         ] = "closest"

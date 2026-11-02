@@ -57,8 +57,10 @@ class spot_wrapper:
     def display(self, experiments, reflections):
         import wx
 
+        from dials.util import use_conda_gsettings_schemas
         from dials.util.image_viewer.spotfinder_frame import SpotFrame
 
+        use_conda_gsettings_schemas()
         try:
             wx.App.GTKSuppressDiagnostics(-1)
         except AttributeError:

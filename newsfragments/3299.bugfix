@@ -1,0 +1,1 @@
+``dials.integrate``: Free the shoeboxes of the reference reflections once the profile model has been computed. They were kept in memory for the whole of integration, which on large datasets could be more than 1 GB.

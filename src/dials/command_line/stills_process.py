@@ -805,6 +805,10 @@ class Script:
                 n_accept = n_mod_denom < process_fractions.numerator
                 return n_accept
 
+        # Garbage is collected after every image, but what exists by now is mostly imports,
+        # live for the whole run. Freeze it, so the collector only walks later objects.
+        gc.freeze()
+
         # Process the data
         if params.mp.method == "mpi":
             if size <= 2:  # client/server only makes sense for n>2
@@ -1201,7 +1205,7 @@ class Processor:
             if gain is not None and gain != 1.0:
                 for detector in experiments.detectors():
                     for panel in detector:
-                        if panel.get_gain() != 1.0 and panel.get_gain() != gain:
+                        if panel.get_gain() != 1.0:
                             raise RuntimeError(
                                 f"""
 The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""
@@ -1247,6 +1251,29 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         return observed
 
     def index(self, experiments, reflections):
+        # self.params is shared across stills, so restore in a finally. Indexing
+        # raises once per failed subsampling attempt, and anything left set makes
+        # a still's result depend on the stills processed before it. max_cell is
+        # included because the indexer resolves it from Auto in place.
+        saved = (
+            self.params.refinement.parameterisation.scan_varying,
+            self.params.indexing.basis_vector_combinations.max_refine,
+            self.params.indexing.max_cell,
+        )
+        # don't do scan-varying refinement during indexing
+        self.params.refinement.parameterisation.scan_varying = False
+        # max_refine=5 for stills, overriding any user-supplied value
+        self.params.indexing.basis_vector_combinations.max_refine = 5
+        try:
+            return self._index_impl(experiments, reflections)
+        finally:
+            (
+                self.params.refinement.parameterisation.scan_varying,
+                self.params.indexing.basis_vector_combinations.max_refine,
+                self.params.indexing.max_cell,
+            ) = saved
+
+    def _index_impl(self, experiments, reflections):
         from dials.algorithms.indexing.indexer import Indexer
 
         def update_indexer(
@@ -1262,6 +1289,11 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
             indexer.known_orientations = known_crystal_models
             indexer.experiments = experiments
             indexer.reflections = reflections
+            # Indexer.__init__() starts these at None; without resetting them a
+            # reused indexer still holds the previous still's results.
+            indexer.refined_experiments = None
+            indexer.hkl_offset = None
+            indexer.d_min = None
             if "flags" in reflections:
                 strong_sel = indexer.reflections.get_flags(
                     indexer.reflections.flags.strong
@@ -1282,15 +1314,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
         logger.info("*" * 80)
         logger.info("Indexing Strong Spots")
         logger.info("*" * 80)
-
-        # don't do scan-varying refinement during indexing
-        scan_varying = self.params.refinement.parameterisation.scan_varying
-        self.params.refinement.parameterisation.scan_varying = False
-        # max_refine=5 for stills was previously applied inside Indexer.from_parameters
-        # when the value was libtbx.Auto. Hoisted here so it is visible and restored.
-        # Note: this overrides any user-supplied max_refine value for stills.
-        max_refine = self.params.indexing.basis_vector_combinations.max_refine
-        self.params.indexing.basis_vector_combinations.max_refine = 5
 
         if hasattr(self, "known_crystal_models"):
             known_crystal_models = self.known_crystal_models
@@ -1457,9 +1480,6 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
 
         logger.info("")
         logger.info("Time Taken = %f seconds", time.time() - st)
-        # Restore params fields mutated for stills indexing.
-        self.params.refinement.parameterisation.scan_varying = scan_varying
-        self.params.indexing.basis_vector_combinations.max_refine = max_refine
         return experiments, indexed
 
     def refine(self, experiments, centroids):

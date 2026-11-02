@@ -59,20 +59,27 @@ grouping:
     assert expts2[1].imageset.get_path(0).split("_")[-1].rstrip(".cbf") == "17003"
 
 
-def test_split_still_data_h5(dials_data, run_in_tmp_path):
+@pytest.mark.parametrize(
+    ("series_repeat", "names"),
+    [
+        ("2", ("group_0", "group_1")),
+        ("first,second", ("first", "second")),
+        ("'dose dose'", ("dose_1", "dose_2")),
+    ],
+)
+def test_split_still_data_h5(dials_data, run_in_tmp_path, series_repeat, names):
     data = dials_data("lysozyme_ssx_processed")
     args = [
         os.fspath(data / "integrated.expt"),
         os.fspath(data / "integrated.refl"),
         "nproc=1",
-        "series_repeat=2",
+        f"series_repeat={series_repeat}",
     ]
     split.run(args=args)
-    assert pathlib.Path(run_in_tmp_path / "group_0_0.expt").is_file()
-    assert pathlib.Path(run_in_tmp_path / "group_0_0.refl").is_file()
-    assert pathlib.Path(run_in_tmp_path / "group_1_0.expt").is_file()
-    assert pathlib.Path(run_in_tmp_path / "group_1_0.refl").is_file()
-    expts1 = load.experiment_list("group_0_0.expt", check_format=False)
+    for name in names:
+        assert pathlib.Path(run_in_tmp_path / f"{name}_0.expt").is_file()
+        assert pathlib.Path(run_in_tmp_path / f"{name}_0.refl").is_file()
+    expts1 = load.experiment_list(f"{names[0]}_0.expt", check_format=False)
     first_images = [
         99,
         133,
@@ -96,7 +103,7 @@ def test_split_still_data_h5(dials_data, run_in_tmp_path):
         assert expt.scan.get_image_range() == (i, i)
 
     expts2 = load.experiment_list(
-        run_in_tmp_path / "group_1_0.expt", check_format=False
+        run_in_tmp_path / f"{names[1]}_0.expt", check_format=False
     )
     second_images = [414, 472, 602, 878, 884, 920]
     assert len(expts2) == len(second_images)

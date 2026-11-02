@@ -64,12 +64,16 @@ def test_SymmetryAnalysisObserver():
 def test_CosymClusterAnalysisObserver():
     rij_matrix = np.random.rand(16).reshape(4, 4)
     coords = np.random.rand(8).reshape(4, 2)
+    rotated_coords = np.random.rand(8).reshape(4, 2)
 
     # setup script
     script = mock.Mock()
     script.target = mock.Mock()
     script.target.rij_matrix = rij_matrix
     script.coords = coords
+    script.rotated_coords = rotated_coords
+    script.dim_list = [0, 1]
+    script.pca_axes_labels = {"0": "PC 1 (80%)", "1": "PC 2 (20%)"}
     script.cluster_labels = np.zeros(4)
 
     # test the observer

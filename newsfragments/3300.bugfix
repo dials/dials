@@ -1,0 +1,1 @@
+Reflection and experiment files given as PHIL parameters are now only read when their data are used. Previously they were read again every time the parameters were extracted or compared, for example to show the modified parameters, so ``dials.integrate`` read its input reflection file five times. For large files this wasted time and could double peak memory use.

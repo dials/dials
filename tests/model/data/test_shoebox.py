@@ -4,9 +4,12 @@ import math
 import pickle
 import random
 
+import pytest
+
 from scitbx import matrix
 
-from dials.model.data import Shoebox
+from dials.array_family import flex
+from dials.model.data import FrameSlicedShoebox, Shoebox
 
 
 def random_shoeboxes(num, mask=False):
@@ -313,3 +316,442 @@ def test_all_foreground_valid():
             assert not shoebox.all_foreground_valid()
         else:
             assert shoebox.all_foreground_valid()
+
+
+def frame_sliced_shoebox_test_data():
+    """A 4 x 3 x 3 (x, y, z) shoebox, with the first frame at image 11"""
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = Shoebox(0, (0, 4, 0, 3, 10, 13))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+
+    # Every pixel on frame k has a value of k + 1 and a background of 0.5
+    for k in range(3):
+        for j in range(3):
+            for i in range(4):
+                shoebox.data[k, j, i] = k + 1
+                shoebox.background[k, j, i] = 0.5
+                shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Background
+
+    # Two foreground pixels on frame 0 and three on frame 1
+    for k, j, i in [(0, 0, 0), (0, 0, 1), (1, 1, 0), (1, 1, 1), (1, 1, 2)]:
+        shoebox.mask[k, j, i] = MaskCode.Valid | MaskCode.Foreground
+
+    # A single foreground pixel on frame 2, which is not valid
+    shoebox.mask[2, 2, 3] = MaskCode.Foreground
+
+    return shoebox
+
+
+def frame_sliced_shoebox_test_models(
+    first_frame=11, nframes=3, phi_cal=1.15, sigma_phi=0.1
+):
+    """Everything the FrameSlicedShoebox constructor wants besides the shoebox
+    and its Miller index, as keyword arguments. That is the rocking curve of the
+    reflection, then the experimental models over the whole of a scan of nframes
+    images starting at first_frame, alongside the image number that the first of
+    those refers to.
+
+    The scan has 0.1 radian oscillations beginning at zero, the crystal is
+    stationary with a 10 Angstrom cubic cell aligned with the laboratory axes,
+    and the beam is stationary along -z with a wavelength of 1 Angstrom"""
+    return {
+        "phi_cal": phi_cal,
+        "sigma_phi": sigma_phi,
+        "phi": flex.double(
+            [0.1 * (f - 0.5) for f in range(first_frame, first_frame + nframes)]
+        ),
+        "phi_scan_points": flex.double(
+            [0.1 * (f - 1) for f in range(first_frame, first_frame + nframes + 1)]
+        ),
+        "UB": flex.mat3_double([(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1)] * nframes),
+        "s0": flex.vec3_double([(0, 0, -1)] * nframes),
+        "first_frame": first_frame,
+    }
+
+
+def gaussian_cdf(x):
+    """The cumulative distribution function of the standard normal distribution"""
+    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+
+
+def test_frame_sliced_shoebox():
+    sliced = FrameSlicedShoebox(
+        frame_sliced_shoebox_test_data(),
+        (1, 0, 0),
+        **frame_sliced_shoebox_test_models(),
+    )
+
+    assert sliced.size() == 3
+    assert len(sliced) == 3
+    # The shoebox z range is 10 -> 13, which is images 11 -> 13 (one-based)
+    assert list(sliced.frames) == [11, 12, 13]
+    assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
+    # A stationary crystal and beam give the same excitation error on each frame
+    assert list(sliced.excitation_error) == pytest.approx([math.sqrt(0.99) - 1.0] * 3)
+    # The rocking curve is centred on the middle frame and is one frame wide, so
+    # the middle frame takes the largest share of the reflection
+    assert list(sliced.partiality) == pytest.approx(
+        [
+            gaussian_cdf(-0.5) - gaussian_cdf(-1.5),
+            gaussian_cdf(0.5) - gaussian_cdf(-0.5),
+            gaussian_cdf(1.5) - gaussian_cdf(0.5),
+        ]
+    )
+    # No pixel is marked as used for the background, so the m/n term of the
+    # variance is zero and the variance is just the sum of the raw foreground
+    # pixel values
+    assert list(sliced.summation_intensity) == [1.0, 4.5, 0.0]
+    assert list(sliced.summation_intensity_variance) == [2.0, 6.0, 0.0]
+    # The foreground pixel on frame 2 could not be summed, as it is not valid
+    assert list(sliced.summation_intensity_valid) == [True, True, False]
+
+
+def test_frame_sliced_shoebox_summation_intensity_counts_background_pixels():
+    from dials.algorithms.shoebox import MaskCode
+
+    # One frame, with two foreground pixels and four background pixels, of which
+    # only two were used to calculate the background
+    shoebox = Shoebox(0, (0, 6, 0, 1, 0, 1))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for i in range(6):
+        shoebox.data[0, 0, i] = 10.0
+        shoebox.background[0, 0, i] = 1.0
+    shoebox.mask[0, 0, 0] = MaskCode.Valid | MaskCode.Foreground
+    shoebox.mask[0, 0, 1] = MaskCode.Valid | MaskCode.Foreground
+    shoebox.mask[0, 0, 2] = (
+        MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+    )
+    shoebox.mask[0, 0, 3] = (
+        MaskCode.Valid | MaskCode.Background | MaskCode.BackgroundUsed
+    )
+    shoebox.mask[0, 0, 4] = MaskCode.Valid | MaskCode.Background
+    shoebox.mask[0, 0, 5] = MaskCode.Valid | MaskCode.Background
+
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models(1, 1)
+    )
+
+    # Two foreground pixels of 10 - 1 each
+    assert list(sliced.summation_intensity) == [18.0]
+    # Only the two BackgroundUsed pixels count, so m/n is 2/2 and the variance
+    # is the sum of the raw foreground values plus the summed background times
+    # that ratio, 20 + 2 * 1
+    assert list(sliced.summation_intensity_variance) == [22.0]
+    assert list(sliced.summation_intensity_valid) == [True]
+
+
+def test_frame_sliced_shoebox_overlapped_foreground_is_invalid():
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = Shoebox(0, (0, 2, 0, 1, 0, 2))
+    shoebox.allocate_data()
+    shoebox.allocate_background()
+    for k in range(2):
+        for i in range(2):
+            shoebox.data[k, 0, i] = 10.0
+            shoebox.background[k, 0, i] = 1.0
+            shoebox.mask[k, 0, i] = MaskCode.Valid | MaskCode.Foreground
+
+    # A valid foreground pixel on frame 1 that overlaps another reflection
+    shoebox.mask[1, 0, 1] |= MaskCode.Overlapped
+
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models(1, 2)
+    )
+
+    # An overlapped pixel is excluded from the sum and invalidates its frame,
+    # even though it is both valid and foreground
+    assert list(sliced.summation_intensity) == [18.0, 9.0]
+    assert list(sliced.summation_intensity_valid) == [True, False]
+
+
+def frame_sliced_shoebox_test_data_with_background_used():
+    """The test shoebox, with a row of its background pixels marked as used to
+    calculate the background, so that the m/n term of the variance is non-zero"""
+    from dials.algorithms.shoebox import MaskCode
+
+    shoebox = frame_sliced_shoebox_test_data()
+    for k in range(3):
+        for i in range(4):
+            shoebox.mask[k, 2, i] |= MaskCode.BackgroundUsed
+    return shoebox
+
+
+def test_frame_sliced_shoebox_summation_matches_summation_integration():
+    """The intensity of each frame should equal integrating that frame on its
+    own. Its variance should not: see the test below"""
+    shoebox = frame_sliced_shoebox_test_data_with_background_used()
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models()
+    )
+
+    for k in range(3):
+        # Build a shoebox holding frame k alone and integrate it
+        single = Shoebox(0, (0, 4, 0, 3, 10 + k, 11 + k))
+        single.allocate_data()
+        single.allocate_background()
+        for j in range(3):
+            for i in range(4):
+                single.data[0, j, i] = shoebox.data[k, j, i]
+                single.background[0, j, i] = shoebox.background[k, j, i]
+                single.mask[0, j, i] = shoebox.mask[k, j, i]
+        expected = single.summed_intensity()
+
+        assert sliced.summation_intensity[k] == pytest.approx(expected.observed.value)
+        assert sliced.summation_intensity_valid[k] == expected.observed.success
+
+
+def test_frame_sliced_shoebox_summation_variances_sum():
+    """The background of a frame was determined from the background pixels of
+    the whole shoebox, so the m/n term of the variance of a frame uses the pixel
+    counts of the whole shoebox rather than those of the frame alone. That makes
+    the variance a sum over pixels, so the variances of the frames sum to the
+    variance of the whole reflection"""
+    shoebox = frame_sliced_shoebox_test_data_with_background_used()
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models()
+    )
+
+    # Five valid foreground pixels and eleven pixels used for the background, so
+    # m/n is 5/11. The foreground values sum to 8 and their background to 2.5
+    expected = [2.0 + 1.0 * 5 / 11, 6.0 + 1.5 * 5 / 11, 0.0]
+    assert list(sliced.summation_intensity_variance) == pytest.approx(expected)
+
+    # That is the variance of the summation integration of the whole shoebox
+    assert sum(sliced.summation_intensity_variance) == pytest.approx(
+        shoebox.summed_intensity().observed.variance
+    )
+
+
+def test_frame_sliced_shoebox_excitation_error():
+    """The excitation error is the distance of the reciprocal lattice point from
+    the surface of the Ewald sphere along the beam, positive if the point is
+    inside the sphere"""
+    shoebox = frame_sliced_shoebox_test_data()
+    models = frame_sliced_shoebox_test_models()
+
+    # The 1 Angstrom beam along -z gives an Ewald sphere of unit radius centred
+    # on (0, 0, 1), and the reciprocal lattice point of h is at UB * h
+
+    # (6, 0, 2) is at (0.6, 0, 0.2), which lies exactly on the sphere
+    sliced = FrameSlicedShoebox(shoebox, (6, 0, 2), **models)
+    assert list(sliced.excitation_error) == pytest.approx([0.0, 0.0, 0.0])
+
+    # (0, 0, 10) is at the centre of the sphere. Moving it a whole radius along
+    # the beam, which is -z, brings it to the origin and onto the surface
+    sliced = FrameSlicedShoebox(shoebox, (0, 0, 10), **models)
+    assert list(sliced.excitation_error) == pytest.approx([1.0, 1.0, 1.0])
+
+    # (1, 0, 0) is at (0.1, 0, 0), which is just outside the sphere
+    sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+    expected = math.sqrt(0.99) - 1.0
+    assert expected < 0.0
+    assert list(sliced.excitation_error) == pytest.approx([expected] * 3)
+
+
+def test_frame_sliced_shoebox_excitation_error_is_measured_along_the_beam():
+    """The distance is measured along the beam, not radially from the centre of
+    the Ewald sphere, so the two differ away from the beam axis"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    # (6, 0, 3) is at (0.6, 0, 0.3), which is inside the unit sphere centred on
+    # (0, 0, 1). Moving it 0.1 along the beam brings it to (0.6, 0, 0.2), on the
+    # surface, whereas it is only sqrt(0.85) from the centre of the sphere
+    sliced = FrameSlicedShoebox(
+        shoebox, (6, 0, 3), **frame_sliced_shoebox_test_models()
+    )
+    assert list(sliced.excitation_error) == pytest.approx([0.1] * 3)
+    assert 1.0 - math.sqrt(0.85) != pytest.approx(0.1)
+
+
+def test_frame_sliced_shoebox_excitation_error_can_be_undefined():
+    """A point further off the beam axis than the radius of the Ewald sphere is
+    not brought to the surface by any movement along the beam"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    # (12, 0, 5) is 1.2 from the beam axis, which the unit sphere never reaches
+    sliced = FrameSlicedShoebox(
+        shoebox, (12, 0, 5), **frame_sliced_shoebox_test_models()
+    )
+    assert all(math.isnan(e) for e in sliced.excitation_error)
+
+
+def test_frame_sliced_shoebox_excitation_error_is_calculated_per_frame():
+    """Each frame uses the orientation matrix and beam vector of its own image"""
+    shoebox = frame_sliced_shoebox_test_data()
+    models = frame_sliced_shoebox_test_models()
+
+    # A crystal cell and a wavelength that both differ on each of the frames
+    cells = (10.0, 11.0, 12.0)
+    wavelengths = (1.0, 1.1, 1.2)
+    models["UB"] = flex.mat3_double(
+        [(1 / a, 0, 0, 0, 1 / a, 0, 0, 0, 1 / a) for a in cells]
+    )
+    models["s0"] = flex.vec3_double([(0, 0, -1 / w) for w in wavelengths])
+
+    sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+
+    expected = [
+        math.sqrt((1 / w) ** 2 - (1 / a) ** 2) - 1 / w
+        for a, w in zip(cells, wavelengths)
+    ]
+    assert list(sliced.excitation_error) == pytest.approx(expected)
+
+
+def test_frame_sliced_shoebox_partiality():
+    """The partiality of a frame is the portion of the rocking curve of the
+    reflection that lies between the boundaries of that frame"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    # A rocking curve centred on the boundary between the first two frames of
+    # the shoebox, which are at 1.0 -> 1.1 -> 1.2 -> 1.3 radians
+    sliced = FrameSlicedShoebox(
+        shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models(phi_cal=1.1)
+    )
+    assert list(sliced.partiality) == pytest.approx(
+        [
+            gaussian_cdf(0.0) - gaussian_cdf(-1.0),
+            gaussian_cdf(1.0) - gaussian_cdf(0.0),
+            gaussian_cdf(2.0) - gaussian_cdf(1.0),
+        ]
+    )
+
+    # The rocking curve is symmetric about the boundary it is centred on, so the
+    # two frames either side of it take equal shares of the reflection. That
+    # holds for the boundaries between frames, not for the frame centres
+    assert sliced.partiality[0] == pytest.approx(sliced.partiality[1])
+    assert sliced.partiality[1] != pytest.approx(sliced.partiality[2])
+
+    # A rocking curve much narrower than a frame is recorded on one frame alone
+    sliced = FrameSlicedShoebox(
+        shoebox,
+        (1, 0, 0),
+        **frame_sliced_shoebox_test_models(phi_cal=1.15, sigma_phi=0.001),
+    )
+    assert list(sliced.partiality) == pytest.approx([0.0, 1.0, 0.0], abs=1e-12)
+
+
+def test_frame_sliced_shoebox_partiality_sums_over_the_frames():
+    """The partialities of the frames sum to the partiality of the whole
+    shoebox, which is what PartialityCalculator3D returns"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    for phi_cal, sigma_phi in ((1.15, 0.1), (1.0, 0.05), (0.8, 0.3), (2.0, 0.2)):
+        sliced = FrameSlicedShoebox(
+            shoebox,
+            (1, 0, 0),
+            **frame_sliced_shoebox_test_models(phi_cal=phi_cal, sigma_phi=sigma_phi),
+        )
+
+        # The shoebox spans images 11 to 13, that is 1.0 to 1.3 radians
+        whole = gaussian_cdf((1.3 - phi_cal) / sigma_phi) - gaussian_cdf(
+            (1.0 - phi_cal) / sigma_phi
+        )
+        assert sum(sliced.partiality) == pytest.approx(whole)
+        assert all(0.0 <= p <= 1.0 for p in sliced.partiality)
+
+
+def test_frame_sliced_shoebox_partiality_needs_a_rocking_curve_width():
+    shoebox = frame_sliced_shoebox_test_data()
+
+    for sigma_phi in (0.0, -0.1):
+        with pytest.raises(RuntimeError):
+            FrameSlicedShoebox(
+                shoebox,
+                (1, 0, 0),
+                **frame_sliced_shoebox_test_models(sigma_phi=sigma_phi),
+            )
+
+
+def test_frame_sliced_shoebox_models_are_looked_up_by_image_number():
+    """The model arrays cover a whole scan, not just the frames of the shoebox"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    # Models for the whole of a 20 image scan, of which the shoebox covers 11-13,
+    # with a crystal cell that shrinks as the scan goes on
+    models = frame_sliced_shoebox_test_models(1, 20)
+    cells = [100.0 / f for f in range(1, 21)]
+    models["UB"] = flex.mat3_double(
+        [(1 / a, 0, 0, 0, 1 / a, 0, 0, 0, 1 / a) for a in cells]
+    )
+
+    sliced = FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+    assert list(sliced.phi) == pytest.approx([1.05, 1.15, 1.25])
+    expected = [math.sqrt(1.0 - (f / 100.0) ** 2) - 1.0 for f in (11, 12, 13)]
+    assert list(sliced.excitation_error) == pytest.approx(expected)
+
+    # The scan does not reach as far as the last frame of the shoebox
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(
+            shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models(1, 12)
+        )
+
+    # The scan starts after the first frame of the shoebox
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(
+            shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models(12, 3)
+        )
+
+
+def test_frame_sliced_shoebox_requires_consistent_model_arrays():
+    """Every model array must cover the same images"""
+    shoebox = frame_sliced_shoebox_test_data()
+
+    for name in ("UB", "s0", "phi_scan_points"):
+        models = frame_sliced_shoebox_test_models(1, 20)
+        models[name] = models[name][:-1]
+        with pytest.raises(RuntimeError):
+            FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+
+    # There must be one more scan point than there are frames
+    models = frame_sliced_shoebox_test_models(1, 20)
+    models["phi"] = models["phi_scan_points"]
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+
+
+def test_frame_sliced_shoebox_arrays_are_read_only():
+    sliced = FrameSlicedShoebox(
+        frame_sliced_shoebox_test_data(),
+        (1, 0, 0),
+        **frame_sliced_shoebox_test_models(),
+    )
+
+    for name in (
+        "frames",
+        "phi",
+        "excitation_error",
+        "partiality",
+        "summation_intensity",
+        "summation_intensity_variance",
+        "summation_intensity_valid",
+    ):
+        with pytest.raises(AttributeError):
+            setattr(sliced, name, None)
+
+
+def test_frame_sliced_shoebox_requires_allocated_arrays():
+    models = frame_sliced_shoebox_test_models()
+
+    # Neither the data nor the background are allocated
+    shoebox = Shoebox(0, (0, 4, 0, 3, 10, 13))
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+
+    # The data is allocated, but the background is not
+    shoebox.allocate_data()
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, (1, 0, 0), **models)
+
+    shoebox.allocate_background()
+    assert len(FrameSlicedShoebox(shoebox, (1, 0, 0), **models)) == 3
+
+
+def test_frame_sliced_shoebox_rejects_flat_shoebox():
+    shoebox = frame_sliced_shoebox_test_data()
+    shoebox.flatten()
+    with pytest.raises(RuntimeError):
+        FrameSlicedShoebox(shoebox, (1, 0, 0), **frame_sliced_shoebox_test_models())

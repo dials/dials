@@ -1,0 +1,1 @@
+Bootstrap: CMake builds made with ``installer/bootstrap.py`` now default to ``RelWithDebInfo`` again, as standalone dials/dxtbx builds do.

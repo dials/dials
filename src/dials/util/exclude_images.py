@@ -23,10 +23,12 @@ phil_scope = iotbx.phil.parse(
     .multiple = True
     .help = "Input in the format exp:start:end"
             "Exclude a range of images (start, stop) from the dataset with"
-            "experiment identifier exp  (inclusive of frames start, stop)."
+            "experiment identifier exp  (inclusive of images start, stop)."
             "Multiple ranges can be given in one go, e.g."
             "exclude_images=0:150:200,1:200:250"
             "exclude_images='0:150:200 1:200:250'"
+            "The experiment may be given as * to apply the same range to"
+            "every dataset, e.g. exclude_images=*:21:100"
     .short_caption = "Exclude images"
     .expert_level = 1
 
@@ -58,7 +60,7 @@ def get_valid_image_ranges(experiments):
     """Extract valid image ranges from experiments, returning None if no scan"""
     valid_images_ranges = []
     for exp in experiments:
-        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
+        if not exp.is_still():
             valid_images_ranges.append(exp.scan.get_valid_image_ranges(exp.identifier))
         else:
             valid_images_ranges.append(None)
@@ -71,7 +73,7 @@ def set_initial_valid_image_ranges(experiments):
     Also this function can be called for a mix of sequences and scanless experiments.
     """
     for exp in experiments:
-        if exp.scan and (exp.scan.get_oscillation()[1] != 0.0):
+        if not exp.is_still():
             if not exp.scan.get_valid_image_ranges(exp.identifier):
                 exp.scan.set_valid_image_ranges(
                     exp.identifier, [exp.scan.get_image_range()]
@@ -82,7 +84,7 @@ def set_initial_valid_image_ranges(experiments):
 def get_selection_for_valid_image_ranges(reflection_table, experiment):
     """Determine a selection for the reflection table corresponding to reflections
     that are located in valid image ranges (according to zobs.px.value)."""
-    if experiment.scan and (experiment.scan.get_oscillation()[1] != 0.0):
+    if not experiment.is_still():
         valid_ranges = experiment.scan.get_valid_image_ranges(experiment.identifier)
         if valid_ranges:
             valid_mask = flex.bool(reflection_table.size(), False)
@@ -96,11 +98,22 @@ def get_selection_for_valid_image_ranges(reflection_table, experiment):
     return flex.bool(reflection_table.size(), True)  # else say all valid
 
 
+_SYNTAX_HELP = """
+Ranges are given as start:stop, using colons: note that this differs from
+image_range=start,stop as used by dials.import and dials.slice_sequence,
+because here a comma separates one range from the next, e.g.
+exclude_images=0:100:150,1:120:200. Multiple ranges may also be separated by
+spaces, or given as repeated exclude_images= parameters. The experiment may be
+given as * to apply the same range to every dataset, e.g. exclude_images=*:21:100
+"""
+
+
 def _parse_exclude_images_commands(commands, experiments, reflections):
     """Parse a list of list of command line options.
 
     e.g. commands = [['1:101:200'], ['0:201:300']]
     or commands = [[101:200]] allowable for a single experiment.
+    The experiment may be given as * to mean every dataset, e.g. [['*:101:200']]
     builds and returns a list of tuples (exp_id, (start, stop))
 
 
@@ -120,6 +133,7 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(experiments) > 1:
                     raise ValueError(
                         "Exclude images must be in the form experimentnumber:start:stop for multiple experiments"
+                        + _SYNTAX_HELP
                     )
                 else:
                     ranges_to_remove.append(
@@ -129,8 +143,12 @@ def _parse_exclude_images_commands(commands, experiments, reflections):
                 if len(vals) != 3:
                     raise ValueError(
                         "Exclude images must be input in the form experimentnumber:start:stop, or start:stop for a single experiment"
-                        + " Multiple ranges can be specified by comma or space separated values e.g 0:100:150,1:120:200"
+                        + _SYNTAX_HELP
                     )
+                if vals[0] == "*":
+                    for expid in experiments.identifiers():
+                        ranges_to_remove.append((expid, (int(vals[1]), int(vals[2]))))
+                    continue
                 dataset_id = int(vals[0])
                 if reflections:
                     for table in reflections:

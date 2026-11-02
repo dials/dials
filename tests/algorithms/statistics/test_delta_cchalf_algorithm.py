@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest import mock
 
-from dxtbx.model import Crystal, Experiment, ExperimentList, Scan
+from dxtbx.model import Crystal, Experiment, ExperimentList, Goniometer, Scan
 
 from dials.algorithms.statistics.cc_half_algorithm import CCHalfFromDials
 from dials.array_family import flex
@@ -25,6 +25,7 @@ def generated_exp(n=1):
         experiments.append(
             Experiment(
                 scan=Scan(image_range=[1, 25], oscillation=[0.0, 1.0]),
+                goniometer=Goniometer(),
                 crystal=Crystal.from_dict(exp_dict),
                 identifier=str(i),
             )

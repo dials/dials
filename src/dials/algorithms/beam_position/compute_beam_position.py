@@ -63,9 +63,9 @@ def resolve_projection_methods(params):
     resolved_method_x = None
     resolved_method_y = None
 
-    if params.method[0] in options and (len(params.method) == 1):
-        resolved_method_x = params.method[0]
-        resolved_method_y = params.method[0]
+    if params.method in options:
+        resolved_method_x = params.method
+        resolved_method_y = params.method
 
     # Parameters `method_x` and `method_y` overwrite the `method` parameter
     # Only `method_x` supplied

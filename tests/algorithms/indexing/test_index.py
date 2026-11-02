@@ -102,8 +102,14 @@ def run_indexing(
         rmsd_y = flex.mean(flex.pow2(obs_y - calc_y)) ** 0.5
         rmsd_z = flex.mean(flex.pow2(obs_z - calc_z)) ** 0.5
         rmsds = (rmsd_x, rmsd_y, rmsd_z)
-        for actual, expected in zip(rmsds, expected_rmsds):
-            assert actual <= expected, f"{rmsds} {expected_rmsds}"
+        # expected_rmsds may be a single (x, y, z) tuple for all experiments,
+        # or a sequence of such tuples, one per experiment
+        if isinstance(expected_rmsds[0], (tuple, list)):
+            expected = expected_rmsds[i]
+        else:
+            expected = expected_rmsds
+        for actual, limit in zip(rmsds, expected):
+            assert actual <= limit, f"Experiment {i}: {rmsds} {expected}"
         assert experiment.identifier != ""
         expt = ExperimentList()
         expt.append(experiment)
@@ -1155,7 +1161,12 @@ def test_rigaku_hypix_arc_150(dials_data, tmp_path):
     expected_unit_cell = uctbx.unit_cell(
         (6.1634, 13.198, 28.564, 89.928, 90.093, 89.839)
     )
-    expected_rmsds = (0.09, 0.06, 0.009)
+    expected_rmsds = (
+        (0.06, 0.07, 0.008),
+        (0.05, 0.04, 0.003),
+        (0.09, 0.06, 0.009),
+        (0.06, 0.05, 0.003),
+    )
     expected_hall_symbol = " P 1"
 
     run_indexing(

@@ -1,0 +1,1 @@
+``dials.stills_process``: This PR repairs a bug introduced by PR #3158 that made indexing results dependent on the order frames were processed.

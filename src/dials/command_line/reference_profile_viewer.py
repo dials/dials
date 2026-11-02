@@ -330,6 +330,7 @@ def run():
 
 
 def show_reference_profile_viewer(data, params):
+    dials.util.use_conda_gsettings_schemas()
     try:
         wx.App.GTKSuppressDiagnostics(-1)
     except AttributeError:

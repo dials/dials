@@ -14,6 +14,14 @@ and the same for reflection files.
 The second index relates to the input file index, so if more than one input file is input,
 there will then be group_0_1.expt etc.
 
+Alternatively, series_repeat can be given as a list of names for the groups, in
+which case the number of names defines the size of the repeat, and the names are
+used in place of group_0, group_1 etc. For example, series_repeat=first,second,last
+(or series_repeat='first second last') gives first_0.expt, second_0.expt and
+last_0.expt. A name may be given more than once, in which case each occurrence is
+numbered in order, i.e. series_repeat=dose,dose,apo gives dose_1_0.expt,
+dose_2_0.expt and apo_0.expt.
+
 Example yaml syntax is
 Point to a data array:
 
@@ -53,6 +61,7 @@ from dials.util.image_grouping import (
     FilePair,
     ParsedYAML,
     get_grouping_handler,
+    parse_series_repeat_names,
     series_repeat_to_groupings,
 )
 from dials.util.options import ArgumentParser
@@ -79,12 +88,20 @@ grouping = None
   .type = str
   .help = "Path to a .yml file defining grouping structure during processing"
 series_repeat = None
-  .type = int(value_min=2)
+  .type = strings
   .expert_level = 2
   .help = "This option allows the user to specify that the data is a repeated series"
           "by providing the number of repeated measurements at each point. i.e. it"
           "is assumed that $series_repeat measurements are taken at each position"
           "and that these form consecutive images in the input image files."
+          "Either give the number of repeated measurements, e.g. series_repeat=3,"
+          "in which case the groups are named group_0, group_1, ..., or give a"
+          "list of names for the groups, e.g. series_repeat=first,second,last"
+          "(or series_repeat='first second last'), in which case the number of"
+          "names defines the size of the repeat and the names are used to label"
+          "the output files. A name may be given more than once, in which case"
+          "each occurrence is numbered in order, i.e. series_repeat=dose,dose,apo"
+          "gives dose_1, dose_2 and apo."
 nproc=Auto
   .type=int
 output.log=dials.split_still_data.log
@@ -140,9 +157,15 @@ def run(args=sys.argv[1:]):
         params.nproc = CPU_COUNT
         logger.info(f"Using nproc={params.nproc}")
 
+    output_names = None
     if params.series_repeat:
+        try:
+            output_names = parse_series_repeat_names(params.series_repeat)
+        except ValueError as e:
+            logger.info(f"Error: {e}")
+            sys.exit(1)
         parsed = series_repeat_to_groupings(
-            expts, params.series_repeat, groupname="split_by"
+            expts, len(output_names), groupname="split_by"
         )
         handler = get_grouping_handler(parsed, "split_by", nproc=params.nproc)
     elif params.grouping:
@@ -161,6 +184,7 @@ def run(args=sys.argv[1:]):
         _ = handler.split_files_to_groups(
             working_directory=Path.cwd(),
             data_file_pairs=datafiles,
+            output_names=output_names,
         )
         logger.info("Finished splitting data.")
     except Exception as e:

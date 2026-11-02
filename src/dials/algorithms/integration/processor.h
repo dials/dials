@@ -385,7 +385,7 @@ namespace dials { namespace algorithms {
       std::size_t off = i0;
       std::size_t num = i1 - off;
       DIALS_ASSERT(off + num <= indices_.size());
-      return af::const_ref<std::size_t>(&indices_[off], num);
+      return af::const_ref<std::size_t>(indices_.data() + off, num);
     }
 
     af::reflection_table data_;

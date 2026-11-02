@@ -32,7 +32,10 @@ from dials.util.phil import parse
 from dials.util.version import dials_version
 from dials_algorithms_tof_integration_ext import (
     TOFProfile1DIBIXParams,
+    TOFProfile1DICParams,
     TOFProfile3DGutmannParams,
+    TOFProfile3DIBIXParams,
+    TOFProfile3DICParams,
     integrate_reflection_table,
     tof_calculate_ellipse_shoebox_mask,
     tof_calculate_seed_skewness_shoebox_mask,
@@ -76,12 +79,18 @@ calculated{
     .help = "The resolution spots are integrated to when using integration_type.calculated"
 
 }
-method = *summation profile_1d_ibix profile_3d_gutmann
+method = *summation profile_1d_ibix profile_1d_ic profile_3d_gutmann profile_3d_ic profile_3d_ibix
     .type = choice
     .help = "Integration method: "
             "summation: shoebox summation"
             "profile_1d_ibix: https://doi.org/10.1038/srep36628 "
+            "profile_1d_ic: Ikeda-Carpenter model, "
+            "https://doi.org/10.1016/0168-9002(85)90033-6"
             "profile_3d_gutmann: https://doi.org/10.1016/j.nima.2016.12.026"
+            "profile_3d_ic: separable Ikeda-Carpenter x bivariate Gaussian model, "
+            "https://doi.org/10.1016/0168-9002(85)90033-6"
+            "profile_3d_ibix: separable iBIX x bivariate Gaussian model, "
+            "https://doi.org/10.1038/srep36628"
 
 mask = *ellipse seed_skewness
     .type = choice
@@ -158,10 +167,54 @@ profile_1d_ibix{
     max_beta = 1.0
         .type = float
         .help = "Max beta value for optimization"
-    n_restarts = 8
+    min_A = 1.0
+        .type = float
+        .help = "Min A value for optimization"
+    max_A = 1e4
+        .type = float
+        .help = "Max A value for optimization"
+    n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
 
+}
+profile_1d_ic{
+    init_A = 1.0
+        .type = float
+        .help = "Initial fast-neutron decay constant before optimization"
+    min_A = 0.1
+        .type = float
+        .help = "Min fast-neutron decay constant for optimization"
+    max_A = 20.0
+        .type = float
+        .help = "Max fast-neutron decay constant for optimization"
+    init_B = 0.05
+        .type = float
+        .help = "Initial slow-neutron decay constant before optimization"
+    min_B = 1e-4
+        .type = float
+        .help = "Min slow-neutron decay constant for optimization"
+    max_B = 5.0
+        .type = float
+        .help = "Max slow-neutron decay constant for optimization"
+    init_R = 0.5
+        .type = float
+        .help = "Initial fast/slow neutron ratio before optimization"
+    min_R = 0.0
+        .type = float
+        .help = "Min fast/slow neutron ratio for optimization"
+    max_R = 1.0
+        .type = float
+        .help = "Max fast/slow neutron ratio for optimization"
+    hat_width = 1.0
+        .type = float
+        .help = "Initial half-width of the rectangular convolution kernel (ToF bins)"
+    kconv = 0.1
+        .type = float
+        .help = "Initial Gaussian convolution kernel decay rate (per ToF bin^2)"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
 }
 profile_3d_gutmann{
     init_alpha = 1.0
@@ -182,12 +235,129 @@ profile_3d_gutmann{
     max_beta = 5.0
         .type = float
         .help = "Max beta value for optimization"
-    n_restarts = 8
+    n_restarts = 100
         .type = int(value_min=0)
         .help = "If fit fails, number of additional attempts with perturbed params"
     gradient_method = *forward_difference central_difference
         .type = choice
         .help = "Method used to calculate gradients"
+}
+profile_3d_ic{
+    init_A = 1.0
+        .type = float
+        .help = "Initial fast-neutron decay constant before optimization"
+    min_A = 0.1
+        .type = float
+        .help = "Min fast-neutron decay constant for optimization"
+    max_A = 20.0
+        .type = float
+        .help = "Max fast-neutron decay constant for optimization"
+    init_B = 0.05
+        .type = float
+        .help = "Initial slow-neutron decay constant before optimization"
+    min_B = 1e-4
+        .type = float
+        .help = "Min slow-neutron decay constant for optimization"
+    max_B = 5.0
+        .type = float
+        .help = "Max slow-neutron decay constant for optimization"
+    init_R = 0.5
+        .type = float
+        .help = "Initial fast/slow neutron ratio before optimization"
+    min_R = 0.0
+        .type = float
+        .help = "Min fast/slow neutron ratio for optimization"
+    max_R = 1.0
+        .type = float
+        .help = "Max fast/slow neutron ratio for optimization"
+    min_sig_x = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma X for optimization"
+    max_sig_x = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma X for optimization"
+    min_sig_y = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma Y for optimization"
+    max_sig_y = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma Y for optimization"
+    init_sig_p = 0.0
+        .type = float
+        .help = "Initial bivariate Gaussian spatial correlation before optimization"
+    min_sig_p = -0.99
+        .type = float
+        .help = "Min bivariate Gaussian spatial correlation for optimization"
+    max_sig_p = 0.99
+        .type = float
+        .help = "Max bivariate Gaussian spatial correlation for optimization"
+    hat_width = 1.0
+        .type = float
+        .help = "Initial half-width of the rectangular convolution kernel (ToF bins)"
+    kconv = 0.1
+        .type = float
+        .help = "Initial Gaussian convolution kernel decay rate (per ToF bin^2)"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+    max_drift_factor = 1.5
+        .type = float
+        .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
+                "shoebox's spatial extent divided by its ToF extent"
+}
+profile_3d_ibix{
+    init_alpha = 0.03
+        .type = float
+        .help = "Initial alpha value before optimization"
+    min_alpha = 0.02
+        .type = float
+        .help = "Min alpha value for optimization"
+    max_alpha = 1.0
+        .type = float
+        .help = "Max alpha value for optimization"
+    init_beta = 0.03
+        .type = float
+        .help = "Initial beta value before optimization"
+    min_beta = 0.0
+        .type = float
+        .help = "Min beta value for optimization"
+    max_beta = 1.0
+        .type = float
+        .help = "Max beta value for optimization"
+    min_sigma = 0.1
+        .type = float
+        .help = "Min instrument-resolution Gaussian width for optimization"
+    max_sigma = 20.0
+        .type = float
+        .help = "Max instrument-resolution Gaussian width for optimization"
+    min_sig_x = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma X for optimization"
+    max_sig_x = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma X for optimization"
+    min_sig_y = 0.05
+        .type = float
+        .help = "Min bivariate Gaussian sigma Y for optimization"
+    max_sig_y = 20.0
+        .type = float
+        .help = "Max bivariate Gaussian sigma Y for optimization"
+    init_sig_p = 0.0
+        .type = float
+        .help = "Initial bivariate Gaussian spatial correlation before optimization"
+    min_sig_p = -0.99
+        .type = float
+        .help = "Min bivariate Gaussian spatial correlation for optimization"
+    max_sig_p = 0.99
+        .type = float
+        .help = "Max bivariate Gaussian spatial correlation for optimization"
+    n_restarts = 100
+        .type = int(value_min=0)
+        .help = "If fit fails, number of additional attempts with perturbed params"
+    max_drift_factor = 1.5
+        .type = float
+        .help = "Scales the per-reflection dXdt/dYdt bounds relative to the "
+                "shoebox's spatial extent divided by its ToF extent"
 }
 
 mp{
@@ -332,7 +502,10 @@ def integrate_reflection_table_for_experiment(
 ) -> flex.reflection_table:
     apply_lorentz = params.corrections.lorentz
     profile_1d_ibix_params = None
+    profile_1d_ic_params = None
     profile_3d_gutmann_params = None
+    profile_3d_ic_params = None
+    profile_3d_ibix_params = None
     incident_params = None
     absorption_params = None
 
@@ -342,14 +515,21 @@ def integrate_reflection_table_for_experiment(
     if params.method == "profile_1d_ibix":
         alpha = params.profile_1d_ibix.init_alpha
         beta = params.profile_1d_ibix.init_beta
-        A = 1.0
+        min_A = params.profile_1d_ibix.min_A
+        max_A = params.profile_1d_ibix.max_A
+        if min_A > max_A:
+            raise ValueError(
+                f"profile_1d_ibix.min_A ({min_A}) is larger than "
+                f"profile_1d_ibix.max_A ({max_A})"
+            )
         min_alpha = params.profile_1d_ibix.min_alpha
         max_alpha = params.profile_1d_ibix.max_alpha
         min_beta = params.profile_1d_ibix.min_beta
         max_beta = params.profile_1d_ibix.max_beta
         n_restarts = params.profile_1d_ibix.n_restarts
         profile_1d_ibix_params = TOFProfile1DIBIXParams(
-            A,
+            min_A,
+            max_A,
             alpha,
             min_alpha,
             max_alpha,
@@ -359,6 +539,27 @@ def integrate_reflection_table_for_experiment(
             n_restarts,
             True,
             show_profile_failures,
+        )
+    elif params.method == "profile_1d_ic":
+        p = params.profile_1d_ic
+        # dict needed due to boost limit of 15 template arguments
+        profile_1d_ic_params = TOFProfile1DICParams(
+            {
+                "A": p.init_A,
+                "A_min": p.min_A,
+                "A_max": p.max_A,
+                "B": p.init_B,
+                "B_min": p.min_B,
+                "B_max": p.max_B,
+                "R": p.init_R,
+                "R_min": p.min_R,
+                "R_max": p.max_R,
+                "HatWidth": p.hat_width,
+                "KConv": p.kconv,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "show_profile_failures": show_profile_failures,
+            }
         )
     elif params.method == "profile_3d_gutmann":
         alpha = params.profile_3d_gutmann.init_alpha
@@ -382,6 +583,61 @@ def integrate_reflection_table_for_experiment(
             True,
             use_central_diff,
             show_profile_failures,
+        )
+    elif params.method == "profile_3d_ic":
+        p = params.profile_3d_ic
+        # dict needed due to boost limit of 15 template arguments
+        profile_3d_ic_params = TOFProfile3DICParams(
+            {
+                "A": p.init_A,
+                "A_min": p.min_A,
+                "A_max": p.max_A,
+                "B": p.init_B,
+                "B_min": p.min_B,
+                "B_max": p.max_B,
+                "R": p.init_R,
+                "R_min": p.min_R,
+                "R_max": p.max_R,
+                "SigX_min": p.min_sig_x,
+                "SigX_max": p.max_sig_x,
+                "SigY_min": p.min_sig_y,
+                "SigY_max": p.max_sig_y,
+                "SigP": p.init_sig_p,
+                "SigP_min": p.min_sig_p,
+                "SigP_max": p.max_sig_p,
+                "HatWidth": p.hat_width,
+                "KConv": p.kconv,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "max_drift_factor": p.max_drift_factor,
+                "show_profile_failures": show_profile_failures,
+            }
+        )
+    elif params.method == "profile_3d_ibix":
+        p = params.profile_3d_ibix
+        # dict needed due to boost limit of 15 template arguments
+        profile_3d_ibix_params = TOFProfile3DIBIXParams(
+            {
+                "alpha": p.init_alpha,
+                "alpha_min": p.min_alpha,
+                "alpha_max": p.max_alpha,
+                "beta": p.init_beta,
+                "beta_min": p.min_beta,
+                "beta_max": p.max_beta,
+                "sigma_min": p.min_sigma,
+                "sigma_max": p.max_sigma,
+                "SigX_min": p.min_sig_x,
+                "SigX_max": p.max_sig_x,
+                "SigY_min": p.min_sig_y,
+                "SigY_max": p.max_sig_y,
+                "SigP": p.init_sig_p,
+                "SigP_min": p.min_sig_p,
+                "SigP_max": p.max_sig_p,
+                "n_restarts": p.n_restarts,
+                "optimize_profile": True,
+                "max_drift_factor": p.max_drift_factor,
+                "show_profile_failures": show_profile_failures,
+            }
         )
 
     if apply_lorentz:
@@ -410,8 +666,36 @@ def integrate_reflection_table_for_experiment(
         apply_lorentz,
         params.mp.nproc,
         profile_1d_ibix_params,
+        profile_1d_ic_params,
         profile_3d_gutmann_params,
+        profile_3d_ic_params,
+        profile_3d_ibix_params,
     )
+
+    return expt_reflections
+
+
+def compute_tof_centroids(
+    expt: Experiment, expt_reflections: flex.reflection_table
+) -> flex.reflection_table:
+    """
+    Calculates the observed centroids from the background subtracted foreground
+    of each shoebox. Time of flight component of centroid is set to
+    the peak position along the time of flight.
+    """
+
+    shoeboxes = expt_reflections["shoebox"]
+    centroids = shoeboxes.centroid_foreground_minus_background()
+    x, y, _ = centroids.px_position().parts()
+    _, _, peak_tof = shoeboxes.peak_coordinates().parts()
+    expt_reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
+    expt_reflections["xyzobs.px.variance"] = centroids.px_std_err_eq()
+
+    # centroid_px_to_mm selects by experiment index, so map this experiment to 0
+    expt_ids = deepcopy(expt_reflections["imageset_id"])
+    expt_reflections["imageset_id"] = flex.int(len(expt_reflections), 0)
+    expt_reflections.centroid_px_to_mm(ExperimentList([expt]))
+    expt_reflections["imageset_id"] = expt_ids
 
     return expt_reflections
 
@@ -442,7 +726,8 @@ def remove_out_of_range_reflections(
             reflections["wavelength_cal"] <= max_wavelength
         )
         logger.info(
-            f"Removing {wavelength_sel.count(False)} reflections outside of range ({min_wavelength}, {max_wavelength}) (A)"
+            f"Removing {wavelength_sel.count(False)} reflections outside of range"
+            f" ({min_wavelength}, {max_wavelength}) (A)"
         )
         reflections = reflections.select(wavelength_sel)
 
@@ -453,7 +738,8 @@ def remove_out_of_range_reflections(
             reflections["tof_cal"] <= max_tof
         )
         logger.info(
-            f"Removing {tof_sel.count(False)} reflections outside of range ({min_tof}, {max_tof}) (usec)"
+            f"Removing {tof_sel.count(False)} reflections outside of range"
+            f" ({min_tof}, {max_tof}) (usec)"
         )
         reflections = reflections.select(tof_sel)
 
@@ -566,6 +852,11 @@ def get_predicted_observed_reflections(
 
     # Update params
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
+    # Add predicted time of flight (usec) to xyzcal.mm
+    x_cal, y_cal, _ = predicted_reflections["xyzcal.mm"].parts()
+    predicted_reflections["xyzcal.mm"] = flex.vec3_double(
+        x_cal, y_cal, predicted_reflections["tof_cal"]
+    )
     predicted_reflections.calculate_entering_flags(experiments)
 
     for i in range(len(experiments)):
@@ -644,6 +935,11 @@ def get_predicted_calculated_reflections(
             r["imageset_id"] = cctbx.array_family.flex.int(len(r), idx)
             predicted_reflections.extend(r)
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
+    # Add predicted time of flight (usec) to xyzcal.mm
+    x_cal, y_cal, _ = predicted_reflections["xyzcal.mm"].parts()
+    predicted_reflections["xyzcal.mm"] = flex.vec3_double(
+        x_cal, y_cal, predicted_reflections["tof_cal"]
+    )
     predicted_reflections.calculate_entering_flags(experiments)
 
     for i in range(len(experiments)):
@@ -651,10 +947,14 @@ def get_predicted_calculated_reflections(
 
     logger.info(f"Predicted {len(predicted_reflections)} using dmin {dmin}")
 
+    # Updates flags to set which reflections were observed
+    predicted_reflections.match_with_reference(reflections)
+
     used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
     model_reflections = reflections.select(used_in_ref)
     logger.info(
-        f"Using {len(model_reflections)} observed reflections to calculate bounding boxes"
+        f"Using {len(model_reflections)} observed reflections"
+        " to calculate bounding boxes"
     )
 
     # Get the closest observed reflection for each calculated reflection
@@ -911,6 +1211,9 @@ def run_integrate(
         expt_reflections.set_flags(
             ~success, expt_reflections.flags.failed_during_background_modelling
         )
+
+        logger.info("    Calculating centroids")
+        expt_reflections = compute_tof_centroids(expt, expt_reflections)
 
         expt_reflections = integrate_reflection_table_for_experiment(
             expt,
