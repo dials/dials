@@ -1,1 +1,1 @@
-Add Python 3.14 support to bootstrap.py.
+Add Python 3.15 support to bootstrap.py.
