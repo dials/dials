@@ -1,0 +1,1 @@
+``dials.export format=cif``: no longer write ``_cell_measurement_reflns_used`` and ``_cell_measurement_theta_min/max`` from the exported reflections, as these describe the reflections used to determine the cell

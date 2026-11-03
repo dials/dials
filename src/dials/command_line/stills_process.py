@@ -805,6 +805,10 @@ class Script:
                 n_accept = n_mod_denom < process_fractions.numerator
                 return n_accept
 
+        # Garbage is collected after every image, but what exists by now is mostly imports,
+        # live for the whole run. Freeze it, so the collector only walks later objects.
+        gc.freeze()
+
         # Process the data
         if params.mp.method == "mpi":
             if size <= 2:  # client/server only makes sense for n>2
@@ -1201,7 +1205,7 @@ class Processor:
             if gain is not None and gain != 1.0:
                 for detector in experiments.detectors():
                     for panel in detector:
-                        if panel.get_gain() != 1.0 and panel.get_gain() != gain:
+                        if panel.get_gain() != 1.0:
                             raise RuntimeError(
                                 f"""
 The detector is reporting a gain of {panel.get_gain():f} but you have also supplied a gain of {gain:f}. Since the detector gain is not 1.0, your supplied gain will be multiplicatively applied in addition to the detector's gain, which is unlikely to be correct. Please re-run, removing spotfinder.dispersion.gain and integration.summation.detector_gain from your parameters. You can override this exception by setting input.ignore_gain_mismatch=True."""

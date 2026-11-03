@@ -58,6 +58,31 @@ namespace dials { namespace algorithms {
     }
 
     /**
+     * Initialize from previously accumulated statistics, e.g. when unpickling
+     */
+    BackgroundStatistics(const af::const_ref<double, af::c_grid<2> >& sum,
+                         const af::const_ref<double, af::c_grid<2> >& sum_sq,
+                         const af::const_ref<int, af::c_grid<2> >& num,
+                         const af::const_ref<double, af::c_grid<2> >& min,
+                         const af::const_ref<double, af::c_grid<2> >& max)
+        : accessor_(sum.accessor()),
+          sum_(accessor_),
+          sum_sq_(accessor_),
+          num_(accessor_),
+          min_(accessor_),
+          max_(accessor_) {
+      DIALS_ASSERT(sum_sq.accessor().all_eq(accessor_));
+      DIALS_ASSERT(num.accessor().all_eq(accessor_));
+      DIALS_ASSERT(min.accessor().all_eq(accessor_));
+      DIALS_ASSERT(max.accessor().all_eq(accessor_));
+      std::copy(sum.begin(), sum.end(), sum_.begin());
+      std::copy(sum_sq.begin(), sum_sq.end(), sum_sq_.begin());
+      std::copy(num.begin(), num.end(), num_.begin());
+      std::copy(min.begin(), min.end(), min_.begin());
+      std::copy(max.begin(), max.end(), max_.begin());
+    }
+
+    /**
      * Add results from another object
      * @param other The other object
      */
@@ -201,6 +226,19 @@ namespace dials { namespace algorithms {
       for (std::size_t i = 0; i < volume.size(); ++i) {
         statistics_.push_back(BackgroundStatistics(volume.get(i)));
       }
+    }
+
+    /**
+     * Initialize with no panels
+     */
+    MultiPanelBackgroundStatistics() {}
+
+    /**
+     * Add the statistics for a panel
+     * @param statistics The panel statistics
+     */
+    void add(const BackgroundStatistics& statistics) {
+      statistics_.push_back(statistics);
     }
 
     /**

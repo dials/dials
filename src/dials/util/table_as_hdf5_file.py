@@ -414,7 +414,7 @@ class HDF5TableFile:
     def __init__(self, filename: str, mode="w") -> None:
         """Open the file with the given mode."""
         # h5py raises OSError if not a hdf5 file
-        self._handle = h5py.File(filename, mode)
+        self._handle = h5py.File(filename, mode, libver="latest")
 
     def close(self) -> None:
         """Close the file."""
