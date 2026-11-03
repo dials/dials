@@ -515,6 +515,89 @@ def set_git_repository_config_to_rebase(config):
         fh.write("".join(cfg))
 
 
+# Output fragments indicating a (probably) transient network problem talking
+# to the git remote, which is worth retrying
+_GIT_TRANSIENT_ERRORS = (
+    "timed out",
+    "broken pipe",
+    "connection reset",
+    "connection refused",
+    "connection closed by",
+    "could not resolve host",
+    "could not resolve hostname",
+    "failed to connect",
+    "unable to access",
+    "the remote end hung up unexpectedly",
+    "early eof",
+    "rpc failed",
+    "kex_exchange_identification",
+    "ssh_exchange_identification",
+    "gnutls_handshake",
+    "ssl_error",
+    "http/2 stream",
+    "internal server error",
+    "bad gateway",
+    "service unavailable",
+)
+GIT_NETWORK_ATTEMPTS = 5
+GIT_NETWORK_RETRY_DELAY = 5  # seconds, multiplied by attempt number
+
+
+def _is_transient_git_failure(output):
+    output = output.lower()
+    return any(fragment in output for fragment in _GIT_TRANSIENT_ERRORS)
+
+
+def _run_git_network_command(module, args, cwd, cleanup=None):
+    """Run a git command that talks to a remote, retrying on network failures.
+
+    Args:
+        module: Name of the module, for log messages
+        args: The git command line to run
+        cwd: The directory to run the command in
+        cleanup: Optional path to remove before retrying (e.g. a partial clone)
+
+    Returns:
+        A (returncode, output) tuple from the final attempt
+    """
+    for attempt in range(1, GIT_NETWORK_ATTEMPTS + 1):
+        with concurrent_git_connection_limit:
+            p = subprocess.Popen(
+                args=args,
+                cwd=cwd,
+                env=clean_env,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+            try:
+                output, _ = p.communicate()
+                output = output.decode("latin-1")
+            except KeyboardInterrupt:
+                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
+                p.terminate()
+                raise
+        if not p.returncode or not _is_transient_git_failure(output):
+            break
+        if attempt == GIT_NETWORK_ATTEMPTS:
+            break
+        delay = GIT_NETWORK_RETRY_DELAY * attempt
+        print(
+            "%s: '%s' failed with a network error (attempt %d of %d), retrying in %ds:\n  %s"
+            % (
+                module,
+                " ".join(args[:2]),
+                attempt,
+                GIT_NETWORK_ATTEMPTS,
+                delay,
+                "\n  ".join(output.strip().splitlines()[-3:]),
+            )
+        )
+        if cleanup and os.path.exists(cleanup):
+            shutil.rmtree(cleanup)
+        time.sleep(delay)
+    return p.returncode, output
+
+
 def git(module, git_available, ssh_available, reference_base, settings):
     """Retrieve a git repository, either by running git directly
     or by downloading and unpacking an archive.
@@ -538,27 +621,15 @@ def git(module, git_available, ssh_available, reference_base, settings):
                     "This may be legitimate when run eg. via Jenkins, but be aware that you cannot commit any changes",
                 )
 
-        with concurrent_git_connection_limit:
-            p = subprocess.Popen(
-                args=["git", "pull", "--rebase"],
-                cwd=destination,
-                env=clean_env,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            # This may fail for unclean trees and merge problems. In this case manual
-            # user intervention will be required.
-            # For the record, you can clean up the tree and *discard ALL changes* with
-            #   git reset --hard origin/master
-            #   git clean -dffx
-            try:
-                output, _ = p.communicate()
-                output = output.decode("latin-1")
-            except KeyboardInterrupt:
-                print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-                p.terminate()
-                raise
-        if p.returncode:
+        # This may fail for unclean trees and merge problems. In this case manual
+        # user intervention will be required.
+        # For the record, you can clean up the tree and *discard ALL changes* with
+        #   git reset --hard origin/master
+        #   git clean -dffx
+        returncode, output = _run_git_network_command(
+            module, ["git", "pull", "--rebase"], cwd=destination
+        )
+        if returncode:
             return (
                 module,
                 "WARNING",
@@ -643,30 +714,21 @@ def git(module, git_available, ssh_available, reference_base, settings):
             os.path.join(reference_base, module),
         ]
 
-    with concurrent_git_connection_limit:
-        p = subprocess.Popen(
-            args=["git", "clone", "--recursive"]
-            + direct_branch_checkout
-            + [
-                remote_pattern
-                % settings.get("base-repository", settings.get("effective-repository")),
-                module,
-            ]
-            + reference_parameters,
-            cwd="modules",
-            env=clean_env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        try:
-            output, _ = p.communicate()
-            output = output.decode("latin-1")
-        except KeyboardInterrupt:
-            print("\nReceived CTRL+C, trying to terminate subprocess...\n")
-            p.terminate()
-            raise
-        if p.returncode:
-            return (module, "ERROR", "Cannot checkout git repository\n" + output)
+    returncode, output = _run_git_network_command(
+        module,
+        ["git", "clone", "--recursive"]
+        + direct_branch_checkout
+        + [
+            remote_pattern
+            % settings.get("base-repository", settings.get("effective-repository")),
+            module,
+        ]
+        + reference_parameters,
+        cwd="modules",
+        cleanup=destination,
+    )
+    if returncode:
+        return (module, "ERROR", "Cannot checkout git repository\n" + output)
 
     if reference_parameters:
         # Sever the link between checked out and reference repository
@@ -708,14 +770,9 @@ def git(module, git_available, ssh_available, reference_base, settings):
                 "ERROR",
                 "Could not add upstream remote to repository. Repository may be in invalid state!",
             )
-        with concurrent_git_connection_limit:
-            returncode = subprocess.call(
-                ["git", "fetch", "upstream"],
-                cwd=destination,
-                env=clean_env,
-                stdout=devnull,
-                stderr=devnull,
-            )
+        returncode, _ = _run_git_network_command(
+            module, ["git", "fetch", "upstream"], cwd=destination
+        )
         if returncode:
             return (
                 module,
