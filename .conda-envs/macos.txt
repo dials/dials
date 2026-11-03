@@ -13,7 +13,7 @@ gemmi>=0.7
 h5py>=3.1.0
 hatchling
 hdf5
-hdf5plugin<=6
+hdf5plugin
 jinja2
 libboost-devel
 libboost-python-devel
@@ -56,6 +56,6 @@ sqlite
 tabulate
 tqdm
 urllib3
-wxpython>=4.2.0=*_5
+wxpython>=4.2.0
 xz
 zlib

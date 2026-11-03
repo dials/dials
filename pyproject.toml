@@ -63,8 +63,8 @@ section-order = [
     "xfel",
 ]
 
-[tool.pytest.ini-options]
-addopts = "-rsxX"
+[tool.pytest.ini_options]
+addopts = "-rfEsxX"
 testpaths = ["tests"]
 filterwarnings = [
     "ignore:the matrix subclass is not the recommended way:PendingDeprecationWarning",

@@ -675,6 +675,31 @@ def integrate_reflection_table_for_experiment(
     return expt_reflections
 
 
+def compute_tof_centroids(
+    expt: Experiment, expt_reflections: flex.reflection_table
+) -> flex.reflection_table:
+    """
+    Calculates the observed centroids from the background subtracted foreground
+    of each shoebox. Time of flight component of centroid is set to
+    the peak position along the time of flight.
+    """
+
+    shoeboxes = expt_reflections["shoebox"]
+    centroids = shoeboxes.centroid_foreground_minus_background()
+    x, y, _ = centroids.px_position().parts()
+    _, _, peak_tof = shoeboxes.peak_coordinates().parts()
+    expt_reflections["xyzobs.px.value"] = flex.vec3_double(x, y, peak_tof)
+    expt_reflections["xyzobs.px.variance"] = centroids.px_std_err_eq()
+
+    # centroid_px_to_mm selects by experiment index, so map this experiment to 0
+    expt_ids = deepcopy(expt_reflections["imageset_id"])
+    expt_reflections["imageset_id"] = flex.int(len(expt_reflections), 0)
+    expt_reflections.centroid_px_to_mm(ExperimentList([expt]))
+    expt_reflections["imageset_id"] = expt_ids
+
+    return expt_reflections
+
+
 def remove_overlapping_reflections(
     reflections: flex.reflection_table,
 ) -> flex.reflection_table:
@@ -701,7 +726,8 @@ def remove_out_of_range_reflections(
             reflections["wavelength_cal"] <= max_wavelength
         )
         logger.info(
-            f"Removing {wavelength_sel.count(False)} reflections outside of range ({min_wavelength}, {max_wavelength}) (A)"
+            f"Removing {wavelength_sel.count(False)} reflections outside of range"
+            f" ({min_wavelength}, {max_wavelength}) (A)"
         )
         reflections = reflections.select(wavelength_sel)
 
@@ -712,7 +738,8 @@ def remove_out_of_range_reflections(
             reflections["tof_cal"] <= max_tof
         )
         logger.info(
-            f"Removing {tof_sel.count(False)} reflections outside of range ({min_tof}, {max_tof}) (usec)"
+            f"Removing {tof_sel.count(False)} reflections outside of range"
+            f" ({min_tof}, {max_tof}) (usec)"
         )
         reflections = reflections.select(tof_sel)
 
@@ -825,6 +852,11 @@ def get_predicted_observed_reflections(
 
     # Update params
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
+    # Add predicted time of flight (usec) to xyzcal.mm
+    x_cal, y_cal, _ = predicted_reflections["xyzcal.mm"].parts()
+    predicted_reflections["xyzcal.mm"] = flex.vec3_double(
+        x_cal, y_cal, predicted_reflections["tof_cal"]
+    )
     predicted_reflections.calculate_entering_flags(experiments)
 
     for i in range(len(experiments)):
@@ -903,6 +935,11 @@ def get_predicted_calculated_reflections(
             r["imageset_id"] = cctbx.array_family.flex.int(len(r), idx)
             predicted_reflections.extend(r)
     predicted_reflections["s0"] = predicted_reflections["s0_cal"]
+    # Add predicted time of flight (usec) to xyzcal.mm
+    x_cal, y_cal, _ = predicted_reflections["xyzcal.mm"].parts()
+    predicted_reflections["xyzcal.mm"] = flex.vec3_double(
+        x_cal, y_cal, predicted_reflections["tof_cal"]
+    )
     predicted_reflections.calculate_entering_flags(experiments)
 
     for i in range(len(experiments)):
@@ -910,10 +947,14 @@ def get_predicted_calculated_reflections(
 
     logger.info(f"Predicted {len(predicted_reflections)} using dmin {dmin}")
 
+    # Updates flags to set which reflections were observed
+    predicted_reflections.match_with_reference(reflections)
+
     used_in_ref = reflections.get_flags(reflections.flags.used_in_refinement)
     model_reflections = reflections.select(used_in_ref)
     logger.info(
-        f"Using {len(model_reflections)} observed reflections to calculate bounding boxes"
+        f"Using {len(model_reflections)} observed reflections"
+        " to calculate bounding boxes"
     )
 
     # Get the closest observed reflection for each calculated reflection
@@ -1170,6 +1211,9 @@ def run_integrate(
         expt_reflections.set_flags(
             ~success, expt_reflections.flags.failed_during_background_modelling
         )
+
+        logger.info("    Calculating centroids")
+        expt_reflections = compute_tof_centroids(expt, expt_reflections)
 
         expt_reflections = integrate_reflection_table_for_experiment(
             expt,
