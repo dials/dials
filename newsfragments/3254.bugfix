@@ -1,1 +1,1 @@
-Fix dials.search_beam_position "method" option type (needed for DUI2)
+``dials.search_beam_position``: Fix "method" option type (needed for DUI2)

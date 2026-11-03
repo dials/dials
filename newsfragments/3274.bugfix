@@ -1,2 +1,1 @@
-``dials.cosym`` and ``dials.correlation_matrix``: cast ``numpy.int64`` to ``int`` for output in logging
-
+``dials.cosym`` and ``dials.correlation_matrix``: Tidy logging output for ``numpy.int64``.

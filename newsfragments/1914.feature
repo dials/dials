@@ -1,1 +1,1 @@
-``flex.reflection_table``: add ``as_pandas_dataframe()``, returning the table as a ``pandas.DataFrame``, with multiple valued columns such as ``miller_index`` and ``bbox`` unpacked element by element.
+``flex.reflection_table``: Add ``as_pandas_dataframe()``, returning the table as a ``pandas.DataFrame``, with multiple valued columns such as ``miller_index`` and ``bbox`` unpacked element by element.

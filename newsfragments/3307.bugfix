@@ -1,1 +1,1 @@
-Fix `dials.symmetry` crashing for time-of-flight data due to scan oscillation check.
+``dials.symmetry``: Fix crash for time-of-flight data, due to scan oscillation check.

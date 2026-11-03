@@ -1,1 +1,1 @@
-Use hdf5 format to store reflection table data on disk (change the default from msgpack).
+Change default reflection table format to HDF5, instead of msgpack. This can be reverted (for now) by setting ``DIALS_USE_MSGPACK=1``.

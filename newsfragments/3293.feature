@@ -1,1 +1,1 @@
-``dials.find_spots``: more efficient union-find algorithm for spot extraction.
+``dials.find_spots``: More efficient union-find algorithm for spot extraction, speeding up large datasets.
