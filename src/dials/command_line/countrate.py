@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
+import sys
 import time
 from collections import Counter
 from itertools import accumulate
@@ -114,6 +115,10 @@ def run(args: list[str] | None = None, phil=phil_scope):
 
     params, options = parser.parse_args(args=args, show_diff_phil=False)
 
+    if not params.input.experiments or not params.input.reflections:
+        parser.print_help()
+        sys.exit("Missing required input file(s)")
+
     # Setup logging
     log.config(logfile=params.output.log, verbosity=options.verbose)
     logger.info(dials_version())
@@ -127,15 +132,18 @@ def run(args: list[str] | None = None, phil=phil_scope):
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+
+    if len(experiments) != 1 or len(reflections) != 1:
+        parser.print_help()
+        sys.exit(
+            "dials.countrate requires exactly one experiment file and one reflection file"
+        )
+        return
+
     # Run the processing pipeline
     logger.info("=" * 60)
     logger.info("Running dials.countrate")
     logger.info("=" * 60)
-
-    if len(experiments) != 1 or len(reflections) != 1:
-        logger.error("Expected exactly one experiment and one reflection table")
-        parser.print_help()
-        return
 
     experiment = experiments[0]
     shoeboxes = reflections[0]["shoebox"]
