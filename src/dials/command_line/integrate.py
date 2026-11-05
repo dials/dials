@@ -607,7 +607,7 @@ def run_integration(params, experiments, reference=None):
         rubbish = None
 
     # Compute the bounding box
-    predicted.compute_bbox(experiments)
+    predicted.compute_bbox(experiments, bbox_params=params.integration.bbox)
 
     # Create the integrator
     integrator = create_integrator(params, experiments, predicted)
