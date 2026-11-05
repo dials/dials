@@ -1,0 +1,1 @@
+``dials.stills_process``: ``indexing.stills.reflection_subsampling.n_attempts_per_step`` now makes that many attempts, each with a new random subset, at every subsampling step. It was previously ignored.
