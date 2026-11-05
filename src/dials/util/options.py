@@ -149,6 +149,37 @@ format
 )
 
 
+lookup_phil_scope = libtbx.phil.parse(
+    """
+lookup {
+  mask = None
+    .type = str
+    .help = "Apply a mask to the imported data"
+
+  gain = None
+    .type = str
+    .help = "Apply a gain to the imported data"
+
+  pedestal = None
+    .type = str
+    .help = "Apply a pedestal to the imported data"
+
+  dx = None
+    .type = str
+    .help = "Apply an x geometry offset"
+            "If both dx and dy are set then"
+            "OffsetParallaxCorrectedPxMmStrategy will be used"
+
+  dy = None
+    .type = str
+    .help = "Apply an y geometry offset"
+            "If both dx and dy are set then"
+            "OffsetParallaxCorrectedPxMmStrategy will be used"
+}
+"""
+)
+
+
 # Simple tuple to hold basic information on why an argument failed
 ArgumentHandlingErrorInfo = namedtuple(
     "ArgumentHandlingErrorInfo",
