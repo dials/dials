@@ -7,7 +7,7 @@ import math
 import sys
 
 import iotbx.cif.model
-from cctbx import miller, sgtbx
+from cctbx import sgtbx
 from dxtbx.model.experiment_list import Experiment, ExperimentList
 from libtbx.phil import parse
 from libtbx.utils import format_float_with_standard_uncertainty
@@ -346,22 +346,6 @@ class Script:
         block["_cell_measurement_theta_max"] = (
             flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
         )
-        block["_diffrn_reflns_number"] = len(used_reflections)
-        miller_span = miller.index_span(used_reflections["miller_index"])
-        min_h, min_k, min_l = miller_span.min()
-        max_h, max_k, max_l = miller_span.max()
-        block["_diffrn_reflns_limit_h_min"] = min_h
-        block["_diffrn_reflns_limit_h_max"] = max_h
-        block["_diffrn_reflns_limit_k_min"] = min_k
-        block["_diffrn_reflns_limit_k_max"] = max_k
-        block["_diffrn_reflns_limit_l_min"] = min_l
-        block["_diffrn_reflns_limit_l_max"] = max_l
-        block["_diffrn_reflns_theta_min"] = (
-            flex.min(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
-        )
-        block["_diffrn_reflns_theta_max"] = (
-            flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
-        )
 
         cif = iotbx.cif.model.cif()
         cif["two_theta_refine"] = block
@@ -404,26 +388,6 @@ class Script:
             flex.min(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
         )
         block["_cell_measurement.theta_max"] = (
-            flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
-        )
-        block["_exptl_crystal.id"] = 1
-        block["_diffrn.id"] = "two_theta_refine"
-        block["_diffrn.crystal_id"] = 1
-        block["_diffrn_reflns.diffrn_id"] = "two_theta_refine"
-        block["_diffrn_reflns.number"] = len(used_reflections)
-        miller_span = miller.index_span(used_reflections["miller_index"])
-        min_h, min_k, min_l = miller_span.min()
-        max_h, max_k, max_l = miller_span.max()
-        block["_diffrn_reflns.limit_h_min"] = min_h
-        block["_diffrn_reflns.limit_h_max"] = max_h
-        block["_diffrn_reflns.limit_k_min"] = min_k
-        block["_diffrn_reflns.limit_k_max"] = max_k
-        block["_diffrn_reflns.limit_l_min"] = min_l
-        block["_diffrn_reflns.limit_l_max"] = max_l
-        block["_diffrn_reflns.theta_min"] = (
-            flex.min(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
-        )
-        block["_diffrn_reflns.theta_max"] = (
             flex.max(used_reflections["2theta_obs.rad"]) * 180 / math.pi / 2
         )
 
