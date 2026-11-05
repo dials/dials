@@ -1,0 +1,1 @@
+``dials.two_theta_refine``: CIF and mmCIF output no longer includes ``_diffrn_reflns`` items, which describe all measured reflections rather than those used for cell refinement. For CIF, these are written for the full data set by ``dials.export format=cif``.

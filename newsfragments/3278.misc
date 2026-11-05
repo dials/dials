@@ -1,1 +1,0 @@
-Remove use of auto_ptr in OLEX-related code.
