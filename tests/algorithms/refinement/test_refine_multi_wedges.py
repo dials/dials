@@ -72,7 +72,7 @@ def test(dials_data, tmp_path):
         # FIXME need is_similar_to for detector that checks geometry
         # assert e1.detector == e2.detector
         s0_1 = matrix.col(e1.beam.get_unit_s0())
-        s0_2 = matrix.col(e1.beam.get_unit_s0())
+        s0_2 = matrix.col(e2.beam.get_unit_s0())
         assert s0_1.accute_angle(s0_2, deg=True) < 0.0057  # ~0.1 mrad
 
 
@@ -165,7 +165,7 @@ def test_order_invariance(dials_data, tmp_path):
     )
 
     history1 = Journal.from_json_file(tmp_path / "history1.json")
-    history2 = Journal.from_json_file(tmp_path / "history1.json")
+    history2 = Journal.from_json_file(tmp_path / "history2.json")
 
     # Compare RMSDs
     rmsd1 = history1["rmsd"]

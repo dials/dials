@@ -1,0 +1,1 @@
+``dials.combine_experiments``: assign experiment identifiers to input experiments that lack them. Previously, with ``clustering.use=True`` every unidentified experiment was written to every cluster.

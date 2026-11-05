@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import os
-
 import h5py
 
 from dials.array_family import flex
@@ -12,7 +10,6 @@ def test_table_as_hdf5_file_no_sbox(dials_data, tmp_path):
     data = dials_data("l_cysteine_4_sweeps_scaled") / "scaled_20_25.refl"
     table = flex.reflection_table.from_file(data)
 
-    os.environ["DIALS_USE_H5"] = "1"
     table.as_file(tmp_path / "scaled.refl")
 
     data = h5py.File(tmp_path / "scaled.refl", "r")
