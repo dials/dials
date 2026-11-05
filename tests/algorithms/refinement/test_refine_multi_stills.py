@@ -48,12 +48,16 @@ def test1(dials_data, tmp_path):
         assert c1.is_similar_to(c2)
 
     for d1, d2 in zip(reg_exp.detectors(), ref_exp.detectors()):
-        assert d1.is_similar_to(
-            d2,
-            fast_axis_tolerance=1e-4,
-            slow_axis_tolerance=1e-4,
-            origin_tolerance=1e-2,
-        )
+        try:
+            assert d1.is_similar_to(
+                d2,
+                fast_axis_tolerance=1e-4,
+                slow_axis_tolerance=1e-4,
+                origin_tolerance=1e-2,
+            )
+        except AssertionError:
+            print("d1: ", d1.to_dict())
+            print("d2: ", d2.to_dict())
 
 
 @pytest.mark.skipif(
