@@ -1,0 +1,1 @@
+``dials.stills_process``: the ``test_sacla_h5`` MPI test now runs under MPI instead of as four independent copies of the job.
