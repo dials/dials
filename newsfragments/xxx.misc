@@ -1,1 +1,1 @@
-Tests: fix tests that could never fail or never ran their intended code path (string booleans in parametrize, self-comparisons, unchecked return codes, C++ asserts disabled by ``NDEBUG``).
+Tests: remove redundant tests and split the serial ToF integration and indexing tests into parallel cases.
