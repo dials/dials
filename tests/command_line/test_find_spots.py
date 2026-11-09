@@ -195,6 +195,24 @@ def test_find_spots_with_resolution_filter(dials_data, tmp_path):
     assert "shoebox" not in reflections
 
 
+def test_find_spots_with_background_gradient_filter(dials_data, tmp_path):
+    result = subprocess.run(
+        [
+            shutil.which("dials.find_spots"),
+            "nproc=1",
+            "output.reflections=spotfinder.refl",
+            "output.shoeboxes=False",
+            "algorithm=dispersion",
+            "spotfinder.filter.background_gradient.filter=True",
+        ]
+        + list(dials_data("centroid_test_data").glob("centroid*.cbf")),
+        cwd=tmp_path,
+        capture_output=True,
+    )
+    assert not result.returncode, result.stderr
+    assert (tmp_path / "spotfinder.refl").is_file()
+
+
 def test_find_spots_with_hot_mask(dials_data, tmp_path):
     # now write a hot mask
     result = subprocess.run(
