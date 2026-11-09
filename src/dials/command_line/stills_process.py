@@ -1373,12 +1373,18 @@ The detector is reporting a gain of {panel.get_gain():f} but you have also suppl
                 flex.set_random_seed(
                     self.params.indexing.stills.reflection_subsampling.seed
                 )
-                subsets = range(
-                    self.params.indexing.stills.reflection_subsampling.step_start,
-                    self.params.indexing.stills.reflection_subsampling.step_stop
-                    - self.params.indexing.stills.reflection_subsampling.step_size,
-                    -self.params.indexing.stills.reflection_subsampling.step_size,
-                )
+                subsets = [
+                    i
+                    for i in range(
+                        self.params.indexing.stills.reflection_subsampling.step_start,
+                        self.params.indexing.stills.reflection_subsampling.step_stop
+                        - self.params.indexing.stills.reflection_subsampling.step_size,
+                        -self.params.indexing.stills.reflection_subsampling.step_size,
+                    )
+                    for _ in range(
+                        self.params.indexing.stills.reflection_subsampling.n_attempts_per_step
+                    )
+                ]
             else:
                 subsets = [100]
             all_reflections = reflections
