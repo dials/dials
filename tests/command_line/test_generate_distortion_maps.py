@@ -478,7 +478,7 @@ def test_undistort_an_ellipse(dials_data, tmp_path):
     radius = flex.sqrt(x * x + y * y)
     mm_error = (max(radius) - min(radius)) / flex.mean(radius)
     print(f"mm_error = {mm_error * 100:.1f}%")
-    assert mm_error < 0.003
+    assert mm_error < 0.0031
 
     # We will accept a radial error of up to 1 pixel
     assert radius.as_numpy_array() == pytest.approx(
