@@ -9,6 +9,7 @@ import pathlib
 import sys
 import time
 from collections import Counter
+from dataclasses import dataclass
 
 import iotbx.phil
 
@@ -123,6 +124,77 @@ def analyse_countrate(
     return recommended_transmission, ref_percentile_trusted_range_pct
 
 
+@dataclass(frozen=True)
+class CountrateSummary:
+    total_pixels: int
+    max_pixel_trusted_range_pct: float
+    percentile_trusted_range_pcts: tuple[tuple[float, float], ...]
+    recommended_transmission: float
+    ref_percentile_trusted_range_pct: float
+    warning_message: str | None
+
+
+def calculate_summary(
+    histogram: dict[int, int],
+    max_trusted_counts: int,
+    transmission: float,
+    target_countrate_pct: float,
+    ref_percentile: float,
+    trusted_range_warning_threshold: float,
+) -> CountrateSummary:
+    """Calculate the values and warning shown in the processing summary."""
+    if not histogram:
+        raise ValueError("Cannot calculate a summary from an empty histogram")
+    if max_trusted_counts <= 0:
+        raise ValueError("max_trusted_counts must be greater than zero")
+
+    total_pixels = sum(histogram.values())
+    max_pixel_trusted_range_pct = max(histogram) * 100 / max_trusted_counts
+    recommended_transmission, ref_percentile_trusted_range_pct = analyse_countrate(
+        transmission,
+        max_trusted_counts,
+        histogram,
+        target_countrate_pct,
+        ref_percentile,
+    )
+
+    percentiles = (99.999, 99.99, 99.9, 99.0, 90.0)
+    percentile_trusted_range_pcts = tuple(
+        (
+            percentile,
+            get_percentile_intensity(histogram, percentile / 100)
+            * 100
+            / max_trusted_counts,
+        )
+        for percentile in percentiles
+    )
+
+    warning_message = None
+    if ref_percentile_trusted_range_pct > trusted_range_warning_threshold:
+        warning_message = (
+            f"WARNING: The {ref_percentile}th percentile pixel is at "
+            f"{ref_percentile_trusted_range_pct:.2f}% of the detector trusted range.\n"
+            "The recommended transmission may be unreliable because the data used "
+            "to calculate it is heavily countrate corrected."
+        )
+    elif ref_percentile_trusted_range_pct > target_countrate_pct:
+        warning_message = (
+            f"The {ref_percentile}th percentile pixel is at "
+            f"{ref_percentile_trusted_range_pct:.2f}% of the detector trusted range.\n"
+            "Some pixels are in the non-linear countrate-correction regime,"
+            " but the recommended transmission should avoid severe countrate correction."
+        )
+
+    return CountrateSummary(
+        total_pixels=total_pixels,
+        max_pixel_trusted_range_pct=max_pixel_trusted_range_pct,
+        percentile_trusted_range_pcts=percentile_trusted_range_pcts,
+        recommended_transmission=recommended_transmission,
+        ref_percentile_trusted_range_pct=ref_percentile_trusted_range_pct,
+        warning_message=warning_message,
+    )
+
+
 @show_mail_handle_errors()
 def run(args: list[str] | None = None, phil=phil_scope):
     """Main entry point for the CLI program."""
@@ -179,68 +251,50 @@ def run(args: list[str] | None = None, phil=phil_scope):
     detector = experiment.detector.to_dict()
     max_trusted_counts = detector["panels"][0]["trusted_range"][1]
 
-    max_pixel_count = max(histogram)
-    max_pixel_percent_of_trusted_range = max_pixel_count * 100 / max_trusted_counts
-
-    total_pixels = sum(histogram.values())
-
     # Calculate transmission needed to scale reference percentile reflection to target countrate
     target_countrate_pct = params.input.target_countrate_pct
     ref_percentile = params.input.ref_percentile
     trusted_range_warning_threshold = params.input.trusted_range_warning_threshold
 
-    recommended_transmission, ref_percentile_trusted_range_pct = analyse_countrate(
-        transmission,
-        max_trusted_counts,
+    summary = calculate_summary(
         histogram,
+        max_trusted_counts,
+        transmission,
         target_countrate_pct,
         ref_percentile,
+        trusted_range_warning_threshold,
     )
 
     # Log summary
     logger.info("=" * 60)
     logger.info("Processing Summary:")
-    logger.info(f"Found {total_pixels} pixels from {len(shoeboxes)} reflections\n")
+    logger.info(
+        f"Found {summary.total_pixels} pixels from {len(shoeboxes)} reflections\n"
+    )
     logger.info(f"Experiment transmission = {transmission * 100:.2f}%")
     logger.info(
-        f"Max pixel recorded at {max_pixel_percent_of_trusted_range:.2f}% of detector trusted range\n"
+        f"Max pixel recorded at {summary.max_pixel_trusted_range_pct:.2f}% of detector trusted range\n"
     )
-    # Calculate the percentage of the detector trusted range for various percentiles of pixel intensities
-    percentile_trusted_range_pcts = [
-        (
-            percentile,
-            get_percentile_intensity(histogram, percentile / 100)
-            * 100
-            / max_trusted_counts,
-        )
-        for percentile in [99.999, 99.99, 99.9, 99.0, 90.0]
-    ]
-    for percentile, percentile_trusted_range_pct in percentile_trusted_range_pcts:
+    for (
+        percentile,
+        percentile_trusted_range_pct,
+    ) in summary.percentile_trusted_range_pcts:
         logger.info(
             f"{percentile}% of pixels <= {percentile_trusted_range_pct:.2f}% of detector trusted range\n"
         )
     logger.info(
-        f"Recommended max transmission of {recommended_transmission * 100:.2f}% to keep {ref_percentile}% of pixel intensities below {target_countrate_pct}% of detector trusted range\n"
+        f"Recommended max transmission of {summary.recommended_transmission * 100:.2f}% to keep {ref_percentile}% of pixel intensities below {target_countrate_pct}% of detector trusted range\n"
     )
-    if ref_percentile_trusted_range_pct > trusted_range_warning_threshold:
-        logger.warning(
-            f"WARNING: The {ref_percentile}th percentile pixel is at "
-            f"{ref_percentile_trusted_range_pct:.2f}% of the detector trusted range.\n"
-            "The recommended transmission may be unreliable because the data used "
-            "to calculate it is heavily countrate corrected."
-        )
-    elif ref_percentile_trusted_range_pct > target_countrate_pct:
-        logger.warning(
-            f"The {ref_percentile}th percentile pixel is at "
-            f"{ref_percentile_trusted_range_pct:.2f}% of the detector trusted range.\n"
-            "Some pixels are in the non-linear countrate-correction regime,"
-            " but the recommended transmission should avoid severe countrate correction."
-        )
+    if summary.warning_message:
+        logger.warning(summary.warning_message)
 
     logger.info("=" * 60)
 
     save_results_to_json(
-        histogram, max_trusted_counts, params.output.results, recommended_transmission
+        histogram,
+        max_trusted_counts,
+        params.output.results,
+        summary.recommended_transmission,
     )
 
     duration = time.time() - start_time
