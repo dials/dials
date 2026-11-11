@@ -108,24 +108,20 @@ def get_percentile_intensity(histogram: dict[int, int], percentile: float) -> in
     raise ValueError("Percentile could not be calculated from the histogram")
 
 
-def analyse_countrate(
+def recommend_transmission(
     transmission: float,
     max_trusted_counts: int,
-    histogram: dict[int, int],
+    ref_percentile_counts: int,
     target_countrate_pct: float,
-    ref_percentile: float,
-) -> tuple[float, float]:
-    """Calculate the recommended maximum transmission to keep a specified percentile of pixel intensities below a target percentage of the detector trusted range. Applies linear scaling to the reference percentile pixel intensity to calculate the recommended transmission."""
+) -> float:
+    """Recommend a transmission that scales the reference intensity to the target."""
     target_counts = max_trusted_counts * (target_countrate_pct / 100)
-    ref_percentile_counts = get_percentile_intensity(histogram, ref_percentile / 100)
-    ref_percentile_trusted_range_pct = ref_percentile_counts * 100 / max_trusted_counts
     scale_factor = target_counts / ref_percentile_counts
-    recommended_transmission = min(transmission * scale_factor, 1.0)
-    return recommended_transmission, ref_percentile_trusted_range_pct
+    return min(transmission * scale_factor, 1.0)
 
 
 @dataclass(frozen=True)
-class CountrateSummary:
+class CountrateAnalysis:
     total_pixels: int
     max_pixel_trusted_range_pct: float
     percentile_trusted_range_pcts: tuple[tuple[float, float], ...]
@@ -134,15 +130,15 @@ class CountrateSummary:
     warning_message: str | None
 
 
-def calculate_summary(
+def analyse_countrate(
     histogram: dict[int, int],
     max_trusted_counts: int,
     transmission: float,
     target_countrate_pct: float,
     ref_percentile: float,
     trusted_range_warning_threshold: float,
-) -> CountrateSummary:
-    """Calculate the values and warning shown in the processing summary."""
+) -> CountrateAnalysis:
+    """Analyse pixel intensities and return the processing summary."""
     if not histogram:
         raise ValueError("Cannot calculate a summary from an empty histogram")
     if max_trusted_counts <= 0:
@@ -150,12 +146,13 @@ def calculate_summary(
 
     total_pixels = sum(histogram.values())
     max_pixel_trusted_range_pct = max(histogram) * 100 / max_trusted_counts
-    recommended_transmission, ref_percentile_trusted_range_pct = analyse_countrate(
+    ref_percentile_counts = get_percentile_intensity(histogram, ref_percentile / 100)
+    ref_percentile_trusted_range_pct = ref_percentile_counts * 100 / max_trusted_counts
+    recommended_transmission = recommend_transmission(
         transmission,
         max_trusted_counts,
-        histogram,
+        ref_percentile_counts,
         target_countrate_pct,
-        ref_percentile,
     )
 
     percentiles = (99.999, 99.99, 99.9, 99.0, 90.0)
@@ -185,7 +182,7 @@ def calculate_summary(
             " but the recommended transmission should avoid severe countrate correction."
         )
 
-    return CountrateSummary(
+    return CountrateAnalysis(
         total_pixels=total_pixels,
         max_pixel_trusted_range_pct=max_pixel_trusted_range_pct,
         percentile_trusted_range_pcts=percentile_trusted_range_pcts,
@@ -256,7 +253,7 @@ def run(args: list[str] | None = None, phil=phil_scope):
     ref_percentile = params.input.ref_percentile
     trusted_range_warning_threshold = params.input.trusted_range_warning_threshold
 
-    summary = calculate_summary(
+    summary = analyse_countrate(
         histogram,
         max_trusted_counts,
         transmission,
