@@ -1,0 +1,1 @@
+``dials.stills_process``: output files are now named ``idx-<tag>_<suffix>.expt`` and ``.refl`` using ``output.*_suffix`` parameters, with separate ``indexed`` and ``refined`` outputs and experiments written only when matching reflections exist; the old ``output.*_filename`` parameters are deprecated but still translated.
