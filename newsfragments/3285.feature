@@ -1,0 +1,1 @@
+``dials.tof_integrate``: new ``method=profile_1d_profilelib``, which measures the peak shape on strong reflections and holds it fixed on weak ones, after Mantid's ``IntegratePeaksProfileFitting``. ``profile_1d_ibix`` is unchanged.
