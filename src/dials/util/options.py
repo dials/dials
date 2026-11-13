@@ -14,9 +14,11 @@ from glob import glob
 
 from ordered_set import OrderedSet
 
+import dxtbx.model
 import libtbx.phil
 from dxtbx.model import ExperimentList
 from dxtbx.model.experiment_list import ExperimentListFactory
+from dxtbx.model.geometry import declarable_metadata_paths, select_geometry_phil
 from dxtbx.util import get_url_scheme
 
 from dials.array_family import flex
@@ -105,30 +107,32 @@ tolerance
 """
 )
 
-geometry_phil_scope = libtbx.phil.parse(
-    """
-geometry
-  .help = "Allow overrides of experimental geometry"
-  .expert_level = 2
-{
-  include scope dxtbx.model.beam.beam_phil_scope
-  include scope dxtbx.model.detector.detector_phil_scope
-  include scope dxtbx.model.goniometer.goniometer_phil_scope
-  include scope dxtbx.model.scan.scan_phil_scope
 
-  convert_stills_to_sequences = False
-    .type = bool
-    .help = "When overriding the scan, convert stills into sequences"
-    .short_caption = "Convert stills into sequences"
+def _build_geometry_phil_scope():
+    # The dxtbx scope, plus the two DIALS-specific conversion options. Composed
+    # from dxtbx.model.geometry rather than re-including the four model scopes, so
+    # that the paths a Format class may declare as missing metadata cannot drift
+    # from the paths dials.import accepts on the command line.
+    scope = copy.deepcopy(dxtbx.model.geometry_phil_scope)
+    scope.objects[0].adopt_scope(
+        libtbx.phil.parse(
+            """
+convert_stills_to_sequences = False
+  .type = bool
+  .help = "When overriding the scan, convert stills into sequences"
+  .short_caption = "Convert stills into sequences"
 
-  convert_sequences_to_stills = False
-    .type = bool
-    .help = "When overriding the scan, convert sequences into stills"
-    .short_caption = "Convert sequences into stills"
-}
-""",
-    process_includes=True,
-)
+convert_sequences_to_stills = False
+  .type = bool
+  .help = "When overriding the scan, convert sequences into stills"
+  .short_caption = "Convert sequences into stills"
+"""
+        )
+    )
+    return scope
+
+
+geometry_phil_scope = _build_geometry_phil_scope()
 
 
 format_phil_scope = libtbx.phil.parse(
@@ -144,9 +148,79 @@ format
     .type = bool
     .help = "Enable a multi-panel detector model."
             "(Not supported by all detector formats)"
+  ignore_missing_metadata = False
+    .type = bool
+    .help = "Do not stop when a format class declares experimental metadata that"
+            "it cannot read from the image file and no geometry override was"
+            "supplied. The format class will then use whatever placeholder values"
+            "it has, so only set this if you know the values are corrected later,"
+            "for example from input.reference_geometry."
+    .expert_level = 3
 }
 """
 )
+
+
+def _geometry_overrides_phil_str(params, user_phils):
+    """
+    A phil string of the geometry.* values the user explicitly supplied.
+
+    This is handed to the Format classes as a format_kwarg, so that a Format
+    declaring missing metadata can fill it in as it is constructed, before any
+    experimental model is assembled. It has to be a string rather than a phil
+    extract because format_kwargs are serialised into the imageset "params" entry
+    of the resulting .expt file.
+
+    Only the paths the user actually mentioned are included. Built from
+    user_phils rather than fetch_diff, because fetch_diff drops a value set equal
+    to its master default, which would make e.g. geometry.beam.probe=x-ray read as
+    "not supplied".
+    """
+    if not user_phils:
+        return ""
+    declarable = declarable_metadata_paths()
+    mentioned = set()
+    for phil in user_phils:
+        for definition in phil.all_definitions():
+            if definition.path.startswith("geometry."):
+                path = definition.path[len("geometry.") :]
+                if path in declarable:
+                    mentioned.add(path)
+    if not mentioned:
+        return ""
+    # Take the values from params rather than from user_phils directly, so that a
+    # path given in several sources resolves the same way it does everywhere else.
+    # Formatted against the dxtbx scope rather than the DIALS one, so that this
+    # works for any caller whose geometry scope covers the declarable paths, even
+    # if it lacks the DIALS-specific convert_* parameters.
+    supplied, _ = select_geometry_phil(
+        dxtbx.model.geometry_phil_scope.format(python_object=params), mentioned
+    )
+    return supplied.as_str()
+
+
+def format_kwargs_from_params(params, user_phils=None):
+    """
+    Collect the keyword arguments to pass on to the Format classes.
+
+    Returns None if params carries no format scope, matching the previous
+    behaviour of the two call sites this replaces.
+    """
+    try:
+        format_kwargs = {
+            "dynamic_shadowing": params.format.dynamic_shadowing,
+            "multi_panel": params.format.multi_panel,
+        }
+    except AttributeError:
+        return None
+    # Both only when set, so that runs which override nothing produce .expt files
+    # byte-identical to those from before these keys existed.
+    overrides = _geometry_overrides_phil_str(params, user_phils)
+    if overrides:
+        format_kwargs["geometry_overrides"] = overrides
+    if getattr(params.format, "ignore_missing_metadata", False):
+        format_kwargs["ignore_missing_metadata"] = True
+    return format_kwargs
 
 
 # Simple tuple to hold basic information on why an argument failed
@@ -408,6 +482,20 @@ class PhilCommandParser:
         # Set the working phil scope
         self._phil = self.system_phil.fetch(source=parse(""))
 
+        # The phil sources supplied by the user on the last parse_args
+        self._user_phils = []
+
+    @property
+    def user_phils(self):
+        """
+        The phil scopes the user supplied to the last parse_args, as command line
+        overrides or phil files. Unlike diff_phil, this retains a value that
+        happens to equal its master default.
+
+        :return: A list of phil scopes
+        """
+        return self._user_phils
+
     @property
     def phil(self):
         """
@@ -492,6 +580,8 @@ class PhilCommandParser:
             else:
                 unhandled.append(arg)
 
+        self._user_phils = user_phils
+
         # Fetch the phil parameters
         self._phil, unused = self.system_phil.fetch(
             sources=user_phils, track_unused_definitions=True
@@ -533,15 +623,7 @@ class PhilCommandParser:
             )
             scan_tolerance = params.input.tolerance.scan.oscillation
 
-            # FIXME Should probably make this smarter since it requires editing here
-            # and in dials.import phil scope
-            try:
-                format_kwargs = {
-                    "dynamic_shadowing": params.format.dynamic_shadowing,
-                    "multi_panel": params.format.multi_panel,
-                }
-            except AttributeError:
-                format_kwargs = None
+            format_kwargs = format_kwargs_from_params(params, user_phils=user_phils)
         else:
             compare_beam = None
             compare_detector = None
@@ -555,20 +637,25 @@ class PhilCommandParser:
             load_models = True
 
         # Try to import everything
-        importer = Importer(
-            unhandled,
-            read_experiments=self._read_experiments,
-            read_reflections=self._read_reflections,
-            read_experiments_from_images=self._read_experiments_from_images,
-            check_format=self._check_format,
-            verbose=verbose,
-            compare_beam=compare_beam,
-            compare_detector=compare_detector,
-            compare_goniometer=compare_goniometer,
-            scan_tolerance=scan_tolerance,
-            format_kwargs=format_kwargs,
-            load_models=load_models,
-        )
+        try:
+            importer = Importer(
+                unhandled,
+                read_experiments=self._read_experiments,
+                read_reflections=self._read_reflections,
+                read_experiments_from_images=self._read_experiments_from_images,
+                check_format=self._check_format,
+                verbose=verbose,
+                compare_beam=compare_beam,
+                compare_detector=compare_detector,
+                compare_goniometer=compare_goniometer,
+                scan_tolerance=scan_tolerance,
+                format_kwargs=format_kwargs,
+                load_models=load_models,
+            )
+        except dxtbx.model.MissingMetadataError as e:
+            # The message is already complete and actionable; re-raise as Sorry
+            # only to keep it out from behind the "please report this bug" banner
+            raise Sorry(str(e)) from None
 
         # Grab a copy of the errors that occurred in case the caller wants them
         self.handling_errors = importer.handling_errors
@@ -992,6 +1079,15 @@ class ArgumentParser(ArgumentParserBase):
         :returns: The diff phil scope
         """
         return self._phil_parser.diff_phil
+
+    @property
+    def user_phils(self):
+        """
+        Get the phil scopes supplied by the user.
+
+        :returns: A list of phil scopes
+        """
+        return self._phil_parser.user_phils
 
     def _strip_rst_markup(self, text):
         """
