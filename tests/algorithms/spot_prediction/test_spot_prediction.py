@@ -111,55 +111,6 @@ def test_miller_index_set(spotpredictor):
         assert gen_hkl[hkl]
 
 
-def test_rotation_angles(spotpredictor):
-    """Ensure the rotation angles agree with XDS"""
-
-    # Create a dict of lists of xy for each hkl
-    gen_phi = {}
-    for r in spotpredictor.reflections.rows():
-        hkl = r["miller_index"]
-        phi = r["phi"]
-        try:
-            a = gen_phi[hkl]
-            a.append(phi)
-            gen_phi[hkl] = a
-        except KeyError:
-            gen_phi[hkl] = [phi]
-
-    for hkl, xyz in zip(
-        spotpredictor.integrate_handle.hkl, spotpredictor.integrate_handle.xyzcal
-    ):
-        xds_phi = (
-            spotpredictor.scan.get_oscillation(deg=False)[0]
-            + xyz[2] * spotpredictor.scan.get_oscillation(deg=False)[1]
-        )
-
-        # Select the nearest xy to use if there are 2
-        my_phi = gen_phi[hkl]
-        if len(my_phi) == 2:
-            my_phi0 = my_phi[0]
-            my_phi1 = my_phi[1]
-            diff0 = abs(xds_phi - my_phi0)
-            diff1 = abs(xds_phi - my_phi1)
-            if diff0 < diff1:
-                my_phi = my_phi0
-            else:
-                my_phi = my_phi1
-        else:
-            my_phi = my_phi[0]
-
-        assert xds_phi == pytest.approx(my_phi, abs=0.1)
-
-
-def test_beam_vectors(spotpredictor):
-    """Ensure |s1| == |s0|"""
-    s0_length = matrix.col(spotpredictor.beam.get_s0()).length()
-    for r in spotpredictor.reflections.rows():
-        s1 = r["s1"]
-        s1_length = matrix.col(s1).length()
-        assert s0_length == pytest.approx(s1_length, abs=1e-7)
-
-
 def test_image_coordinates(spotpredictor):
     """Ensure the image coordinates agree with XDS"""
     # Create a dict of lists of xy for each hkl

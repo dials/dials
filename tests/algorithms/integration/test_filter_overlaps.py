@@ -4,7 +4,8 @@ import pytest
 
 
 @pytest.mark.xfail(
-    reason="Test does not appear correct. See https://github.com/dials/dials/issues/2909"
+    reason="Test does not appear correct. See https://github.com/dials/dials/issues/2909",
+    run=False,
 )
 def test_for_overlaps(dials_data):
     from cctbx.array_family import flex
