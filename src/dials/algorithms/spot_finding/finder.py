@@ -342,7 +342,7 @@ def shoeboxes_to_reflection_table(
 
     # Filter the reflections and select only the desired spots
     flags = filter_spots(
-        None, sweep=imageset, observations=observed, shoeboxes=shoeboxes
+        None, sequence=imageset, observations=observed, shoeboxes=shoeboxes
     )
     observed = observed.select(flags)
     shoeboxes = shoeboxes.select(flags)

@@ -1,0 +1,1 @@
+``dials.find_spots``: fix a crash when ``spotfinder.filter.background_gradient.filter=True`` was set. The background gradient filter now receives the imageset it needs, so spot finding completes instead of raising an ``AttributeError``.
