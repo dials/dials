@@ -14,13 +14,6 @@ Python_add_library(
 target_link_libraries( dials_algorithms_integration_integrator_ext PUBLIC CCTBX::cctbx Boost::python )
 
 Python_add_library(
-    dials_algorithms_integration_parallel_integrator_ext
-    MODULE
-    boost_python/parallel_integrator_ext.cc
-)
-target_link_libraries( dials_algorithms_integration_parallel_integrator_ext PUBLIC Boost::thread Boost::python CCTBX::cctbx )
-
-Python_add_library(
     dials_algorithms_integration_sum_ext
     MODULE
     sum/boost_python/summation.cc

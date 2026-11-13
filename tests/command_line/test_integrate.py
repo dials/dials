@@ -139,37 +139,6 @@ def test_basic_blocking_options(dials_data, tmp_path, block_size, block_units):
     assert not result.returncode and not result.stderr
 
 
-@pytest.mark.skip(reason="3d threaded integrator")
-def test_basic_threaded_integrate(dials_data, tmp_path):
-    """Test the threaded integrator on single imageset data."""
-
-    expts = dials_data("centroid_test_data") / "indexed.expt"
-    refls = dials_data("centroid_test_data") / "indexed.refl"
-
-    result = subprocess.run(
-        [
-            shutil.which("dials.integrate"),
-            "nproc=1",
-            "integration.integrator=3d_threaded",
-            "background.algorithm=glm",
-            "njobs=2",
-            "nproc=2",
-            refls,
-            expts,
-        ],
-        cwd=tmp_path,
-        capture_output=True,
-    )
-    assert not result.returncode and not result.stderr
-    assert tmp_path.joinpath("integrated.refl").is_file()
-    assert tmp_path.joinpath("integrated.expt").is_file()
-
-    table = flex.reflection_table.from_file(tmp_path / "integrated.refl")
-    assert table.size() == 3526
-    assert set(table["id"]) == {0}
-    assert table.select(table["id"] == 0).size() == 3526
-
-
 def test_basic_integrate_output_integrated_only(dials_data, tmp_path):
     exp = load.experiment_list(dials_data("centroid_test_data") / "experiments.json")
     exp[0].identifier = "bar"

@@ -10,10 +10,6 @@ import random
 import dials.extensions
 from dials.algorithms.integration import TimingInfo, processor
 from dials.algorithms.integration.filtering import IceRingFilter
-from dials.algorithms.integration.parallel_integrator import (
-    IntegratorProcessor,
-    ReferenceCalculatorProcessor,
-)
 from dials.algorithms.integration.processor import (
     Processor2D,
     Processor3D,
@@ -54,7 +50,6 @@ __all__ = [
     "Integrator",
     "Integrator2D",
     "Integrator3D",
-    "Integrator3DThreaded",
     "IntegratorExecutor",
     "IntegratorFlat3D",
     "IntegratorSingle2D",
@@ -186,7 +181,7 @@ def generate_phil_scope():
 
       }
 
-      integrator = *auto 3d flat3d 2d single2d stills 3d_threaded
+      integrator = *auto 3d flat3d 2d single2d stills
         .type = choice
         .help = "The integrator to use."
         .expert_level=3
@@ -1590,188 +1585,6 @@ class IntegratorStills(Integrator):
     finalize_reflections = staticmethod(_finalize_stills)
 
 
-class Integrator3DThreaded:
-    """
-    Integrator for 3D algorithms
-    """
-
-    def __init__(self, experiments, reflections, params):
-        """
-        Initialize the integrator
-
-        :param experiments: The experiment list
-        :param reflections: The reflections to process
-        :param params: The parameters to use
-        """
-
-        # Save some stuff
-        self.experiments = experiments
-        self.reflections = reflections
-        self.params = params
-        self.profile_model_report = None
-        self.integration_report = None
-
-    def initialise(self):
-        """
-        Initialise the integrator
-        """
-        # Compute some reflection properties
-        self.reflections.compute_zeta_multi(self.experiments)
-        self.reflections.compute_d(self.experiments)
-        self.reflections.compute_bbox(
-            self.experiments,
-            sigma_b_multiplier=self.params.integration.profile.sigma_b_multiplier,
-        )
-
-        # Filter the reflections by zeta
-        mask = (
-            flex.abs(self.reflections["zeta"]) < self.params.integration.filter.min_zeta
-        )
-        self.reflections.set_flags(mask, self.reflections.flags.dont_integrate)
-
-        # Filter the reflections by powder ring
-        # if self.params.integration.filter.powder_filter is not None:
-        #   mask = self.params.integration.filter.powder_filter(self.reflections['d'])
-        #   self.reflections.set_flags(mask, self.reflections.flags.in_powder_ring)
-
-    def finalise(self):
-        """
-        Finalise the integrator
-        """
-
-        # Compute the corrections
-        self.reflections.compute_corrections(self.experiments)
-
-    def integrate(self):
-        """
-        Integrate the data
-        """
-        # Init the report
-        self.profile_model_report = None
-        self.integration_report = None
-
-        # Heading
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info("Processing reflections")
-        logger.info("")
-
-        # Create summary format
-        fmt = (
-            " Processing the following experiments:\n"
-            "\n"
-            " Experiments: %d\n"
-            " Beams:       %d\n"
-            " Detectors:   %d\n"
-            " Goniometers: %d\n"
-            " Scans:       %d\n"
-            " Crystals:    %d\n"
-            " Imagesets:   %d\n"
-        )
-
-        # Print the summary
-        logger.info(
-            fmt,
-            len(self.experiments),
-            len(self.experiments.beams()),
-            len(self.experiments.detectors()),
-            len(self.experiments.goniometers()),
-            len(self.experiments.scans()),
-            len(self.experiments.crystals()),
-            len(self.experiments.imagesets()),
-        )
-
-        # Do the initialisation
-        self.initialise()
-
-        # Do profile modelling
-        if self.params.integration.profile.fitting:
-            logger.info("=" * 80)
-            logger.info("")
-            logger.info("Modelling reflection profiles")
-            logger.info("")
-
-            # Compute the reference profiles
-            reference_calculator = ReferenceCalculatorProcessor(
-                experiments=self.experiments,
-                reflections=self.reflections,
-                params=self.params,
-            )
-
-            # Get the reference profiles
-            self.reference_profiles = reference_calculator.profiles()
-        else:
-            self.reference_profiles = None
-
-        logger.info("=" * 80)
-        logger.info("")
-        logger.info("Integrating reflections")
-        logger.info("")
-
-        integrator = IntegratorProcessor(
-            experiments=self.experiments,
-            reflections=self.reflections,
-            reference=self.reference_profiles,
-            params=self.params,
-        )
-
-        # Process the reflections
-        self.reflections = integrator.reflections()
-
-        # Do the finalisation
-        self.finalise()
-
-        # Create the integration report
-        self.integration_report = IntegrationReport(self.experiments, self.reflections)
-        logger.info("")
-        logger.info(self.integration_report.as_str(prefix=" "))
-
-        # Print the time info
-        # logger.info("Timing information for integration")
-        # logger.info(str(time_info))
-        # logger.info("")
-
-        # Return the reflections
-        return self.reflections
-
-    def report(self):
-        """
-        Return the report of the processing
-        """
-        result = Report()
-        if self.profile_model_report is not None:
-            result.combine(self.profile_model_report)
-        result.combine(self.integration_report)
-        return result
-
-    def summary(self, block_size, block_size_units):
-        """Print a summary of the integration stuff."""
-        # Compute the task table
-        if self._experiments.all_stills():
-            rows = [["#", "Group", "Frame From", "Frame To"]]
-            for i in range(len(self)):
-                job = self._manager.job(i)
-                group = job.index()
-                f0, f1 = job.frames()
-                rows.append([str(i), str(group), str(f0), str(f1)])
-        elif self._experiments.all_sequences():
-            rows = [["#", "Group", "Frame From", "Frame To", "Angle From", "Angle To"]]
-            for i in range(len(self)):
-                job = self._manager.job(i)
-                group = job.index()
-                expr = job.expr()
-                f0, f1 = job.frames()
-                scan = self._experiments[expr[0]].scan
-                p0 = scan.get_angle_from_array_index(f0)
-                p1 = scan.get_angle_from_array_index(f1)
-                rows.append(
-                    [str(i), str(group), str(f0 + 1), str(f1), str(p0), str(p1)]
-                )
-        else:
-            raise RuntimeError("Experiments must be all sequences or all stills")
-        return tabulate(rows, headers="firstrow")
-
-
 def create_integrator(params, experiments, reflections):
     """
     Create an integrator object with a given configuration.
@@ -1824,7 +1637,6 @@ def create_integrator(params, experiments, reflections):
         "2d": Integrator2D,
         "single2d": IntegratorSingle2D,
         "stills": IntegratorStills,
-        "3d_threaded": Integrator3DThreaded,
     }.get(params.integration.integrator)
     if not IntegratorClass:
         raise ValueError(f"Unknown integration type {params.integration.integrator}")
