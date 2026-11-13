@@ -11,6 +11,11 @@ from dxtbx import flumpy
 import dials_array_family_flex_ext
 from dials.array_family import flex
 
+
+def compression() -> hdf5plugin.Bitshuffle:
+    return hdf5plugin.Bitshuffle(cname="lz4")
+
+
 dials_to_nx_names = {
     "id": "id",
     "partial_id": "reflection_id",
@@ -189,7 +194,11 @@ class ReflectionListEncoder(object):
                 s = data.size()
                 this_data = flumpy.to_numpy(data.as_int()).reshape(s, 6)
                 group.create_dataset(
-                    key, data=this_data, shape=this_data.shape, dtype=this_data.dtype
+                    key,
+                    data=this_data,
+                    shape=this_data.shape,
+                    dtype=this_data.dtype,
+                    compression=compression(),
                 )
             elif isinstance(data, flex.std_string):
                 this_data = [s.encode("utf-8") for s in data]
@@ -197,7 +206,11 @@ class ReflectionListEncoder(object):
             else:
                 this_data = flumpy.to_numpy(data)
                 group.create_dataset(
-                    key, data=this_data, shape=this_data.shape, dtype=this_data.dtype
+                    key,
+                    data=this_data,
+                    shape=this_data.shape,
+                    dtype=this_data.dtype,
+                    compression=compression(),
                 )
             # Create references to the data in the NXReflections group
             ref_dtype = h5py.special_dtype(ref=h5py.RegionReference)
@@ -218,14 +231,14 @@ class ReflectionListEncoder(object):
         panel = data.panels()
         bbox = data.bounding_boxes()
         data = flumpy.to_numpy(sbdata)
-        lz4 = hdf5plugin.LZ4()
+        bitshuffle = compression()
         sbox_group = group.create_group(key)
         sbox_group.create_dataset(
             "shoebox_data",
             data=data,
             shape=data.shape,
             dtype=data.dtype,
-            compression=lz4,
+            compression=bitshuffle,
         )
         data = flumpy.to_numpy(bg)
         sbox_group.create_dataset(
@@ -233,7 +246,7 @@ class ReflectionListEncoder(object):
             data=data,
             shape=data.shape,
             dtype=data.dtype,
-            compression=lz4,
+            compression=bitshuffle,
         )
         data = flumpy.to_numpy(mask)
         sbox_group.create_dataset(
@@ -241,7 +254,7 @@ class ReflectionListEncoder(object):
             data=data,
             shape=data.shape,
             dtype=data.dtype,
-            compression=lz4,
+            compression=bitshuffle,
         )
         s = bbox.size()
         this_data = flumpy.to_numpy(bbox.as_int()).reshape(s, 6)
@@ -250,11 +263,15 @@ class ReflectionListEncoder(object):
             data=this_data,
             shape=this_data.shape,
             dtype=this_data.dtype,
-            compression=lz4,
+            compression=bitshuffle,
         )
         data = flumpy.to_numpy(panel)
         sbox_group.create_dataset(
-            "panel", data=data, shape=data.shape, dtype=data.dtype, compression=lz4
+            "panel",
+            data=data,
+            shape=data.shape,
+            dtype=data.dtype,
+            compression=bitshuffle,
         )
 
     @staticmethod
@@ -266,7 +283,7 @@ class ReflectionListEncoder(object):
         The per-frame arrays vary in length from row to row, so they are stored
         concatenated, alongside the number of frames of each row.
         """
-        lz4 = hdf5plugin.LZ4()
+        bitshuffle = compression()
         fss_group = group.create_group(key)
         arrays = dict(
             zip(
@@ -282,7 +299,7 @@ class ReflectionListEncoder(object):
                 data=this_data,
                 shape=this_data.shape,
                 dtype=this_data.dtype,
-                compression=lz4,
+                compression=bitshuffle,
             )
 
 
