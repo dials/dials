@@ -451,9 +451,11 @@ class UCSettingsPanel(wx.Panel):
 
         wavelength = float(self.wavelength_ctrl.GetValue())
         distance = float(self.distance_ctrl.GetValue())
-        pixel_size = detector[0].get_pixel_size()[
-            0
-        ]  # FIXME assumes square pixels, and that all panels use same pixel size
+        # ring radii are drawn in picture pixels, whose pitch is the finest
+        # pixel size on the detector (see flex_image.get_picture_pixel_size)
+        from .flex_image import get_picture_pixel_size
+
+        pixel_size = get_picture_pixel_size(detector)  # FIXME assumes square pixels
 
         twotheta = hkl_list.two_theta(wavelength=wavelength)
         L_mm = []
