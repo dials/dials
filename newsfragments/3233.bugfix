@@ -1,0 +1,1 @@
+``dials.correlation_matrix``: Avoid html plotting crash when crystals are filtered out based on min_reflections
