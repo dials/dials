@@ -246,6 +246,10 @@ def run(args: list[str] | None = None, phil=phil_scope):
 
     histogram = generate_histogram_from_shoeboxes(shoeboxes)
     detector = experiment.detector.to_dict()
+    if len(detector["panels"]) > 1:
+        logger.warning(
+            "\nDetector has multiple panels - using only the first panel's trusted range for countrate analysis\n"
+        )
     max_trusted_counts = detector["panels"][0]["trusted_range"][1]
 
     # Calculate transmission needed to scale reference percentile reflection to target countrate
@@ -290,7 +294,7 @@ def run(args: list[str] | None = None, phil=phil_scope):
     save_results_to_json(
         histogram,
         max_trusted_counts,
-        params.output.results,
+        params.output.json,
         summary.recommended_transmission,
     )
 
