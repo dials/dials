@@ -1,3 +1,64 @@
+DIALS 3.31.0 (2026-11-03)
+=========================
+
+Features
+--------
+
+- ``flex.reflection_table``: Add ``as_pandas_dataframe()``, returning the table as a ``pandas.DataFrame``, with multiple valued columns such as ``miller_index`` and ``bbox`` unpacked element by element. (`#1914 <https://github.com/dials/dials/issues/1914>`_)
+- ``dials.scale``: With ``exclude_images=``, allow ``*`` in place of the experiment number, to exclude the same image range from every dataset, e.g. ``exclude_images=*:21:100``. (`#2560 <https://github.com/dials/dials/issues/2560>`_)
+- ``dials.model_background``: Support multiprocessing with ``nproc``. (`#3005 <https://github.com/dials/dials/issues/3005>`_)
+- ``dials.export``: Laue and time-of-flight data can now be exported to MTZ, with one batch per experiment and the wavelength of each reflection in a ``LAMBDA`` column. The ``PANEL`` number to which ``XDET`` and ``YDET`` refer is written too, and for time-of-flight data the ``TOF`` in microseconds. (`#3150 <https://github.com/dials/dials/issues/3150>`_)
+- Change default reflection table format to HDF5, instead of msgpack. This can be reverted (for now) by setting ``DIALS_USE_MSGPACK=1``. (`#3255 <https://github.com/dials/dials/issues/3255>`_)
+- ``dials.integrate``: Add frame-sliced integration results with ``integration.frame_slice_shoeboxes=True``, intended to reconstruct the rocking curve for comparison with 3DED simulations. (`#3259 <https://github.com/dials/dials/issues/3259>`_)
+- Added three additional tof profile methods: ``profile_3d_ic``, ``profile_1d_ic``, and ``profile_3d_ibix``. (`#3268 <https://github.com/dials/dials/issues/3268>`_)
+- ``dials.export``: add ``format=cif`` to write a small molecule CIF, including electron diffraction metadata, for structure solution. (`#3269 <https://github.com/dials/dials/issues/3269>`_)
+- ``dials.cosym``: Rotate cosym plot to align with principal components and add matrix-style PCA plot for better visualisation of higher dimension cases. (`#3277 <https://github.com/dials/dials/issues/3277>`_)
+- ``dials.sequence_to_stills``: Retain ImageSequence data structure in output experiments for performance. (`#3287 <https://github.com/dials/dials/issues/3287>`_)
+- ``dials.split_still_data``: ``series_repeat=`` can now be given as a list of names for the groups, e.g. ``series_repeat=first,second,last``, in which case the number of names defines the size of the repeat and the names are used for the output files in place of ``group_0``, ``group_1``, .... A name may be repeated, in which case each occurrence is numbered in order, i.e. ``series_repeat=dose,dose,apo`` gives ``dose_1``, ``dose_2`` and ``apo``. (`#3288 <https://github.com/dials/dials/issues/3288>`_)
+- ``dials.export format=cif``: Cdd ``cif.combine=`` to take the ``_cell_measurement`` items from a CIF written by ``dials.two_theta_refine``. (`#3289 <https://github.com/dials/dials/issues/3289>`_)
+- ``dials.find_spots``: More efficient union-find algorithm for spot extraction, speeding up large datasets. (`#3293 <https://github.com/dials/dials/issues/3293>`_)
+- Add Python 3.15 support to bootstrap.py. (`#3306 <https://github.com/dials/dials/issues/3306>`_)
+
+
+Bugfixes
+--------
+
+- ``dials.model_background``: Fix the smoothing of the background model when next to azimuth zero, where pixels from the wrong part of the detector were used. (`#3005 <https://github.com/dials/dials/issues/3005>`_)
+- ``Shoebox.peak_coordinates``: When several pixels share the maximum value, break the tie by selecting the pixel nearest the shoebox centroid. This stops well-placed reflections being rejected by the peak-centroid distance filter. (`#3014 <https://github.com/dials/dials/issues/3014>`_)
+- ``dials.stills_process``: Repairs a bug that made indexing results dependent on the order frames were processed. (`#3245 <https://github.com/dials/dials/issues/3245>`_)
+- ``dials.search_beam_position``: Fix "method" option type (needed for DUI2) (`#3254 <https://github.com/dials/dials/issues/3254>`_)
+- ``dials.cosym`` and ``dials.correlation_matrix``: Tidy logging output for ``numpy.int64``. (`#3274 <https://github.com/dials/dials/issues/3274>`_)
+- ``tof_profile_1d_ibix``: Allow the user to specify bounds of A parameter, and made these bounds independent of reflection intensity. (`#3281 <https://github.com/dials/dials/issues/3281>`_)
+- ``dials.tof_integrate``: Stop ``mask=ellipse`` aborting the whole run on a shoebox with no counts in it, which is an ordinary case for weak predicted reflections. (`#3282 <https://github.com/dials/dials/issues/3282>`_)
+- ``dials.export format=cif``: No longer write ``_cell_measurement_reflns_used`` and ``_cell_measurement_theta_min/max`` from the exported reflections, as these describe the reflections used to determine the cell. (`#3289 <https://github.com/dials/dials/issues/3289>`_)
+- ``dials.integrate``: Fix harmless bounds check error. (`#3294 <https://github.com/dials/dials/issues/3294>`_)
+- Bootstrap: CMake builds made with ``installer/bootstrap.py`` now default to ``RelWithDebInfo`` again, as standalone dials/dxtbx builds do. (`#3295 <https://github.com/dials/dials/issues/3295>`_)
+- ``dials.image_viewer``, and other GUI tools: Fix crash when opening a file dialog on systems with older GTK installed (e.g. RHEL8). (`#3296 <https://github.com/dials/dials/issues/3296>`_)
+- ``dials.integrate``: Stop sending a copy of the whole input reflection table to every worker process. This can save used a large amount of memory, particularly on Windows. (`#3298 <https://github.com/dials/dials/issues/3298>`_)
+- ``dials.integrate``: Free the shoeboxes of the reference reflections, once the profile model has been computed. They were kept in memory for the whole of integration, which on large datasets could be more than 1 GB. (`#3299 <https://github.com/dials/dials/issues/3299>`_)
+- Reflection and experiment files given as PHIL parameters are now only read when their data are used. Previously they were read again every time the parameters were extracted or compared, for example to show the modified parameters, so ``dials.integrate`` read its input reflection file five times. For large files this wasted time and could double peak memory use. (`#3300 <https://github.com/dials/dials/issues/3300>`_)
+- ``dials.integrate``: The memory estimate used to limit the number of processes is now more accurate. (`#3302 <https://github.com/dials/dials/issues/3302>`_)
+- ``dials.symmetry``: Fix crash for time-of-flight data, due to scan oscillation check. (`#3307 <https://github.com/dials/dials/issues/3307>`_)
+- ``dials.stills_process``: Raise the gain mismatch error also when the supplied gain equals the detector gain, since the two were applied multiplicatively. (`#3309 <https://github.com/dials/dials/issues/3309>`_)
+- ``dials.refine``, ``dials.stills_process``: Correct the analytical gradients of predicted spot positions for stills with respect to the crystal orientation, unit cell and beam direction. (`#3313 <https://github.com/dials/dials/issues/3313>`_)
+- ``dials.report``: Add support for ToF data (`#3314 <https://github.com/dials/dials/issues/3314>`_)
+- bootstrap.py: Retry git operations on failure. (`#3328 <https://github.com/dials/dials/issues/3328>`_)
+
+
+Improved Documentation
+----------------------
+
+- ``dials.model_background``: Expand the help to describe the algorithm, its parameters and outputs, and how to use the model in ``dials.integrate``, citing the paper that describes the method. (`#3005 <https://github.com/dials/dials/issues/3005>`_)
+- Tutorials: correct the ``dials.index`` commands for data containing more than one rotation sequence, which now require ``joint_indexing`` to be set explicitly, and fix the misspelt ``joint=False`` in the intensity-based clustering tutorial. (`#3222 <https://github.com/dials/dials/issues/3222>`_)
+- Present the stable release downloads as a matrix of platform against kind of installer, instead of a flat list of buttons. (`#3240 <https://github.com/dials/dials/issues/3240>`_)
+
+
+Misc
+----
+
+- `#1394 <https://github.com/dials/dials/issues/1394>`_, `#3237 <https://github.com/dials/dials/issues/3237>`_, `#3238 <https://github.com/dials/dials/issues/3238>`_, `#3240 <https://github.com/dials/dials/issues/3240>`_, `#3242 <https://github.com/dials/dials/issues/3242>`_, `#3249 <https://github.com/dials/dials/issues/3249>`_, `#3261 <https://github.com/dials/dials/issues/3261>`_, `#3271 <https://github.com/dials/dials/issues/3271>`_, `#3278 <https://github.com/dials/dials/issues/3278>`_, `#3292 <https://github.com/dials/dials/issues/3292>`_, `#3303 <https://github.com/dials/dials/issues/3303>`_, `#3304 <https://github.com/dials/dials/issues/3304>`_, `#3306 <https://github.com/dials/dials/issues/3306>`_, `#3322 <https://github.com/dials/dials/issues/3322>`_, `#3325 <https://github.com/dials/dials/issues/3325>`_, `#3326 <https://github.com/dials/dials/issues/3326>`_
+
+
 DIALS 3.30.1 (2026-09-16)
 =========================
 

@@ -18,6 +18,7 @@ from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
+    LaueBeamParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
@@ -416,13 +417,14 @@ def test_laue_target_function(dials_data):
     )
 
     det_param = DetectorParameterisationHierarchical(detector)
+    beam_param = LaueBeamParameterisation(beam, goniometer)
     xlo_param = CrystalOrientationParameterisation(crystal)
     xluc_param = CrystalUnitCellParameterisation(crystal)
 
     pred_param = LauePredictionParameterisation(
         experiments,
         detector_parameterisations=[det_param],
-        beam_parameterisations=[],
+        beam_parameterisations=[beam_param],
         xl_orientation_parameterisations=[xlo_param],
         xl_unit_cell_parameterisations=[xluc_param],
     )

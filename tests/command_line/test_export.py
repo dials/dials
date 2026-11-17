@@ -887,13 +887,11 @@ def test_cif_combine(dials_data, tmp_path, two_theta_cif):
         float(source.find_value("_cell_measurement_theta_min")), abs=1e-4
     )
 
-    # the other items from the two_theta_refine CIF describe the reflections it
-    # used, not the exported data, so must not have been copied
+    # _diffrn_reflns items describe the exported data, not the reflections
+    # used for cell refinement
+    assert source.find_value("_diffrn_reflns_number") is None
     n_exported = len(block.find("_diffrn_refln_", ["index_h", "index_k", "index_l"]))
     assert int(block.find_value("_diffrn_reflns_number")) == n_exported
-    assert block.find_value("_diffrn_reflns_number") != source.find_value(
-        "_diffrn_reflns_number"
-    )
 
 
 def test_cif_combine_extra_takes_precedence(dials_data, tmp_path, two_theta_cif):

@@ -323,7 +323,7 @@ def vmxi_protk_reindexed(dials_data, tmp_path_factory):
         "space_group=P422",
     ]
     tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
-    subprocess.run(command, cwd=tmp_path, capture_output=True)
+    subprocess.run(command, cwd=tmp_path, capture_output=True).check_returncode()
     return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 

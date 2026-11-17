@@ -1,4 +1,4 @@
-#include <cassert>
+#include <dials/error.h>
 #include <vector>
 #include <iostream>
 #include <sstream>
@@ -137,7 +137,7 @@ void tst_detect_2d() {
   }
 
   // Check the sizes are equal
-  assert(collisions2.size() == collisions1.size());
+  DIALS_ASSERT(collisions2.size() == collisions1.size());
 
   // Test passed
   std::cout << "OK" << std::endl;
@@ -183,7 +183,7 @@ void tst_detect_3d() {
   }
 
   // Check the sizes are equal
-  assert(collisions2.size() == collisions1.size());
+  DIALS_ASSERT(collisions2.size() == collisions1.size());
 
   // Test passed
   std::cout << "OK" << std::endl;

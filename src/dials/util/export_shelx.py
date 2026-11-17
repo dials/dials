@@ -131,7 +131,7 @@ def _generate_laue_batch_numbers(reflections: flex.reflection_table) -> flex.int
     else:
         idx_id = reflections["id"]
 
-    return idx_id
+    return idx_id + 1
 
 
 def _export_as_shelx_hklf2(

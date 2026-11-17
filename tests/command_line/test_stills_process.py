@@ -174,7 +174,9 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
             "-n",
             "4",
             "dials.stills_process",
-            "mp.method=mpi mp.composite_stride=4 output.logging_dir=.",
+            "mp.method=mpi",
+            "mp.composite_stride=4",
+            "output.logging_dir=.",
         ]
     else:
         command = [shutil.which("dials.stills_process")]
@@ -182,56 +184,53 @@ def test_sacla_h5(dials_data, tmp_path, control_flags, in_memory=False):
     result = subprocess.run(command, cwd=tmp_path, capture_output=True)
     assert not result.returncode and not result.stderr
 
-    def test_refl_table(result_filename, ranges, ids=None):
-        if ids is None:
-            ids = {0, 1, 2, 3}
+    def test_refl_table(result_filename, ranges):
+        """Check each image's reflection count against ranges, keyed by image index."""
         table = flex.reflection_table.from_file(result_filename)
-        for expt_id, (min_, max_) in enumerate(ranges):
-            subset = table.select(table["id"] == expt_id)
-            n_refl = len(subset)
-            assert min_ <= n_refl < max_, (result_filename, expt_id, len(table))
-        assert "id" in table
-        assert set(table["id"]) == ids
+        experiments = ExperimentListFactory.from_json_file(
+            result_filename.with_suffix(".expt"), check_format=False
+        )
+        assert set(table["id"]) == set(range(len(experiments)))
+        # Experiment ids follow processing order, which MPI does not fix, so match
+        # each experiment to its image instead.
+        counts = {
+            experiment.imageset.indices()[0]: (table["id"] == expt_id).count(True)
+            for expt_id, experiment in enumerate(experiments)
+        }
+        assert counts.keys() == ranges.keys(), (result_filename, counts)
+        for image, (min_, max_) in ranges.items():
+            assert min_ <= counts[image] < max_, (result_filename, image, counts[image])
 
     # large ranges to handle platform-specific differences
     if control_flags in [("use_mpi"), ()]:
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [(140, 160), (575, 600), (420, 445), (485, 510)],
+            {0: (140, 160), 1: (575, 600), 2: (420, 445), 3: (485, 510)},
         )
         test_refl_table(
             tmp_path / "idx-0000_coset6.refl",
-            [(145, 160), (545, 570), (430, 455), (490, 515)],
+            {0: (145, 160), 1: (545, 570), 2: (430, 455), 3: (490, 515)},
         )
     elif control_flags == ("known_orientations"):
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [(140, 160), (575, 600), (420, 445), (485, 510)],
+            {0: (140, 160), 1: (575, 600), 2: (420, 445), 3: (485, 510)},
         )
         test_refl_table(
             tmp_path / "idx-0000_coset6.refl",
-            [(155, 175), (545, 570), (430, 455), (480, 495)],
+            {0: (155, 175), 1: (545, 570), 2: (430, 455), 3: (480, 495)},
         )
     elif control_flags == ("wrong_gain"):
+        # Image 2 does not index with the wrong gain.
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [
-                (175, 190),
-                (515, 535),
-                # (450, 470), # this one doesn't work with wrong_gain
-                (520, 540),
-            ],
-            {0, 1, 2},
+            {0: (175, 190), 1: (515, 535), 3: (520, 540)},
         )
     elif control_flags == ("subsample_enable", "wrong_gain"):
+        # Reflection subsampling lets image 2 index despite the wrong gain.
         test_refl_table(
             tmp_path / "idx-0000_integrated.refl",
-            [
-                (175, 190),
-                (515, 535),
-                (450, 470),  # this one works if wrong_gain and subsample_enable
-                (520, 540),
-            ],
+            {0: (175, 190), 1: (515, 535), 2: (450, 470), 3: (520, 540)},
         )
 
 

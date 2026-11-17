@@ -225,7 +225,7 @@ def test(dials_data, tmp_path):
 
 @pytest.mark.parametrize(
     "with_identifiers,with_reflections",
-    [("True", "True"), ("False", "True"), ("True", "False")],
+    [(True, True), (False, True), (True, False)],
 )
 def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflections):
     """Test with the clustering.use=True option.
@@ -236,6 +236,7 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflect
 
     input_range = [2, 3, 4, 5, 10]
     if with_identifiers:
+        files = []
         for n, i in enumerate(input_range):
             command = [
                 shutil.which("dials.assign_experiment_identifiers"),
@@ -244,25 +245,21 @@ def test_combine_clustering(dials_data, tmp_path, with_identifiers, with_reflect
                 f"output.experiments={n}.expt",
                 f"output.reflections={n}.refl",
             ]
-            subprocess.run(command, cwd=tmp_path, capture_output=True)
-
-        phil_input = "\n".join(
-            (
-                f"  input.experiments={tmp_path / f'{i}.expt'}\n"
-                + f"  input.reflections={tmp_path / f'{i}.refl'}"
-                if with_reflections
-                else ""
-            )
-            for i in [0, 1, 2, 3, 4]
-        )
-
+            subprocess.run(
+                command, cwd=tmp_path, capture_output=True
+            ).check_returncode()
+            files.append((tmp_path / f"{n}.expt", tmp_path / f"{n}.refl"))
     else:
-        phil_input = "\n".join(
-            f"  input.experiments={data_dir}/experiments_{i}.json\n"
-            + f"  input.reflections={data_dir}/reflections_{i}.pickle"
-            if with_reflections
-            else ""
-        )
+        files = [
+            (data_dir / f"experiments_{i}.json", data_dir / f"reflections_{i}.pickle")
+            for i in input_range
+        ]
+
+    phil_input = "\n".join(
+        f"  input.experiments={expt}"
+        + (f"\n  input.reflections={refl}" if with_reflections else "")
+        for expt, refl in files
+    )
 
     tmp_path.joinpath("input.phil").write_text(phil_input)
 
@@ -312,7 +309,7 @@ def narrow_wedge_input_with_identifiers(dials_data, tmp_path):
             f"output.experiments={n}.expt",
             f"output.reflections={n}.refl",
         ]
-        subprocess.run(command, cwd=tmp_path, capture_output=True)
+        subprocess.run(command, cwd=tmp_path, capture_output=True).check_returncode()
 
     phil_input = "\n".join(
         (
@@ -405,7 +402,7 @@ def test_min_max_reflections_per_experiment(dials_data, tmp_path, min_refl, max_
     assert len(exp) == expected_results[(min_refl, max_refl)]
 
 
-@pytest.mark.parametrize("with_identifiers", ["True", "False"])
+@pytest.mark.parametrize("with_identifiers", [True, False])
 @pytest.mark.parametrize("method", ["random", "n_refl", "significance_filter"])
 def test_combine_nsubset(
     dials_data,

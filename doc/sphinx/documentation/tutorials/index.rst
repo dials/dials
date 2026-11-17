@@ -11,6 +11,13 @@ Tutorials
 
 .. _introduction:
 
+Introductory tutorial for DUI2 or the command line
+
+.. toctree::
+   :maxdepth: 1
+
+   thas1_dui2_and_command_line
+
 DIALS User Interface (DUI) tutorial
 
 .. toctree::
