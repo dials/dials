@@ -119,9 +119,9 @@ corrections{
                 .type = float
                 .help = "Sample number density for incident run."
                         "Default is Vanadium used at SXD"
-            sample_radius = 0.03
+            sample_radius = 3.0
                 .type = float
-                .help = "Sample radius incident run."
+                .help = "Sample radius (mm) for incident run."
                         "Default is Vanadium used at SXD"
             scattering_x_section = 5.158
                 .type = float
