@@ -33,12 +33,12 @@ Usage examples:
 phil_scope = iotbx.phil.parse(
     """
 input {
-    target_countrate_pct = 10.0
+    target_countrate_percentage = 10.0
         .type = float
         .help = "Target percentage of the detector trusted range to scale the reference percentile reflection to. This should represent the upper limit of linear detector response where no countrate correction is required."
-    ref_percentile = 99.9
+    reference_percentile = 99.9
         .type = float
-        .help = "Percentile value used as reference in transmission recommendation. dials.countrate will calculate the transmission required to scale this percentile reflection intensity to the desired target_countrate_pct"
+        .help = "Percentile value used as reference in transmission recommendation. dials.countrate will calculate the transmission required to scale this percentile reflection intensity to the desired target_countrate_percentage"
     trusted_range_warning_threshold = 80.0
         .type = float
         .help = "Threshold percentage of the detector trusted range above which a warning will be issued"
@@ -48,7 +48,7 @@ output {
     log = "dials.countrate.log"
         .type = str
         .help = "Log file for processing"
-    results = "countrate.json"
+    json = "countrate.json"
         .type = str
         .help = "JSON file containing histogram of pixel intensities, detector trusted range and recommended transmission"
 }
@@ -249,8 +249,8 @@ def run(args: list[str] | None = None, phil=phil_scope):
     max_trusted_counts = detector["panels"][0]["trusted_range"][1]
 
     # Calculate transmission needed to scale reference percentile reflection to target countrate
-    target_countrate_pct = params.input.target_countrate_pct
-    ref_percentile = params.input.ref_percentile
+    target_countrate_pct = params.input.target_countrate_percentage
+    ref_percentile = params.input.reference_percentile
     trusted_range_warning_threshold = params.input.trusted_range_warning_threshold
 
     summary = analyse_countrate(
