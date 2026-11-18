@@ -46,6 +46,7 @@ from dials.util.multi_dataset_handling import (
     select_datasets_on_ids,
     update_imageset_ids,
 )
+from dials.util.resolution_analysis import resolution_cc_half
 
 logger = logging.getLogger("dials")
 
@@ -260,10 +261,15 @@ class ScalingAlgorithm:
         self.merging_statistics_result = None
         self.anom_merging_statistics_result = None
         self.filtering_results = None
+        self.use_auto_dmin = False
+        if params.cut_data.d_min is Auto:
+            self.use_auto_dmin = True
+            params.cut_data.d_min = None
         self.params, self.experiments, self.reflections = prepare_input(
             params, experiments, reflections
         )
         self._create_model_and_scaler()
+        self.resolution_estimate = None
         logger.debug("Initialised scaling script object")
         log_memory_usage()
 
@@ -303,6 +309,9 @@ class ScalingAlgorithm:
                 self.calculate_merging_stats()
             except DialsMergingStatisticsError as e:
                 logger.info(e)
+            else:
+                if self.use_auto_dmin:
+                    self.apply_auto_resolution_cutoff()
 
             # All done!
             logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
@@ -376,6 +385,35 @@ class ScalingAlgorithm:
             )
         except DialsMergingStatisticsError as e:
             logger.warning(e, exc_info=True)
+
+    def apply_auto_resolution_cutoff(self):
+        try:
+            self.resolution_estimate = resolution_cc_half(
+                self.merging_statistics_result, limit=0.3
+            ).d_min
+        except RuntimeError:
+            logger.info("Unable to determine auto resolution cut")
+            self.resolution_estimate = None
+        if self.resolution_estimate:
+            logger.info(
+                f"Applying auto resolution cut at {self.resolution_estimate:.2f}"
+            )
+            self.params.cut_data.d_min = self.resolution_estimate
+            # Apply the dmin filter.
+            # Redetermine the best cell, as some experiments may have been removed.
+            best_unit_cell = self.params.reflection_selection.best_unit_cell
+            if best_unit_cell is None:
+                best_unit_cell = determine_best_unit_cell(self.experiments)
+            for table in self.reflections:
+                d = best_unit_cell.d(table["miller_index"])
+                sel = d < self.params.cut_data.d_min
+                table.set_flags(sel, table.flags.user_excluded_in_scaling)
+            self.scaled_miller_array = scaled_data_as_miller_array(
+                self.reflections,
+                self.experiments,
+                anomalous_flag=False,
+                best_unit_cell=best_unit_cell,
+            )
 
     def finish(self):
         """Save the experiments json and scaled pickle file."""
