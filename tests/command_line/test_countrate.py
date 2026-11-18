@@ -102,12 +102,12 @@ def _configure_run(
         input=SimpleNamespace(
             experiments=["experiment.expt"] if has_input else [],
             reflections=["reflections.refl"] if has_input else [],
-            target_countrate_pct=10.0,
-            ref_percentile=90.0,
+            target_countrate_percentage=10.0,
+            reference_percentile=90.0,
             trusted_range_warning_threshold=80.0,
         ),
         output=SimpleNamespace(
-            log=tmp_path / "countrate.log", results=tmp_path / "countrate.json"
+            log=tmp_path / "countrate.log", json=tmp_path / "countrate.json"
         ),
     )
     options = SimpleNamespace(verbose=0)
