@@ -269,15 +269,17 @@ namespace dials { namespace algorithms {
       double I0, var_I0, I_raw, B, var_B_pre;
       double J = 1.0, var_J = 0.0;
 
-      // Bin-width normalisation is used when there is no incident/empty
+      // Bin-width normalisation is applied to the incident spectrum
       if (!has_incident) {
-        double bin_width = geometry_.img_tof[frame_z] - geometry_.img_tof[frame_z - 1];
-        I0 = (raw_S - raw_B) / bin_width;
-        var_I0 = (var_S + var_B) / (bin_width * bin_width);
-        I_raw = raw_S / bin_width;
-        B = raw_B / bin_width;
-        var_B_pre = var_B / (bin_width * bin_width);
+        I0 = raw_S - raw_B;
+        var_I0 = var_S + var_B;
+        I_raw = raw_S;
+        B = raw_B;
+        var_B_pre = var_B;
       } else {
+        double bin_width =
+          frame_z > 0 ? geometry_.img_tof[frame_z] - geometry_.img_tof[frame_z - 1]
+                      : geometry_.img_tof[1] - geometry_.img_tof[0];
         double n = double((*n_contrib_)[z]);
         double raw_J = (*smoothed_incident_)[z] / n;
         double raw_E = (*smoothed_empty_)[z] / n;
@@ -288,12 +290,13 @@ namespace dials { namespace algorithms {
 
         double S = raw_S / sample_pc;
         double Bn = raw_B / sample_pc;
-        double Jn = raw_J / incident_pc;
+        double Jn = raw_J / (incident_pc * bin_width);
         double En = raw_E / empty_pc;
 
         double var_Sn = var_S / (sample_pc * sample_pc);
         double var_Bn = var_B / (sample_pc * sample_pc);
-        double var_Jn = (std::abs(raw_J) * n) / (incident_pc * incident_pc * n * n);
+        double var_Jn = (std::abs(raw_J) * n)
+                        / (incident_pc * incident_pc * bin_width * bin_width * n * n);
         double var_En = (std::abs(raw_E) * n) / (empty_pc * empty_pc * n * n);
 
         if (has_absorption) {
@@ -329,9 +332,9 @@ namespace dials { namespace algorithms {
       out.B = L * B / JT;
       out.I_raw = L * I_raw / JT;
       out.var_I =
-        (L * L / (JT * JT)) * var_I0 + (L * L * I0 * I0 / std::pow(JT, 4)) * var_J;
+        (L * L / (JT * JT)) * var_I0 + (L * L * I0 * I0 / (JT * JT * J * J)) * var_J;
       out.var_B =
-        (L * L / (JT * JT)) * var_B_pre + (L * L * B * B / std::pow(JT, 4)) * var_J;
+        (L * L / (JT * JT)) * var_B_pre + (L * L * B * B / (JT * JT * J * J)) * var_J;
       return true;
     }
 

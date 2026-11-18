@@ -1,0 +1,1 @@
+fix tof bin width being applied incorrectly during integration with an incident spectrum, a missing factor in propagating the variance error, and spherical absorption correction being inverted.
