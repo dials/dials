@@ -309,8 +309,9 @@ class ScalingAlgorithm:
                 self.calculate_merging_stats()
             except DialsMergingStatisticsError as e:
                 logger.info(e)
-
-            self.apply_auto_resolution_cutoff()
+            else:
+                if self.use_auto_dmin:
+                    self.apply_auto_resolution_cutoff()
 
             # All done!
             logger.info("\nTotal time taken: %.4fs ", time.time() - start_time)
@@ -386,14 +387,13 @@ class ScalingAlgorithm:
             logger.warning(e, exc_info=True)
 
     def apply_auto_resolution_cutoff(self):
-        if self.use_auto_dmin:
-            try:
-                self.resolution_estimate = resolution_cc_half(
-                    self.merging_statistics_result, limit=0.3
-                ).d_min
-            except RuntimeError:
-                logger.info("Unable to determine auto resolution cut")
-                self.resolution_estimate = None
+        try:
+            self.resolution_estimate = resolution_cc_half(
+                self.merging_statistics_result, limit=0.3
+            ).d_min
+        except RuntimeError:
+            logger.info("Unable to determine auto resolution cut")
+            self.resolution_estimate = None
         if self.resolution_estimate:
             logger.info(
                 f"Applying auto resolution cut at {self.resolution_estimate:.2f}"
