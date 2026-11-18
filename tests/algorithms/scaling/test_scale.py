@@ -311,6 +311,31 @@ def test_scale_single_dataset_with_options(dials_data, tmp_path, option):
     run_one_scaling(tmp_path, args)
 
 
+def test_scale_dmin_auto_no_estimate(dials_data, tmp_path):
+    """Test d_min=auto when the data extend beyond the resolution limit."""
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    args = [refl_1, expt_1, "d_min=auto"]
+    run_one_scaling(tmp_path, args)
+
+
+def test_scale_dmin_auto_estimate(dials_data, tmp_path):
+    """Test d_min=auto when the resolution limit is within the data range."""
+    location = dials_data("multi_crystal_proteinase_k")
+    args = ["d_min=auto", "merged_mtz=merged.mtz"]
+    # expect d_min to be 1.84. Full limit of the data is 1.18
+    for i in [1, 2]:
+        args.append(location / f"experiments_{i}.json")
+        args.append(location / f"reflections_{i}.pickle")
+    run_one_scaling(tmp_path, args)
+    m = iotbx.mtz.object(str(tmp_path / "merged.mtz"))
+    ma = m.as_miller_arrays()[0]
+    d_min = flex.min(ma.d_spacings().data())
+    # precise values not important, just check the cut has been suitably applied.
+    assert d_min > 1.82 and d_min < 1.86
+
+
 @pytest.fixture(scope="session")
 def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""

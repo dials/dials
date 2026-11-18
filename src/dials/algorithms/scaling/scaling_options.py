@@ -109,8 +109,12 @@ phil_scope = iotbx.phil.parse(
   cut_data {
     d_min = None
       .type = float
-      .help = "Option to apply a high resolution cutoff for the dataset (i.e.
-               the chosen reflections have d > d_min)."
+      .help = "Option to apply a high resolution cutoff for the dataset (i.e."
+              "the chosen reflections have d > d_min)."
+              "Setting d_min=auto will apply a cutoff at the end of scaling based"
+              "on the estimated resolution limit determined from the merging"
+              "statistics, determined as the resolution value at which a fit of"
+              "a tanh curve to CC1/2 vs resolution crosses 0.3."
       .expert_level = 1
     d_max = None
       .type = float
