@@ -137,3 +137,45 @@ class LaueMixedWeightingStrategy(StatisticalWeightingStrategy):
         reflections["xyzobs.mm.weights"] = flex.vec3_double(wx, wy, wz)
 
         return reflections
+
+
+class TOFStatisticalWeightingStrategy:
+    """Statistical weights for time-of-flight Laue refinement, where the
+    three residuals are X, Y (mm) and ToF (usec). All three are measured
+    quantities with their own variances, so w = 1/var for each."""
+
+    @staticmethod
+    def calculate_weights(reflections):
+        parts = reflections["xyzobs.mm.variance"].deep_copy().parts()
+        for w in parts:
+            sel = w > 0.0
+            w.set_selected(sel, 1.0 / w.select(sel))
+        reflections["xyzobs.mm.weights"] = flex.vec3_double(*parts)
+
+        indexed = reflections.select(reflections.get_flags(reflections.flags.indexed))
+        if any(indexed["xyzobs.mm.weights"].norms() == 0.0):
+            raise DialsRefineConfigError(
+                "Cannot set statistical weights as some indexed reflections have "
+                "observed variances in X, Y and ToF all equal to zero"
+            )
+
+        return reflections
+
+
+class TOFConstantWeightingStrategy:
+    """Constant weights for time-of-flight (ToF) Laue refinement, for the X, Y
+    (mm) and ToF (usec) residuals"""
+
+    def __init__(self, wx, wy, wtof):
+        self._wx = wx
+        self._wy = wy
+        self._wtof = wtof
+
+    def calculate_weights(self, reflections):
+        n = len(reflections)
+        reflections["xyzobs.mm.weights"] = flex.vec3_double(
+            flex.double(n, self._wx),
+            flex.double(n, self._wy),
+            flex.double(n, self._wtof),
+        )
+        return reflections
