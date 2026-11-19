@@ -92,6 +92,9 @@ message that the code in question is special and care should be taken.
   candidate for a non-squash merge - please try to keep commits a relatively
   clean representation of the implementation of your change, by e.g. using
   `git rebase` - This helps people to understand your changes easier.
+- Small PRs do not necessarily need a review. If a PR is open for 2 business
+  days with no comment, you can treat this as an implicit approval. Please use
+  your judgement and ensure an adequate review for more substantial changes.
 
 
 ## Code linting, automatic formatting and static analysis
