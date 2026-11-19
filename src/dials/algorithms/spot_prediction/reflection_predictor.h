@@ -1212,8 +1212,9 @@ namespace dials { namespace algorithms {
           break;
         }
         double d = unit_cell_.d(h);
-        double deltapsi_model = (d / ML_domain_size_ang_)
-                                + (ML_half_mosaicity_deg_ * pi_180 / 2);  // equation 16
+        // equation 16; the crystal stores the half mosaicity eta/2 already
+        double deltapsi_model =
+          (d / ML_domain_size_ang_) + (ML_half_mosaicity_deg_ * pi_180);
 
         Ray ray;
         ray = predict_ray_(h, ub);
