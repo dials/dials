@@ -91,3 +91,41 @@ def test_sliced_sequence(dials_data, tmp_path):
         tmp_path / "stills.expt", check_format=False
     )
     assert len(experiments) == 41
+
+
+def test_shoeboxes_without_background(dials_data):
+    # Shoeboxes from spot finding have no background allocated, meaning zero.
+    # They must give the same stills as the same shoeboxes with a background of
+    # zeros, as they have after a round trip through a reflection file.
+    from dials.array_family import flex
+    from dials.command_line.sequence_to_stills import phil_scope, sequence_to_stills
+    from dials.model.data import Shoebox
+
+    data_dir = dials_data("insulin_processed")
+    experiments = ExperimentListFactory.from_json_file(
+        data_dir / "integrated.expt", check_format=False
+    )
+    reflections = flex.reflection_table.from_file(data_dir / "refined.refl")
+    reflections = reflections.select(reflections["bbox"].parts()[4] < 5)
+    assert all(s.background.all_eq(0) for s in reflections["shoebox"])
+    params = phil_scope.extract()
+    params.output.domain_size_ang = 500
+    params.output.half_mosaicity_deg = 0.1
+    params.max_scan_points = 5
+
+    without = reflections.copy()
+    shoeboxes = flex.shoebox()
+    for s in reflections["shoebox"]:
+        new_sb = Shoebox(s.panel, s.bbox)
+        new_sb.data = s.data
+        new_sb.mask = s.mask
+        shoeboxes.append(new_sb)
+    without["shoebox"] = shoeboxes
+
+    _, expected = sequence_to_stills(experiments, [reflections], params)
+    _, result = sequence_to_stills(experiments, [without], params)
+    assert len(result) == len(expected) > 0
+    for key in ("intensity.sum.value", "intensity.sum.variance", "xyzobs.px.value"):
+        assert list(result[key]) == list(expected[key])
+    assert not any(result["shoebox"].is_background_allocated())
+    assert all(result["shoebox"].is_consistent())

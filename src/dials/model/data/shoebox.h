@@ -211,19 +211,14 @@ namespace dials { namespace model {
       return int3(1, ysize(), xsize());
     }
 
-    /** @return True/False whether the array and bbox sizes are consistent */
+    /**
+     * @return True/False whether the array and bbox sizes are consistent. The
+     * background may be unallocated, which means a background of zero.
+     */
     bool is_consistent() const {
-      bool result = true;
-      if (flat) {
-        result = result && (data.accessor().all_eq(size_flat()));
-        result = result && (mask.accessor().all_eq(size_flat()));
-        result = result && (background.accessor().all_eq(size_flat()));
-      } else {
-        result = result && (data.accessor().all_eq(size()));
-        result = result && (mask.accessor().all_eq(size()));
-        result = result && (background.accessor().all_eq(size()));
-      }
-      return result;
+      int3 expected = flat ? size_flat() : size();
+      return data.accessor().all_eq(expected) && mask.accessor().all_eq(expected)
+             && (background.size() == 0 || background.accessor().all_eq(expected));
     }
 
     /** @return True/False whether the shoebox data and mask are allocated */
@@ -253,6 +248,18 @@ namespace dials { namespace model {
         }
       }
       return true;
+    }
+
+    /**
+     * @returns The background, or an array of zeros the shape of the data if
+     * the background is not allocated
+     */
+    af::versa<FloatType, af::c_grid<3> > background_or_zeros() const {
+      // Deliberately independent of the bbox, which callers may set later
+      if (background.size() > 0) {
+        return background;
+      }
+      return af::versa<FloatType, af::c_grid<3> >(data.accessor(), 0.0);
     }
 
     /**
@@ -397,11 +404,12 @@ namespace dials { namespace model {
       typedef CentroidImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask and data
-      DIALS_ASSERT(data.size() == background.size());
+      af::versa<FloatType, af::c_grid<3> > bg = background_or_zeros();
+      DIALS_ASSERT(data.size() == bg.size());
       af::versa<FloatType, af::c_grid<3> > fg_data_arr(data.accessor());
       af::ref<FloatType, af::c_grid<3> > foreground_data = fg_data_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_data[i] = data[i] - background[i];
+        foreground_data[i] = data[i] - bg[i];
       }
 
       // Calculate the centroid
@@ -419,14 +427,15 @@ namespace dials { namespace model {
       typedef CentroidMaskedImage3d<FloatType> Centroider;
 
       // Calculate the foreground mask and data
+      af::versa<FloatType, af::c_grid<3> > bg = background_or_zeros();
       DIALS_ASSERT(data.size() == mask.size());
-      DIALS_ASSERT(data.size() == background.size());
+      DIALS_ASSERT(data.size() == bg.size());
       af::versa<bool, af::c_grid<3> > fg_mask_arr(mask.accessor());
       af::versa<FloatType, af::c_grid<3> > fg_data_arr(data.accessor());
       af::ref<FloatType, af::c_grid<3> > foreground_data = fg_data_arr.ref();
       af::ref<bool, af::c_grid<3> > foreground_mask = fg_mask_arr.ref();
       for (std::size_t i = 0; i < mask.size(); ++i) {
-        foreground_data[i] = data[i] - background[i];
+        foreground_data[i] = data[i] - bg[i];
         foreground_mask[i] = ((mask[i] & code) == code) && ((mask[i] & Overlapped) == 0)
                              && (foreground_data[i] > 0);
       }
@@ -479,8 +488,9 @@ namespace dials { namespace model {
      */
     Intensity bayesian_intensity() const {
       // Do the intengration
+      af::versa<FloatType, af::c_grid<3> > bg = background_or_zeros();
       BayesianIntegrator<FloatType> summation(
-        data.const_ref(), background.const_ref(), mask.const_ref());
+        data.const_ref(), bg.const_ref(), mask.const_ref());
 
       // Return the intensity struct
       Intensity result;
@@ -498,8 +508,9 @@ namespace dials { namespace model {
      */
     Intensity summed_intensity() const {
       // Do the intengration
+      af::versa<FloatType, af::c_grid<3> > bg = background_or_zeros();
       Summation<FloatType> summation(
-        data.const_ref(), background.const_ref(), mask.const_ref());
+        data.const_ref(), bg.const_ref(), mask.const_ref());
 
       // Return the intensity struct
       Intensity result;
@@ -551,7 +562,9 @@ namespace dials { namespace model {
         af::c_grid<3> accessor(1, ysize(), xsize());
         data.resize(accessor);
         mask.resize(accessor);
-        background.resize(accessor);
+        if (is_background_allocated()) {
+          background.resize(accessor);
+        }
       }
       flat = true;
       DIALS_ASSERT(is_consistent());
