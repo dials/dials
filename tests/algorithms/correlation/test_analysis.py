@@ -95,14 +95,6 @@ def proteinase_k(dials_data):
     yield experiments, reflections, params
 
 
-def test_corr_mat(proteinase_k, run_in_tmp_path):
-    experiments, reflections, params = proteinase_k
-    matrices = CorrelationMatrix(experiments, reflections, params)
-    matrices.calculate_matrices()
-    matrices.output_json()
-    assert pathlib.Path("dials.correlation_matrix.json").is_file()
-
-
 def test_filtered_corr_mat(proteinase_k, run_in_tmp_path):
     experiments, reflections, params = proteinase_k
     ids_to_identifiers_map = {}

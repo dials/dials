@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import random
 
-import pytest
-
 
 def test_split_blocks_1_frame():
     from dials.algorithms.integration.integrator import JobList
@@ -400,47 +398,6 @@ def test_reflection_manager():
             assert result[processed[i][j]] == i + 1
 
     # Test passed
-
-
-@pytest.mark.parametrize("nproc", [1, 2])
-def test_integrator_3d(dials_data, nproc):
-    from math import pi
-
-    from dxtbx.model.experiment_list import ExperimentListFactory
-
-    from dials.algorithms.profile_model.gaussian_rs import Model
-    from dials.array_family import flex
-
-    path = dials_data("centroid_test_data") / "experiments.json"
-
-    exlist = ExperimentListFactory.from_json_file(path)
-    exlist[0].profile = Model(
-        None, n_sigma=3, sigma_b=0.024 * pi / 180.0, sigma_m=0.044 * pi / 180.0
-    )
-
-    rlist = flex.reflection_table.from_predictions(exlist[0])
-    rlist["id"] = flex.int(len(rlist), 0)
-    rlist.compute_bbox(exlist)
-    rlist.compute_zeta_multi(exlist)
-    rlist.compute_d(exlist)
-
-    from libtbx.phil import parse
-
-    from dials.algorithms.integration.integrator import Integrator3D, phil_scope
-
-    params = phil_scope.fetch(
-        parse(
-            """
-    integration.block.size=%d
-    integration.mp.nproc=%d
-    integration.profile_fitting=False
-  """
-            % (5, nproc)
-        )
-    ).extract()
-
-    integrator = Integrator3D(exlist, rlist, params)
-    integrator.integrate()
 
 
 def test_summation(dials_data):

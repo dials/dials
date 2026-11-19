@@ -71,7 +71,6 @@ def test_dynamic_shadowing(
             )
 
 
-@pytest.mark.xfail(reason="Failing due to deprecation warning in output")
 def test_shadow_plot(dials_data, tmp_path):
     result = subprocess.run(
         (
@@ -83,7 +82,7 @@ def test_shadow_plot(dials_data, tmp_path):
     )
     assert not result.returncode and not result.stderr
     result = subprocess.run(
-        ("dials.shadow_plot", "imported.expt", "json=shadow.json"),
+        (shutil.which("dials.shadow_plot"), "imported.expt", "json=shadow.json"),
         cwd=tmp_path,
         capture_output=True,
     )

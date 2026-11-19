@@ -11,6 +11,8 @@ def test_corr_mat(dials_data, run_in_tmp_path):
     for i in [0, 1, 2, 3]:
         args.append(str(mcp / f"experiments_{i}.expt"))
         args.append(str(mcp / f"reflections_{i}.refl"))
+    args.append("output.json=dials.correlation_matrix.json")
     dials_corr_mat.run(args=args)
     assert pathlib.Path("dials.correlation_matrix.html").is_file()
     assert pathlib.Path("dials.correlation_matrix.log").is_file()
+    assert pathlib.Path("dials.correlation_matrix.json").is_file()
