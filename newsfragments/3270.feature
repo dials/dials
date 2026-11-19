@@ -1,0 +1,1 @@
+``dials.countrate`` has been added as a commandline tool for analysing whether data is likely to be heavily countrate corrected and recommend a maximum transmission that would avoid significant countrate corrections.
