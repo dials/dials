@@ -1,0 +1,1 @@
+``dials.integrate``: the default volume of background pixels in each shoebox is determined by a target value rather than ``sigma_b_multiplier``, which produces highly variable shoebox sizes.
