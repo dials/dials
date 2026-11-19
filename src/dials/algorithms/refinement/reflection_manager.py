@@ -207,6 +207,17 @@ class BlockCalculator:
         return self._reflections
 
 
+def _auto_sauter_poon_px_sz(experiments):
+    """Pixel size(s) in mm for the Sauter-Poon outlier rejector, taken from the
+    first detector. Returns a single (x, y) tuple if all panels share one pixel
+    size, otherwise one (x, y) tuple per panel."""
+    detector = experiments.detectors()[0]
+    px_sizes = [p.get_pixel_size() for p in detector]
+    if all(px == px_sizes[0] for px in px_sizes):
+        return px_sizes[0]
+    return px_sizes
+
+
 class ReflectionManagerFactory:
     @staticmethod
     def get_col_names(params: libtbx.phil.scope_extract, do_stills: bool = False):
@@ -290,10 +301,7 @@ class ReflectionManagerFactory:
         if params.outlier.algorithm in ("auto", libtbx.Auto):
             params.outlier.algorithm = "sauter_poon"
         if params.outlier.sauter_poon.px_sz is libtbx.Auto:
-            # get this from the first panel of the first detector
-            params.outlier.sauter_poon.px_sz = experiments.detectors()[0][
-                0
-            ].get_pixel_size()
+            params.outlier.sauter_poon.px_sz = _auto_sauter_poon_px_sz(experiments)
 
         if params.outlier.algorithm in ("null", None):
             outlier_detector = None
@@ -349,10 +357,7 @@ class ReflectionManagerFactory:
             params.outlier.algorithm = "mcd"
         if params.outlier.algorithm == "sauter_poon":
             if params.outlier.sauter_poon.px_sz is libtbx.Auto:
-                # get this from the first panel of the first detector
-                params.outlier.sauter_poon.px_sz = experiments.detectors()[0][
-                    0
-                ].get_pixel_size()
+                params.outlier.sauter_poon.px_sz = _auto_sauter_poon_px_sz(experiments)
 
         ## Weighting strategy
 
@@ -417,10 +422,7 @@ class ReflectionManagerFactory:
         if params.outlier.algorithm in ("auto", libtbx.Auto):
             params.outlier.algorithm = "mcd"
         if params.outlier.sauter_poon.px_sz is libtbx.Auto:
-            # get this from the first panel of the first detector
-            params.outlier.sauter_poon.px_sz = experiments.detectors()[0][
-                0
-            ].get_pixel_size()
+            params.outlier.sauter_poon.px_sz = _auto_sauter_poon_px_sz(experiments)
 
         if params.outlier.algorithm in ("null", None):
             outlier_detector = None
