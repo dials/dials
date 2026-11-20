@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections import namedtuple
 
+from dxtbx.model import tof_helpers
 from scitbx import matrix, sparse
 
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -1204,3 +1205,109 @@ class LauePredictionParameterisation(PredictionParameterisation):
                 dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
         return dX_dp, dY_dp
+
+
+class TOFPredictionParameterisation(LauePredictionParameterisation):
+    """An extension of LauePredictionParameterisation for time-of-flight (ToF)
+    Laue data, where the third residual is the time of flight rather than the
+    wavelength.
+
+    The predicted ToF of a reflection is t = K * (L0 * wavelength + 1 / v[2]),
+
+    where K=m_n/h, v = D*s1.
+
+    dt/dp = K * (L0 * dwavelength/dp - (1 / v[2]**2) * dv[2]/dp)
+
+    dwavelength/dp and dv/dp are already calculated for the Laue case
+    """
+
+    _grad_names = ("dX_dp", "dY_dp", "dtof_dp")
+
+    # K, using a bit of a hack with tof_from_wavelength to ensure it's all converted the same
+    _tof_constant = tof_helpers.tof_from_wavelength(1.0e-3, 1.0) * 1.0e6
+
+    def _local_setup(self, reflections):
+        super()._local_setup(reflections)
+
+        # source to sample distance (mm), assumed the same for all experiments
+        L0 = {exp.beam.get_sample_to_source_distance() for exp in self._experiments}
+        if len(L0) != 1:
+            raise DialsRefineConfigError(
+                "ToF refinement requires the same sample to source distance for "
+                f"all experiments, but found {sorted(L0)} mm"
+            )
+        self._L0 = L0.pop()
+        return
+
+    def _tof_derivatives(self, isel, dpv_dp, dwavelength_dp=None):
+        """Convert derivatives of pv and optionally wavelength into
+        derivatives of the predicted ToF"""
+
+        w_inv = self._w_inv.select(isel)
+        w_inv_sq = w_inv * w_inv
+        L0 = self._L0
+        if dwavelength_dp is None:
+            dwavelength_dp = [None] * len(dpv_dp)
+
+        dtof_dp = []
+        for dpv, dwavelength in zip(dpv_dp, dwavelength_dp):
+            if dpv is None:
+                dtof_dp.append(None)
+                continue
+            dtof = -dpv.parts()[2] * w_inv_sq
+            if dwavelength is not None:
+                dtof += L0 * dwavelength
+            dtof_dp.append(dtof * self._tof_constant)
+        return dtof_dp
+
+    def _beam_derivatives(
+        self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
+    ):
+        dpv_dp, dwavelength_dp = super()._beam_derivatives(
+            isel, parameterisation, ds0_dbeam_p, reflections
+        )
+        return dpv_dp, self._tof_derivatives(isel, dpv_dp, dwavelength_dp)
+
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        dpv_dp, dwavelength_dp = super()._xl_derivatives(
+            isel, derivatives, b_matrix, parameterisation
+        )
+        return dpv_dp, self._tof_derivatives(isel, dpv_dp, dwavelength_dp)
+
+    def _grads_detector_loop(self, reflections, results, callback=None):
+        """Extend the base class detector loop with dtof/dp.
+        The base loop is run without the callback, because the callback reduces
+        each parameter's gradients as soon as they are complete. The ToF
+        gradients are filled in here and the callback is applied afterwards."""
+
+        iparam_start = self._iparam
+        results = super()._grads_detector_loop(reflections, results, callback=None)
+
+        iparam = iparam_start
+        for dp in self._detector_parameterisations:
+            isel = flex.size_t()
+            for exp_id in dp.get_experiment_ids():
+                isel.extend(self._experiment_to_idx[exp_id])
+            panel = reflections["panel"].select(isel)
+
+            for panel_id, _ in enumerate(dp.get_model()):
+                sub_isel = isel.select(panel == panel_id)
+                if len(sub_isel) == 0:
+                    continue
+                dpv_ddet_p = self._detector_derivatives(
+                    sub_isel, panel_id, parameterisation=dp, reflections=reflections
+                )
+                dtof_ddet_p = self._tof_derivatives(sub_isel, dpv_ddet_p)
+                for i, dtof in enumerate(dtof_ddet_p):
+                    if dtof is not None:
+                        results[iparam + i][self._grad_names[2]].set_selected(
+                            sub_isel, dtof
+                        )
+
+            if callback is not None:
+                for i in range(dp.num_free()):
+                    results[iparam + i] = callback(results[iparam + i])
+
+            iparam += dp.num_free()
+
+        return results
