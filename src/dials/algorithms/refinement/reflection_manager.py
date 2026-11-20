@@ -438,7 +438,7 @@ class ReflectionManagerFactory:
 
         if all_tof_experiments:
             weighting_strategy = ReflectionManagerFactory.get_tof_weighting_strategy(
-                params
+                params, experiments
             )
         else:
             if params.weighting_strategy.override == "statistical":
@@ -475,6 +475,7 @@ class ReflectionManagerFactory:
     @staticmethod
     def get_tof_weighting_strategy(
         params: libtbx.phil.scope_extract,
+        experiments: ExperimentList,
     ) -> (
         weighting_strategies.TOFStatisticalWeightingStrategy
         | weighting_strategies.TOFConstantWeightingStrategy
@@ -482,7 +483,7 @@ class ReflectionManagerFactory:
 
         override = params.weighting_strategy.override
         if override in (None, "statistical"):
-            return weighting_strategies.TOFStatisticalWeightingStrategy()
+            return weighting_strategies.TOFStatisticalWeightingStrategy(experiments)
         elif override == "constant":
             return weighting_strategies.TOFConstantWeightingStrategy(
                 *params.weighting_strategy.constants
@@ -1218,7 +1219,7 @@ class TOFReflectionManager(LaueReflectionManager):
     ):
         if weighting_strategy_override is None:
             weighting_strategy_override = (
-                weighting_strategies.TOFStatisticalWeightingStrategy()
+                weighting_strategies.TOFStatisticalWeightingStrategy(experiments)
             )
         super().__init__(
             reflections=reflections,

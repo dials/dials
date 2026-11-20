@@ -472,6 +472,7 @@ def test_laue_target_function(dials_data, tof):
 
     # Set 'observed' centroids from the predicted ones
     obs_refs["xyzobs.mm.value"] = obs_refs["xyzcal.mm"]
+    obs_refs["xyzobs.px.value"] = obs_refs["xyzcal.px"]
     obs_refs["s0"] = obs_refs["s0_cal"]
     obs_refs["wavelength"] = obs_refs["wavelength_cal"]
 

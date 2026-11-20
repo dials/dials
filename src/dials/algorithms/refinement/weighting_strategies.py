@@ -3,6 +3,10 @@ ReflectionManagers."""
 
 from __future__ import annotations
 
+import numpy as np
+
+from dxtbx.model.tof_helpers import frame_to_tof_interpolator
+
 from dials.algorithms.refinement import DialsRefineConfigError
 from dials.array_family import flex
 
@@ -140,23 +144,58 @@ class LaueMixedWeightingStrategy(StatisticalWeightingStrategy):
 
 
 class TOFStatisticalWeightingStrategy:
-    """Statistical weights for time-of-flight Laue refinement, where the
-    three residuals are X, Y (mm) and ToF (usec). All three are measured
-    quantities with their own variances, so w = 1/var for each."""
+    """Weights for time-of-flight Laue refinement (X, Y (mm) and ToF (usec)).
 
-    @staticmethod
-    def calculate_weights(reflections):
-        parts = reflections["xyzobs.mm.variance"].deep_copy().parts()
-        for w in parts:
+    X and Y use statistical weights, w = 1/var, from the centroid variances.
+
+    The observed ToF is the centre of the maximum ToF bin of the spot, and
+    the ToF uncertainty is taken as one bin width
+    at the observed position, where sigma_t = dt/dframe, and w = 1/sigma_t^2."""
+
+    def __init__(self, experiments):
+        self._experiments = experiments
+
+    def _tof_bin_widths(self, reflections):
+        """ToF bin width (usec) at the observed frame of each reflection"""
+
+        bin_widths = flex.double(len(reflections), 0.0)
+        frames_obs = reflections["xyzobs.px.value"].parts()[2]
+        for iexp, expt in enumerate(self._experiments):
+            sel = reflections["id"] == iexp
+            if sel.count(True) == 0:
+                continue
+            tof = expt.scan.get_property("time_of_flight")  # (usec)
+            frames = list(range(len(tof)))
+            frame_to_tof = frame_to_tof_interpolator(frames, tof)
+
+            # central difference of +/- half a frame, clipped to the frame range
+            z = frames_obs.select(sel).as_numpy_array()
+            lo = np.clip(z - 0.5, frames[0], frames[-1])
+            hi = np.clip(z + 0.5, frames[0], frames[-1])
+            dtof_dframe = (frame_to_tof(hi) - frame_to_tof(lo)) / (hi - lo)
+            bin_widths.set_selected(sel, flex.double(dtof_dframe))
+        return bin_widths
+
+    def calculate_weights(self, reflections):
+        var_x, var_y, _ = reflections["xyzobs.mm.variance"].parts()
+        wx = var_x.deep_copy()
+        wy = var_y.deep_copy()
+        for w in (wx, wy):
             sel = w > 0.0
             w.set_selected(sel, 1.0 / w.select(sel))
-        reflections["xyzobs.mm.weights"] = flex.vec3_double(*parts)
+
+        sigma_t = self._tof_bin_widths(reflections)
+        wt = flex.double(len(reflections), 0.0)
+        sel = sigma_t > 0.0
+        wt.set_selected(sel, 1.0 / (sigma_t.select(sel) ** 2))
+
+        reflections["xyzobs.mm.weights"] = flex.vec3_double(wx, wy, wt)
 
         indexed = reflections.select(reflections.get_flags(reflections.flags.indexed))
         if any(indexed["xyzobs.mm.weights"].norms() == 0.0):
             raise DialsRefineConfigError(
                 "Cannot set statistical weights as some indexed reflections have "
-                "observed variances in X, Y and ToF all equal to zero"
+                "zero weights in X, Y and ToF"
             )
 
         return reflections
