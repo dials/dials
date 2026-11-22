@@ -36,6 +36,15 @@ if(NOT TARGET Boost::python)
     set_target_properties(Boost::python PROPERTIES INTERFACE_LINK_LIBRARIES Python::Module)
 endif()
 
+# Codecs used to compress shoebox pixels in memory during integration
+find_path(BLOSC2_INCLUDE_DIR blosc2.h REQUIRED)
+find_library(BLOSC2_LIBRARY NAMES blosc2 libblosc2 REQUIRED)
+find_path(LZ4_INCLUDE_DIR lz4.h REQUIRED)
+find_library(LZ4_LIBRARY NAMES lz4 liblz4 REQUIRED)
+add_library(dials_shoebox_codecs INTERFACE)
+target_include_directories(dials_shoebox_codecs INTERFACE ${BLOSC2_INCLUDE_DIR} ${LZ4_INCLUDE_DIR})
+target_link_libraries(dials_shoebox_codecs INTERFACE ${BLOSC2_LIBRARY} ${LZ4_LIBRARY})
+
 # Put the libraries into lib/ so that we can run this in-place in a TBX install
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/lib")
 

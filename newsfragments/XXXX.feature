@@ -1,0 +1,1 @@
+``dials.integrate``: keep shoebox pixels compressed in memory (Bitshuffle + LZ4) until all the frames of a reflection have been read. Memory use per process is about a third lower on large datasets, at a cost of a few percent in run time. Set ``compress_shoeboxes=False`` to turn this off.

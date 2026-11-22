@@ -11,7 +11,7 @@ Python_add_library(
     MODULE
     boost_python/integration_integrator_ext.cc
 )
-target_link_libraries( dials_algorithms_integration_integrator_ext PUBLIC CCTBX::cctbx Boost::python )
+target_link_libraries( dials_algorithms_integration_integrator_ext PUBLIC CCTBX::cctbx Boost::python dials_shoebox_codecs )
 
 Python_add_library(
     dials_algorithms_integration_parallel_integrator_ext
@@ -42,4 +42,4 @@ Python_add_library(
     MODULE
     tof/boost_python/tof_integration_ext.cc
 )
-target_link_libraries( dials_algorithms_tof_integration_ext PUBLIC CCTBX::cctbx Boost::thread Boost::python )
+target_link_libraries( dials_algorithms_tof_integration_ext PUBLIC CCTBX::cctbx Boost::thread Boost::python dials_shoebox_codecs )

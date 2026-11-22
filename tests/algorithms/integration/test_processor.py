@@ -4,6 +4,7 @@ import math
 import os
 from unittest import mock
 
+import numpy as np
 import psutil
 import pytest
 
@@ -12,7 +13,13 @@ from dxtbx.model.experiment_list import ExperimentListFactory
 import dials.algorithms.integration.processor
 from dials.algorithms.profile_model.gaussian_rs import Model
 from dials.array_family import flex
-from dials_algorithms_integration_integrator_ext import JobList, max_memory_needed
+from dials.model.data import make_image
+from dials_algorithms_integration_integrator_ext import (
+    Executor,
+    JobList,
+    ShoeboxProcessor,
+    max_memory_needed,
+)
 
 
 def test_shoebox_memory_is_a_reasonable_guesstimate(dials_data):
@@ -102,6 +109,145 @@ def test_shoebox_memory_includes_bytes_per_reflection():
         base = max_memory_needed(rlist, 0, 4, flatten)
         assert max_memory_needed(rlist, 0, 4, flatten, 100) == base + 2 * 100
         assert list(jobs.shoebox_memory(rlist, flatten, 100)) == [base + 2 * 100]
+
+
+def test_shoebox_memory_with_compression():
+    rlist = _reflections([(0, 10, 0, 10, 0, 4), (0, 5, 0, 5, 1, 2)])
+    jobs = JobList()
+    jobs.add((0, 1), (0, 4), 4, 0)
+    # The Shoebox objects and frame lookup as before, plus the per-reflection
+    # record of the compressed store
+    fixed = 2 * (_shoebox_object_bytes() + 12) + 5 * 8
+    # Peak is on the last frame of A: frames 0-2 of A compressed, at an assumed
+    # 2 bytes per pixel plus one 256-byte chunk, and all of A decoded with its
+    # background (9 bytes per pixel). B is on one frame, so never compressed.
+    expected = fixed + 2 * 300 + 256 + 9 * 400
+    assert max_memory_needed(rlist, 0, 4, False, 0, True) == expected
+    assert list(jobs.shoebox_memory(rlist, False, 0, True)) == [expected]
+    # Flat shoeboxes are a single slice, so never compressed
+    assert max_memory_needed(rlist, 0, 4, True, 0, True) == max_memory_needed(
+        rlist, 0, 4, True
+    )
+
+
+class _RecordingExecutor(Executor):
+    """Keep a copy of each shoebox as the executor sees it"""
+
+    def __init__(self):
+        super().__init__()
+        self.seen = {}
+        self.calls = []
+
+    def process(self, frame, reflections):
+        self.calls.append((frame, len(reflections)))
+        for i, sbox in zip(reflections["index"], reflections["shoebox"]):
+            assert sbox.is_consistent()
+            self.seen[i] = (
+                frame,
+                sbox.data.as_numpy_array().copy(),
+                sbox.mask.as_numpy_array().copy(),
+                sbox.background.as_numpy_array().copy(),
+            )
+
+
+def _extract(images, masks, bboxes, compress, save=False):
+    rlist = flex.reflection_table()
+    rlist["bbox"] = flex.int6(bboxes)
+    rlist["panel"] = flex.size_t(len(bboxes), 0)
+    rlist["index"] = flex.size_t_range(len(bboxes))
+    rlist["shoebox"] = flex.shoebox(
+        rlist["panel"], rlist["bbox"], allocate=False, flatten=False
+    )
+    processor = ShoeboxProcessor(rlist, 1, 0, len(images), save, compress)
+    assert processor.compressed() == compress
+    executor = _RecordingExecutor()
+    for image, mask in zip(images, masks):
+        processor.next(make_image(image, mask), executor)
+    assert processor.finished()
+    return executor, rlist, processor
+
+
+@pytest.mark.parametrize("save", [False, True])
+def test_shoebox_processor_compression_is_lossless(save):
+    rng = np.random.default_rng(42)
+    ny, nx, nz = 40, 50, 6
+    # Poisson counts on some frames and arbitrary floats on others, so that
+    # both compressible and incompressible slices are stored
+    images, masks = [], []
+    for z in range(nz):
+        if z % 2:
+            data = rng.normal(0, 1e6, (ny, nx))
+        else:
+            data = rng.poisson(3, (ny, nx)).astype(float)
+        images.append((flex.double(data),))
+        masks.append((flex.bool(rng.random((ny, nx)) > 0.1),))
+    bboxes = [
+        (5, 15, 5, 20, 0, 6),  # whole scan
+        (10, 12, 30, 31, 2, 3),  # one frame
+        (-4, 6, -3, 8, 1, 5),  # off the image at the top left
+        (45, 58, 35, 44, 0, 4),  # off the image at the bottom right
+        (20, 30, 10, 20, 3, 6),  # ends on the last frame
+        (0, 50, 0, 40, 1, 3),  # the whole image
+    ]
+    executor_c, rlist_c, processor = _extract(images, masks, bboxes, True, save)
+    executor_u, rlist_u, _ = _extract(images, masks, bboxes, False, save)
+    seen_c, seen_u = executor_c.seen, executor_u.seen
+    assert sorted(seen_c) == sorted(seen_u) == list(range(len(bboxes)))
+    for i in seen_u:
+        assert seen_c[i][0] == seen_u[i][0]
+        for a, b in zip(seen_c[i][1:], seen_u[i][1:]):
+            assert a.dtype == b.dtype and np.array_equal(a, b)
+    for sc, su in zip(rlist_c["shoebox"], rlist_u["shoebox"]):
+        assert sc.is_data_allocated() == su.is_data_allocated() == save
+        if save:
+            assert sc.data.all_eq(su.data) and sc.mask.all_eq(su.mask)
+    assert processor.max_compressed_bytes() > 0
+
+
+def test_shoebox_processor_compresses_counts():
+    rng = np.random.default_rng(0)
+    ny, nx, nz = 100, 100, 5
+    images = [(flex.double(rng.poisson(1, (ny, nx)).astype(float)),) for _ in range(nz)]
+    masks = [(flex.bool(flex.grid(ny, nx), True),) for _ in range(nz)]
+    bboxes = [
+        (x, x + 20, y, y + 20, 0, nz)
+        for x in range(0, 80, 20)
+        for y in range(0, 80, 20)
+    ]
+    _, _, processor = _extract(images, masks, bboxes, True)
+    # 16 shoeboxes of 4 stored 20x20 slices: raw data and mask take 5 bytes
+    # per pixel, but low counts should compress to under 1 byte per pixel
+    raw = 16 * 4 * 400 * 5
+    assert processor.max_compressed_bytes() < raw / 5
+
+
+def test_shoebox_processor_batches_frames_where_many_shoeboxes_finish():
+    # Five 1000x1000x2 shoeboxes finish on the last frame: 18 MB each decoded,
+    # 90 MB in all, far more than on a typical frame and more than the 64 MB
+    # lower limit for one batch. So they are decoded and processed in two
+    # batches, with the same results.
+    rng = np.random.default_rng(1)
+    ny, nx, nz = 1000, 1000, 3
+    images = [(flex.double(rng.poisson(2, (ny, nx)).astype(float)),) for _ in range(nz)]
+    masks = [(flex.bool(rng.random((ny, nx)) > 0.01),) for _ in range(nz)]
+    bboxes = [(0, nx, 0, ny, 1, 3)] * 5 + [(0, 5, 0, 5, z, z + 1) for z in range(3)]
+    executor_c, _, _ = _extract(images, masks, bboxes, True)
+    executor_u, _, _ = _extract(images, masks, bboxes, False)
+    assert executor_u.calls == [(0, 1), (1, 1), (2, 6)]
+    assert executor_c.calls == [(0, 1), (1, 1), (2, 3), (2, 3)]
+    for i in executor_u.seen:
+        for a, b in zip(executor_c.seen[i][1:], executor_u.seen[i][1:]):
+            assert np.array_equal(a, b)
+
+
+def test_shoebox_processor_never_compresses_flat_shoeboxes():
+    rlist = flex.reflection_table()
+    rlist["bbox"] = flex.int6([(0, 2, 0, 2, 0, 3)])
+    rlist["panel"] = flex.size_t(1, 0)
+    rlist["shoebox"] = flex.shoebox(
+        rlist["panel"], rlist["bbox"], allocate=False, flatten=True
+    )
+    assert not ShoeboxProcessor(rlist, 1, 0, 3, False, True).compressed()
 
 
 @mock.patch("dials.algorithms.integration.processor.flex.max")

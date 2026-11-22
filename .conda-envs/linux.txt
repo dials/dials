@@ -1,6 +1,7 @@
 alabaster
 biopython
 bzip2
+c-blosc2
 c-compiler
 colorlog
 conda
@@ -18,6 +19,7 @@ jinja2
 libboost-devel
 libboost-python-devel
 libglu
+lz4-c
 matplotlib-base>=3.0.2
 mesa-libgl-devel-cos7-x86_64
 mrcfile
