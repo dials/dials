@@ -8,7 +8,6 @@ import math
 import random
 
 import libtbx
-from dxtbx.model import tof_helpers
 from dxtbx.model.experiment_list import ExperimentList
 from libtbx.phil import parse
 from scitbx import matrix
@@ -437,23 +436,28 @@ class ReflectionManagerFactory:
 
         ## Weighting strategy
 
-        if params.weighting_strategy.override == "statistical":
-            params.weighting_strategy.override = "statistical_laue"
-        elif params.weighting_strategy.override == "constant":
-            params.weighting_strategy.override = "constant_laue"
+        if all_tof_experiments:
+            weighting_strategy = ReflectionManagerFactory.get_tof_weighting_strategy(
+                params, experiments
+            )
+        else:
+            if params.weighting_strategy.override == "statistical":
+                params.weighting_strategy.override = "statistical_laue"
+            elif params.weighting_strategy.override == "constant":
+                params.weighting_strategy.override = "constant_laue"
 
-        if params.weighting_strategy.override is not None:
-            if params.weighting_strategy.override not in [
-                "constant_laue",
-                "statistical_laue",
-            ]:
-                raise ValueError(
-                    f"{params.weighting_strategy.override} not compatible with Laue data"
-                )
+            if params.weighting_strategy.override is not None:
+                if params.weighting_strategy.override not in [
+                    "constant_laue",
+                    "statistical_laue",
+                ]:
+                    raise ValueError(
+                        f"{params.weighting_strategy.override} not compatible with Laue data"
+                    )
 
-        weighting_strategy = ReflectionManagerFactory.get_weighting_strategy_override(
-            params
-        )
+            weighting_strategy = (
+                ReflectionManagerFactory.get_weighting_strategy_override(params)
+            )
 
         return refman(
             reflections=reflections,
@@ -467,6 +471,24 @@ class ReflectionManagerFactory:
             weighting_strategy_override=weighting_strategy,
             wavelength_weight=params.weighting_strategy.wavelength_weight,
         )
+
+    @staticmethod
+    def get_tof_weighting_strategy(
+        params: libtbx.phil.scope_extract,
+        experiments: ExperimentList,
+    ) -> (
+        weighting_strategies.TOFStatisticalWeightingStrategy
+        | weighting_strategies.TOFConstantWeightingStrategy
+    ):
+
+        override = params.weighting_strategy.override
+        if override in (None, "statistical"):
+            return weighting_strategies.TOFStatisticalWeightingStrategy(experiments)
+        elif override == "constant":
+            return weighting_strategies.TOFConstantWeightingStrategy(
+                *params.weighting_strategy.constants
+            )
+        raise ValueError(f"{override} not compatible with ToF data")
 
     @staticmethod
     def get_weighting_strategy_override(
@@ -1178,6 +1200,10 @@ class LaueReflectionManager(ReflectionManager):
 
 
 class TOFReflectionManager(LaueReflectionManager):
+    """Reflection manager for time-of-flight Laue data."""
+
+    experiment_type = "tof"
+
     def __init__(
         self,
         reflections,
@@ -1191,6 +1217,10 @@ class TOFReflectionManager(LaueReflectionManager):
         weighting_strategy_override=None,
         wavelength_weight=1e7,
     ):
+        if weighting_strategy_override is None:
+            weighting_strategy_override = (
+                weighting_strategies.TOFStatisticalWeightingStrategy(experiments)
+            )
         super().__init__(
             reflections=reflections,
             experiments=experiments,
@@ -1204,94 +1234,50 @@ class TOFReflectionManager(LaueReflectionManager):
             wavelength_weight=wavelength_weight,
         )
 
-        tof_to_frame_interpolators = []
-        sample_to_source_distances = []
-        tof_ranges = []
-        for expt in self._experiments:
-            tof = expt.scan.get_property("time_of_flight")  # (usec)
-            tof_range = (min(tof), max(tof))
-            tof_ranges.append(tof_range)
-            frames = list(range(len(tof)))
-            tof_to_frame = tof_helpers.tof_to_frame_interpolator(tof, frames)
-            tof_to_frame_interpolators.append(tof_to_frame)
-            sample_to_source_distances.append(
-                expt.beam.get_sample_to_source_distance() * 10**-3  # (m)
-            )
+    def print_stats_on_matches(self):
+        """Print some basic statistics on the matches"""
 
-        self._tof_to_frame_interpolators = tof_to_frame_interpolators
-        self._sample_to_source_distances = sample_to_source_distances
-        self._tof_ranges = tof_ranges
+        l = self.get_matches()
+        nref = len(l)
+        if nref == 0:
+            logger.warning(
+                "Unable to calculate summary statistics for zero observations"
+            )
+            return
+
+        try:
+            x_resid = l["x_resid"]
+            y_resid = l["y_resid"]
+            tof_resid = l["tof_resid"]
+            w_x, w_y, w_z = l["xyzobs.mm.weights"].parts()
+        except KeyError:
+            return
+
+        header = ["", "Min", "Q1", "Med", "Q3", "Max"]
+        rows = []
+        row_data = five_number_summary(x_resid)
+        rows.append(["Xc - Xo (mm)"] + [f"{e:.4g}" for e in row_data])
+        row_data = five_number_summary(y_resid)
+        rows.append(["Yc - Yo (mm)"] + [f"{e:.4g}" for e in row_data])
+        row_data = five_number_summary(tof_resid)
+        rows.append(["ToFc - ToFo (usec)"] + [f"{e:.4g}" for e in row_data])
+        row_data = five_number_summary(w_x)
+        rows.append(["X weights"] + [f"{e:.4g}" for e in row_data])
+        row_data = five_number_summary(w_y)
+        rows.append(["Y weights"] + [f"{e:.4g}" for e in row_data])
+        row_data = five_number_summary(w_z)
+        rows.append(["ToF weights"] + [f"{e:.4g}" for e in row_data])
+
+        msg = (
+            f"\nSummary statistics for {nref} observations" + " matched to predictions:"
+        )
+        logger.info(msg)
+        logger.info(dials.util.tabulate(rows, header) + "\n")
 
     def update_residuals(self):
-        x_obs, y_obs, _ = self._reflections["xyzobs.mm.value"].parts()
-        x_cal, y_cal, _ = self._reflections["xyzcal.mm"].parts()
-        wavelength_obs = self._reflections["wavelength"]
-        wavelength_cal = self._reflections["wavelength_cal"]
-        L1 = self._reflections["s1"].norms() * 10**-3  # (m)
+        x_obs, y_obs, tof_obs = self._reflections["xyzobs.mm.value"].parts()
+        x_cal, y_cal, tof_cal = self._reflections["xyzcal.mm"].parts()
         self._reflections["x_resid"] = x_cal - x_obs
         self._reflections["y_resid"] = y_cal - y_obs
-        self._reflections["wavelength_resid"] = wavelength_cal - wavelength_obs
-        self._reflections["wavelength_resid2"] = (
-            self._reflections["wavelength_resid"] ** 2
-        )
-
-        L1_cal = flex.double(len(self._reflections))
-        for idx, expt in enumerate(self._experiments):
-            if "imageset_id" in self._reflections:
-                r_expt = self._reflections["imageset_id"] == idx
-            else:
-                r_expt = self._reflections["id"] == idx
-            for i_panel in range(len(expt.detector)):
-                sel = r_expt & (self._reflections["panel"] == i_panel)
-                x_cal_p = x_cal.select(sel)
-                y_cal_p = y_cal.select(sel)
-                s1_cal = expt.detector[i_panel].get_lab_coord(
-                    flex.vec2_double(x_cal_p, y_cal_p)
-                )
-                L1_cal_p = s1_cal.norms() * 10**-3  # (m)
-                L1_cal.set_selected(sel, L1_cal_p)
-
-        frame_resid = flex.double(len(self._reflections))
-        frame_resid2 = flex.double(len(self._reflections))
-        for idx, expt in enumerate(self._experiments):
-            if "imageset_id" in self._reflections:
-                r_expt = self._reflections["imageset_id"] == idx
-            else:
-                r_expt = self._reflections["id"] == idx
-
-            L_expt = self._sample_to_source_distances[idx] + L1.select(r_expt)
-            L_expt_cal = self._sample_to_source_distances[idx] + L1_cal.select(r_expt)
-
-            tof_obs_expt = (
-                tof_helpers.tof_from_wavelength(L_expt, wavelength_obs.select(r_expt))
-                * 10**6
-            )  # (usec)
-            tof_obs_expt.set_selected(
-                tof_obs_expt < self._tof_ranges[idx][0], self._tof_ranges[idx][0]
-            )
-            tof_obs_expt.set_selected(
-                tof_obs_expt > self._tof_ranges[idx][1], self._tof_ranges[idx][1]
-            )
-
-            tof_cal_expt = (
-                tof_helpers.tof_from_wavelength(
-                    L_expt_cal, wavelength_cal.select(r_expt)
-                )
-                * 10**6
-            )  # (usec)
-            tof_cal_expt.set_selected(
-                tof_cal_expt < self._tof_ranges[idx][0], self._tof_ranges[idx][0]
-            )
-            tof_cal_expt.set_selected(
-                tof_cal_expt > self._tof_ranges[idx][1], self._tof_ranges[idx][1]
-            )
-
-            tof_to_frame = self._tof_to_frame_interpolators[idx]
-            frame_resid_expt = flex.double(
-                tof_to_frame(tof_cal_expt) - tof_to_frame(tof_obs_expt)
-            )
-            frame_resid.set_selected(r_expt, frame_resid_expt)
-            frame_resid2.set_selected(r_expt, frame_resid_expt**2)
-
-        self._reflections["frame_resid"] = frame_resid
-        self._reflections["frame_resid2"] = frame_resid2
+        self._reflections["tof_resid"] = tof_cal - tof_obs
+        self._reflections["tof_resid2"] = self._reflections["tof_resid"] ** 2
