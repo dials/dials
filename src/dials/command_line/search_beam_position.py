@@ -398,7 +398,12 @@ def run(args=None):
                             image, params, image_counter, det_index
                         )
 
-                        if x is not None and y is not None:
+                        if (
+                            x is not None
+                            and y is not None
+                            and np.isfinite(x)
+                            and np.isfinite(y)
+                        ):
                             msg = f"[Detector {int(det_index)}] "
                             msg += f"image {int(image_counter):05d}: "
                             msg += f"{x:.2f} {y:.2f}"
@@ -452,7 +457,7 @@ def run(args=None):
                     average_image, params, detector_index=det_index
                 )
 
-                if x is None or y is None:
+                if x is None or y is None or not (np.isfinite(x) and np.isfinite(y)):
                     logger.warning(
                         f"[Detector {det_index}] beam position not found on "
                         "the average image; detector model not updated"
