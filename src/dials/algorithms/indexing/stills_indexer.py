@@ -349,7 +349,8 @@ class StillsIndexer(Indexer):
                         refinery=None,
                         graph_verbose=False,
                     )
-                    experiments[expt_id].crystal = nv()
+                    # return only element in nv() list rather than the list
+                    experiments[expt_id].crystal = nv()[0]
                 ref_predictor = ExperimentsPredictorFactory.from_experiments(
                     experiments,
                     force_stills=True,
