@@ -188,3 +188,27 @@ def test_ssx_index_input_unit_cell(dials_data, run_in_tmp_path):
     run([expts, refls, "method=pink_indexer", "unit_cell=96.4,96.4,96.4,90,90,90"])
     experiments = load.experiment_list("indexed.expt", check_format=False)
     assert len(experiments) == 5
+
+
+def test_ssx_index_refinement_protocol_mode_repredict_only(dials_data, run_in_tmp_path):
+    ssx = dials_data("cunir_serial_processed")
+    expts = str(ssx / "imported_with_ref_5.expt")
+    refls = str(ssx / "strong_5.refl")
+
+    # invoke the run function
+    run(
+        [
+            expts,
+            refls,
+            "max_lattices=2",
+            "unit_cell=96.4,96.4,96.4,90,90,90",
+            "method=fft1d+real_space_grid_search",
+            "refinement_protocol.mode=repredict_only",
+        ]
+    )
+
+    assert os.path.exists("indexed.refl")
+    assert os.path.exists("indexed.expt")
+    assert os.path.exists("dials.ssx_index.html")
+    experiments = load.experiment_list("indexed.expt", check_format=False)
+    assert len(experiments) == 5
