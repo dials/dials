@@ -352,7 +352,11 @@ class SingleScaler(ScalerBase):
         self._free_Ih_table = None  # An array of len n_suitable_refl
         self._configure_model_and_datastructures(for_multi=for_multi)
         self.is_still = True
-        if self._experiment.scan and self._experiment.scan.get_oscillation()[1] != 0.0:
+        if (
+            self._experiment.scan
+            and self._experiment.scan.has_property("oscillation")
+            and self._experiment.scan.get_oscillation()[1] != 0.0
+        ):
             self.is_still = False
         if self.params.weighting.error_model.error_model:
             # reload current error model parameters, or create new null

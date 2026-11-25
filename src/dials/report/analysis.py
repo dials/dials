@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from cctbx import miller
+from dxtbx.model import ExperimentType
 from scitbx.array_family import flex
 
 from dials.algorithms.scaling.scaling_library import scaled_data_as_miller_array
@@ -10,6 +11,7 @@ from dials.util.batch_handling import (
     assign_batches_to_reflections,
     calculate_batch_offsets,
     get_batch_ranges,
+    get_image_ranges,
 )
 
 
@@ -74,7 +76,16 @@ def reflection_tables_to_batch_dependent_properties(
 ):
     """Extract batch dependent properties from a reflection table list."""
     offsets = calculate_batch_offsets(experiments)
-    reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
+    polychromatic_types = {ExperimentType.LAUE, ExperimentType.TOF}
+    if all(e.get_type() in polychromatic_types for e in experiments):
+        # z is not an image number for polychromatic data: one batch per
+        # experiment, as in export_mtz
+        for r, offset, image_range in zip(
+            reflection_tables, offsets, get_image_ranges(experiments)
+        ):
+            r["batch"] = flex.int(r.size(), offset + image_range[0])
+    else:
+        reflection_tables = assign_batches_to_reflections(reflection_tables, offsets)
     # filter bad refls and negative scales
     batches = flex.int()
     scales = flex.double()

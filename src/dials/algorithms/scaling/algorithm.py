@@ -29,6 +29,11 @@ from dials.algorithms.scaling.scaling_utilities import (
     DialsMergingStatisticsError,
     log_memory_usage,
 )
+from dials.algorithms.scaling.tof.model import check_panel_scales
+from dials.algorithms.scaling.tof.preparation import (
+    is_tof_experiment,
+    prepare_tof_input,
+)
 from dials.algorithms.statistics.cc_half_algorithm import (
     CCHalfFromDials as deltaccscript,
 )
@@ -133,6 +138,11 @@ def prepare_input(params, experiments, reflections):
         r.experiment_identifiers().keys() for r in reflections
     )
     logger.info("\nDataset ids are: %s \n", ",".join(str(i) for i in ids))
+
+    if any(is_tof_experiment(e) for e in experiments):
+        params, experiments, reflections = prepare_tof_input(
+            params, experiments, reflections
+        )
 
     for r in reflections:
         r.unset_flags(flex.bool(len(r), True), r.flags.bad_for_scaling)
@@ -417,6 +427,8 @@ class ScalingAlgorithm:
 
     def finish(self):
         """Save the experiments json and scaled pickle file."""
+        if self.experiments.all_tof():
+            check_panel_scales(self.experiments)
 
         # Now create a joint reflection table. Delete all other data before
         # joining reflection tables - just need experiments for mtz export

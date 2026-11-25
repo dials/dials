@@ -23,7 +23,7 @@ import numpy as np
 
 import iotbx.merging_statistics
 from cctbx import crystal, miller, uctbx
-from dxtbx.model import Experiment
+from dxtbx.model import Experiment, ExperimentList, ExperimentType
 from dxtbx.util import ersatz_uuid4
 from libtbx import Auto, phil
 
@@ -354,7 +354,7 @@ will not be used for calculating merging statistics""",
         / joint_table["inverse_scale_factor"]
     )
     if not wavelength:
-        wavelength = np.mean([expt.beam.get_wavelength() for expt in experiments])
+        wavelength = _mean_wavelength(experiments, reflection_table_list)
     i_obs.set_info(
         miller.array_info(
             source="DIALS",
@@ -363,6 +363,20 @@ will not be used for calculating merging statistics""",
         )
     )
     return i_obs
+
+
+def _mean_wavelength(
+    experiments: ExperimentList, reflection_tables: list[flex.reflection_table]
+) -> float:
+    """The mean beam wavelength, or for polychromatic (Laue and time-of-flight)
+    beams, which have no fixed wavelength, the mean reflection wavelength."""
+    polychromatic = (ExperimentType.LAUE, ExperimentType.TOF)
+    if any(expt.get_type() in polychromatic for expt in experiments):
+        wavelengths = flex.double()
+        for table in reflection_tables:
+            wavelengths.extend(table["wavelength_cal"])
+        return flex.mean(wavelengths)
+    return np.mean([expt.beam.get_wavelength() for expt in experiments])
 
 
 def determine_best_unit_cell(experiments):
