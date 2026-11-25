@@ -1,0 +1,1 @@
+``dials.ssx_index``: enable `refinement_protocol.mode=repredict_only` keyword argument, previously caused ``dials.ssx_index`` to crash.
