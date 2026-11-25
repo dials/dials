@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from collections import namedtuple
 
+from dxtbx.model import tof_helpers
 from scitbx import matrix, sparse
 
 from dials.algorithms.refinement import DialsRefineConfigError
@@ -984,9 +985,7 @@ class LauePredictionParameterisation(PredictionParameterisation):
         self._wavelength = reflections["wavelength_cal"]
         self._r = self._setting_rotation * self._fixed_rotation * self._UB * self._h
         self._s0 = reflections["s0_cal"]
-        self._e_X_r = (self._setting_rotation * self._axis).cross(self._r)
-        self._e_r_s0 = (self._e_X_r).dot(self._s0)
-        self._ds0_dbeam_p = None
+        self._unit_s0 = self._s0.each_normalize()
         return
 
     def get_gradients(self, reflections, callback=None):
@@ -1075,42 +1074,48 @@ class LauePredictionParameterisation(PredictionParameterisation):
         self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
     ):
         """helper function to extend the derivatives lists by derivatives of the
-        beam parameterisations."""
+        beam parameterisations. The state of a Laue beam is its unit direction
+        unit_s0. The crystal does not move, so the beam affects s1 = r + s0 only
+        through s0 = unit_s0 / wavelength, where the wavelength of each reflection
+        is the one that puts r on the Ewald sphere:
+        wavelength = -2 r.unit_s0 / r.r"""
 
         # Get required data
         r = self._r.select(isel)
-        e_X_r = self._e_X_r.select(isel)
-        e_r_s0 = self._e_r_s0.select(isel)
+        unit_s0 = self._unit_s0.select(isel)
+        wavelength = self._wavelength.select(isel)
         D = self._D.select(isel)
+        r_dot_r = r.dot(r)
 
         if ds0_dbeam_p is None:
-            # get the derivatives of the beam vector wrt the parameters
+            # get the derivatives of the unit beam vector wrt the parameters
             ds0_dbeam_p = parameterisation.get_ds_dp(use_none_as_null=True)
 
             ds0_dbeam_p = [
                 None if e is None else flex.vec3_double(len(r), e.elems)
                 for e in ds0_dbeam_p
             ]
-            self._ds0_dbeam_p = ds0_dbeam_p
 
-        dphi_dp = []
+        dwavelength_dp = []
         dpv_dp = []
 
         # loop through the parameters
         for der in ds0_dbeam_p:
             if der is None:
-                dphi_dp.append(None)
+                dwavelength_dp.append(None)
                 dpv_dp.append(None)
                 continue
 
-            # calculate the derivative of phi for this parameter
-            dphi = (der.dot(r) / e_r_s0) * -1.0
-            dphi_dp.append(dphi)
+            # calculate the derivative of the wavelength for this parameter
+            dwavelength = -2.0 * r.dot(der) / r_dot_r
+            dwavelength_dp.append(dwavelength)
 
-            # calculate the derivative of pv for this parameter
-            dpv_dp.append(D * (e_X_r * dphi + der))
+            # calculate the derivative of s1 = r + unit_s0 / wavelength, and
+            # hence of pv, for this parameter
+            ds1 = der / wavelength - unit_s0 * (dwavelength / wavelength**2)
+            dpv_dp.append(D * ds1)
 
-        return dpv_dp, dphi_dp
+        return dpv_dp, dwavelength_dp
 
     def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
         """helper function to extend the derivatives lists by derivatives of
@@ -1124,6 +1129,7 @@ class LauePredictionParameterisation(PredictionParameterisation):
             U = self._U.select(isel)
         D = self._D.select(isel)
         wavelength = self._wavelength.select(isel)
+        unit_s0 = self._unit_s0.select(isel)
         fixed_rotation = self._fixed_rotation.select(isel)
         setting_rotation = self._setting_rotation.select(isel)
         r = self._r.select(isel)
@@ -1151,7 +1157,6 @@ class LauePredictionParameterisation(PredictionParameterisation):
             else:
                 dr = setting_rotation * fixed_rotation * U * der * h
 
-            unit_s0 = flex.vec3_double(len(dr), self._experiments[0].beam.get_unit_s0())
             r_dot_r = r.dot(r)
             dwavelength = -2 * unit_s0.dot(
                 ((dr * r_dot_r) - ((2 * r) * dr.dot(r))) / (r_dot_r**2)
@@ -1200,3 +1205,109 @@ class LauePredictionParameterisation(PredictionParameterisation):
                 dY_dp.append(w_inv * (dv_dp - dw_dp * v_w_inv))
 
         return dX_dp, dY_dp
+
+
+class TOFPredictionParameterisation(LauePredictionParameterisation):
+    """An extension of LauePredictionParameterisation for time-of-flight (ToF)
+    Laue data, where the third residual is the time of flight rather than the
+    wavelength.
+
+    The predicted ToF of a reflection is t = K * (L0 * wavelength + 1 / v[2]),
+
+    where K=m_n/h, v = D*s1.
+
+    dt/dp = K * (L0 * dwavelength/dp - (1 / v[2]**2) * dv[2]/dp)
+
+    dwavelength/dp and dv/dp are already calculated for the Laue case
+    """
+
+    _grad_names = ("dX_dp", "dY_dp", "dtof_dp")
+
+    # K, using a bit of a hack with tof_from_wavelength to ensure it's all converted the same
+    _tof_constant = tof_helpers.tof_from_wavelength(1.0e-3, 1.0) * 1.0e6
+
+    def _local_setup(self, reflections):
+        super()._local_setup(reflections)
+
+        # source to sample distance (mm), assumed the same for all experiments
+        L0 = {exp.beam.get_sample_to_source_distance() for exp in self._experiments}
+        if len(L0) != 1:
+            raise DialsRefineConfigError(
+                "ToF refinement requires the same sample to source distance for "
+                f"all experiments, but found {sorted(L0)} mm"
+            )
+        self._L0 = L0.pop()
+        return
+
+    def _tof_derivatives(self, isel, dpv_dp, dwavelength_dp=None):
+        """Convert derivatives of pv and optionally wavelength into
+        derivatives of the predicted ToF"""
+
+        w_inv = self._w_inv.select(isel)
+        w_inv_sq = w_inv * w_inv
+        L0 = self._L0
+        if dwavelength_dp is None:
+            dwavelength_dp = [None] * len(dpv_dp)
+
+        dtof_dp = []
+        for dpv, dwavelength in zip(dpv_dp, dwavelength_dp):
+            if dpv is None:
+                dtof_dp.append(None)
+                continue
+            dtof = -dpv.parts()[2] * w_inv_sq
+            if dwavelength is not None:
+                dtof += L0 * dwavelength
+            dtof_dp.append(dtof * self._tof_constant)
+        return dtof_dp
+
+    def _beam_derivatives(
+        self, isel, parameterisation=None, ds0_dbeam_p=None, reflections=None
+    ):
+        dpv_dp, dwavelength_dp = super()._beam_derivatives(
+            isel, parameterisation, ds0_dbeam_p, reflections
+        )
+        return dpv_dp, self._tof_derivatives(isel, dpv_dp, dwavelength_dp)
+
+    def _xl_derivatives(self, isel, derivatives, b_matrix, parameterisation=None):
+        dpv_dp, dwavelength_dp = super()._xl_derivatives(
+            isel, derivatives, b_matrix, parameterisation
+        )
+        return dpv_dp, self._tof_derivatives(isel, dpv_dp, dwavelength_dp)
+
+    def _grads_detector_loop(self, reflections, results, callback=None):
+        """Extend the base class detector loop with dtof/dp.
+        The base loop is run without the callback, because the callback reduces
+        each parameter's gradients as soon as they are complete. The ToF
+        gradients are filled in here and the callback is applied afterwards."""
+
+        iparam_start = self._iparam
+        results = super()._grads_detector_loop(reflections, results, callback=None)
+
+        iparam = iparam_start
+        for dp in self._detector_parameterisations:
+            isel = flex.size_t()
+            for exp_id in dp.get_experiment_ids():
+                isel.extend(self._experiment_to_idx[exp_id])
+            panel = reflections["panel"].select(isel)
+
+            for panel_id, _ in enumerate(dp.get_model()):
+                sub_isel = isel.select(panel == panel_id)
+                if len(sub_isel) == 0:
+                    continue
+                dpv_ddet_p = self._detector_derivatives(
+                    sub_isel, panel_id, parameterisation=dp, reflections=reflections
+                )
+                dtof_ddet_p = self._tof_derivatives(sub_isel, dpv_ddet_p)
+                for i, dtof in enumerate(dtof_ddet_p):
+                    if dtof is not None:
+                        results[iparam + i][self._grad_names[2]].set_selected(
+                            sub_isel, dtof
+                        )
+
+            if callback is not None:
+                for i in range(dp.num_free()):
+                    results[iparam + i] = callback(results[iparam + i])
+
+            iparam += dp.num_free()
+
+        return results

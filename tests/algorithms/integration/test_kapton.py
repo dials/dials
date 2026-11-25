@@ -89,8 +89,12 @@ def test_kapton(tmp_path, dials_data):
         image_file,
         "params_with_kapton.phil",
     )
-    subprocess.run(command_without_kapton, cwd=tmp_path, capture_output=True)
-    subprocess.run(command_with_kapton, cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        command_without_kapton, cwd=tmp_path, capture_output=True
+    ).check_returncode()
+    subprocess.run(
+        command_with_kapton, cwd=tmp_path, capture_output=True
+    ).check_returncode()
 
     # Now compare the 2 experimental results
     # Currently just comparing the mean values to get a sense of the effect if the kapton and whether it is being applied correctly

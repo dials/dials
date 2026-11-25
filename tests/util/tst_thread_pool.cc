@@ -1,4 +1,4 @@
-#include <cassert>
+#include <dials/error.h>
 #include <vector>
 #include <iostream>
 #include <atomic>
@@ -26,7 +26,7 @@ void tst_basic_functionality() {
   pool.wait();
 
   // Check that all tasks executed
-  assert(counter == 100);
+  DIALS_ASSERT(counter == 100);
 
   // Test passed
   std::cout << "OK" << std::endl;
@@ -62,11 +62,11 @@ void tst_concurrent_execution() {
   pool.wait();
 
   // Should have completed all tasks
-  assert(completed == 20);
+  DIALS_ASSERT(completed == 20);
   // Should have achieved some concurrency (more than 1 thread working)
-  assert(max_concurrent > 1);
+  DIALS_ASSERT(max_concurrent > 1);
   // No tasks should be running now
-  assert(concurrent_count == 0);
+  DIALS_ASSERT(concurrent_count == 0);
 
   // Test passed
   std::cout << "OK" << std::endl;
@@ -92,11 +92,11 @@ void tst_multiple_post_wait_cycles() {
     pool.wait();
 
     // Check this cycle completed
-    assert(cycle_count == 10);
+    DIALS_ASSERT(cycle_count == 10);
   }
 
   // Check total
-  assert(total_executed == 50);
+  DIALS_ASSERT(total_executed == 50);
 
   // Test passed
   std::cout << "OK" << std::endl;
@@ -126,7 +126,8 @@ void tst_exception_handling() {
     // Parent process - wait for child to crash
     int status;
     waitpid(pid, &status, 0);
-    assert(!WIFEXITED(status) || WEXITSTATUS(status) != 0);  // Should not exit normally
+    DIALS_ASSERT(!WIFEXITED(status)
+                 || WEXITSTATUS(status) != 0);  // Should not exit normally
     std::cout << "OK" << std::endl;
   }
 #endif
@@ -151,12 +152,12 @@ void tst_single_thread_pool() {
   pool.wait();
 
   // All tasks should have executed
-  assert(counter == 10);
-  assert(execution_order.size() == 10);
+  DIALS_ASSERT(counter == 10);
+  DIALS_ASSERT(execution_order.size() == 10);
 
   // With single thread, should execute in order
   for (int i = 0; i < 10; ++i) {
-    assert(execution_order[i] == i);
+    DIALS_ASSERT(execution_order[i] == i);
   }
 
   // Test passed

@@ -5,6 +5,8 @@ import random
 from math import pi
 from os.path import join
 
+import pytest
+
 from cctbx.sgtbx import space_group, space_group_symbols
 from dxtbx.format.FormatISISSXD import FormatISISSXD
 
@@ -18,6 +20,7 @@ from scitbx.array_family import flex
 
 from dials.algorithms.refinement.parameterisation.beam_parameters import (
     BeamParameterisation,
+    LaueBeamParameterisation,
 )
 from dials.algorithms.refinement.parameterisation.crystal_parameters import (
     CrystalOrientationParameterisation,
@@ -33,16 +36,19 @@ from dials.algorithms.refinement.parameterisation.detector_parameters import (
 # Parameterisation of the prediction equation
 from dials.algorithms.refinement.parameterisation.prediction_parameters import (
     LauePredictionParameterisation,
+    TOFPredictionParameterisation,
     XYPhiPredictionParameterisation,
 )
 from dials.algorithms.refinement.prediction.managed_predictors import (
     LaueExperimentsPredictor,
     ScansExperimentsPredictor,
     ScansRayPredictor,
+    TOFExperimentsPredictor,
 )
 from dials.algorithms.refinement.reflection_manager import (
     LaueReflectionManager,
     ReflectionManager,
+    TOFReflectionManager,
 )
 
 # Imports for the target function
@@ -292,7 +298,8 @@ def test(args=[]):
             assert abs(e) < 0.1  # check differences less than 10%
 
 
-def test_laue_target_function(dials_data):
+@pytest.mark.parametrize("tof", [False, True], ids=["laue", "tof"])
+def test_laue_target_function(dials_data, tof):
     fmt = FormatISISSXD(join(dials_data("isis_sxd_example_data"), "sxd_nacl_run.nxs"))
     beam = fmt.get_beam()
     detector = fmt.get_detector()
@@ -416,13 +423,25 @@ def test_laue_target_function(dials_data):
     )
 
     det_param = DetectorParameterisationHierarchical(detector)
+    beam_param = LaueBeamParameterisation(beam, goniometer)
     xlo_param = CrystalOrientationParameterisation(crystal)
     xluc_param = CrystalUnitCellParameterisation(crystal)
 
-    pred_param = LauePredictionParameterisation(
+    if tof:
+        PredParam = TOFPredictionParameterisation
+        ExperimentsPredictor = TOFExperimentsPredictor
+        RefMan = TOFReflectionManager
+        Target = TOFLeastSquaresResidualWithRmsdCutoff
+    else:
+        PredParam = LauePredictionParameterisation
+        ExperimentsPredictor = LaueExperimentsPredictor
+        RefMan = LaueReflectionManager
+        Target = LaueLeastSquaresResidualWithRmsdCutoff
+
+    pred_param = PredParam(
         experiments,
         detector_parameterisations=[det_param],
-        beam_parameterisations=[],
+        beam_parameterisations=[beam_param],
         xl_orientation_parameterisations=[xlo_param],
         xl_unit_cell_parameterisations=[xluc_param],
     )
@@ -439,54 +458,46 @@ def test_laue_target_function(dials_data):
 
     reflection_predictor = LaueReflectionPredictor(experiments[0], 1.0)
     obs_refs = reflection_predictor.all_reflections_for_asu(0.0)
+    obs_refs["id"] = flex.int(len(obs_refs), 0)
+    obs_refs["wavelength"] = obs_refs["wavelength_cal"]
+    if tof:
+        # Add predicted ToF as the third component of xyzcal.mm
+        ExperimentsPredictor(experiments)(obs_refs)
+        # Keep only reflections with ToF within the scan range
+        tof_range = experiments[0].scan.get_property("time_of_flight")
+        tof_cal = obs_refs["xyzcal.mm"].parts()[2]
+        obs_refs = obs_refs.select(
+            (tof_cal > min(tof_range)) & (tof_cal < max(tof_range))
+        )
 
     # Set 'observed' centroids from the predicted ones
     obs_refs["xyzobs.mm.value"] = obs_refs["xyzcal.mm"]
+    obs_refs["xyzobs.px.value"] = obs_refs["xyzcal.px"]
     obs_refs["s0"] = obs_refs["s0_cal"]
     obs_refs["wavelength"] = obs_refs["wavelength_cal"]
-    obs_refs["id"] = flex.int(len(obs_refs), 0)
 
     # Invent some variances for the centroid positions of the simulated data
     px_size = detector[0].get_pixel_size()
     var_x = flex.double(len(obs_refs), (px_size[0] / 2.0) ** 2)
     var_y = flex.double(len(obs_refs), (px_size[1] / 2.0) ** 2)
-    var_z = flex.double(len(obs_refs), 0.0)
+    if tof:
+        var_z = flex.double(len(obs_refs), 10.0**2)  # (usec^2)
+    else:
+        var_z = flex.double(len(obs_refs), 0.0)
     obs_refs["xyzobs.mm.variance"] = flex.vec3_double(var_x, var_y, var_z)
+    obs_refs.set_flags(flex.bool(len(obs_refs), True), obs_refs.flags.indexed)
 
     # Undo known parameter shifts
     det_param.set_param_vals(det_p_vals)
     xlo_param.set_param_vals(xlo_p_vals)
 
-    refman = LaueReflectionManager(obs_refs, experiments, outlier_detector=None)
+    refman = RefMan(obs_refs, experiments, outlier_detector=None)
     refman.finalise()
 
     # Redefine the reflection predictor to use the type expected by the Target class
-    ref_predictor = LaueExperimentsPredictor(experiments)
+    ref_predictor = ExperimentsPredictor(experiments)
 
-    mytarget = LaueLeastSquaresResidualWithRmsdCutoff(
-        experiments, ref_predictor, refman, pred_param, restraints_parameterisation=None
-    )
-
-    # get the functional and gradients
-    mytarget.predict()
-    L, dL_dp, curvs = mytarget.compute_functional_gradients_and_curvatures()
-
-    # test normalised differences between FD and analytical calculations
-    fdgrads = get_fd_gradients(mytarget, pred_param, [1.0e-7] * len(pred_param))
-    diffs = [a - b for a, b in zip(dL_dp, fdgrads[0])]
-    norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[0])])
-    for e in norm_diffs:
-        assert abs(e) < 0.002  # check differences less than 0.2%
-
-    # test normalised differences between FD curvatures and analytical least
-    # squares approximation. We don't expect this to be especially close
-    if curvs:
-        diffs = [a - b for a, b in zip(curvs, fdgrads[1])]
-        norm_diffs = tuple([a / b for a, b in zip(diffs, fdgrads[1])])
-        for e in norm_diffs:
-            assert abs(e) < 0.1  # check differences less than 10%
-
-    mytarget = TOFLeastSquaresResidualWithRmsdCutoff(
+    mytarget = Target(
         experiments, ref_predictor, refman, pred_param, restraints_parameterisation=None
     )
 

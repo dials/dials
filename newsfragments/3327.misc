@@ -1,0 +1,1 @@
+Tests: fix tests that could never fail or never ran their intended code path (string booleans in parametrize, self-comparisons, unchecked return codes, C++ asserts disabled by ``NDEBUG``).

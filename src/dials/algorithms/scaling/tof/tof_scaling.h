@@ -211,7 +211,7 @@ double tof_pixel_spherical_absorption_correction(double muR,
   const double sin_theta_2 = pow(sin(deg_as_rad((two_theta_idx + 1) * 5.0)), 2);
   const double l1 = (t1 - t2) / (sin_theta_1 - sin_theta_2);
   const double l0 = t1 - l1 * sin_theta_1;
-  const double correction = 1 / (l0 + l1 * pow(sin(two_theta * .5), 2));
+  const double correction = l0 + l1 * pow(sin(two_theta * .5), 2);
   return correction;
 }
 
@@ -605,6 +605,8 @@ void tof_extract_shoeboxes_to_reflection_table(
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z] * std::pow(10, -6);  // (s)
+      double bin_width =
+        frame_z > 0 ? img_tof[frame_z] - img_tof[frame_z - 1] : img_tof[1] - img_tof[0];
 
       for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
         int panel_y = bbox[2] + y;
@@ -629,6 +631,7 @@ void tof_extract_shoeboxes_to_reflection_table(
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
           incident_pixel_data -= empty_pixel_data;
+          incident_pixel_data /= bin_width;
 
           scitbx::vec3<double> s1 =
             detector[panel].get_pixel_lab_coord(scitbx::vec2<double>(panel_x, panel_y));
@@ -782,6 +785,8 @@ void tof_extract_shoeboxes_to_reflection_table(
     for (std::size_t z = 0; z < shoebox.zsize(); ++z) {
       int frame_z = bbox[4] + z;
       double tof = img_tof[frame_z] * std::pow(10, -6);  // (s)
+      double bin_width =
+        frame_z > 0 ? img_tof[frame_z] - img_tof[frame_z - 1] : img_tof[1] - img_tof[0];
 
       for (std::size_t y = 0; y < shoebox.ysize(); ++y) {
         int panel_y = bbox[2] + y;
@@ -806,6 +811,7 @@ void tof_extract_shoeboxes_to_reflection_table(
           // Subtract empty from incident and sample
           pixel_data -= empty_pixel_data;
           incident_pixel_data -= empty_pixel_data;
+          incident_pixel_data /= bin_width;
 
           double two_theta = detector[panel].get_two_theta_at_pixel(
             unit_s0, scitbx::vec2<double>(panel_x, panel_y));

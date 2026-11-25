@@ -8,7 +8,6 @@ import pytest
 
 from dxtbx.model.experiment_list import ExperimentListFactory
 from libtbx import phil
-from scitbx import matrix
 
 from dials.algorithms.refinement import RefinerFactory
 from dials.array_family import flex
@@ -41,13 +40,10 @@ def test1(dials_data, tmp_path):
         assert b1.is_similar_to(
             b2,
             wavelength_tolerance=tol,
-            direction_tolerance=tol,
+            direction_tolerance=1e-4,  # radians, i.e. ~0.1 mrad
             polarization_normal_tolerance=tol,
             polarization_fraction_tolerance=tol,
         )
-        s0_1 = matrix.col(b1.get_unit_s0())
-        s0_2 = matrix.col(b2.get_unit_s0())
-        assert s0_1.accute_angle(s0_2, deg=True) < 0.0057  # ~0.1 mrad
     for c1, c2 in zip(reg_exp.crystals(), ref_exp.crystals()):
         assert c1.is_similar_to(c2)
 

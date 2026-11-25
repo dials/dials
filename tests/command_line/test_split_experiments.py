@@ -20,7 +20,7 @@ def generate_exp(wavelength=1):
     return exp
 
 
-@pytest.mark.parametrize("with_identifiers", ["True", "False"])
+@pytest.mark.parametrize("with_identifiers", [True, False])
 @pytest.mark.parametrize("option", ["chunk_size=2", 'chunk_sizes="2 2 1"'])
 def test_split_chunk_sizes(tmp_path, option, with_identifiers):
     ids = list(range(0, 5))

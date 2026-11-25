@@ -14,6 +14,15 @@ from pathlib import Path
 
 import pytest
 
+# Each pytest-xdist worker is a separate process whose BLAS/OpenMP runtime would
+# otherwise start one thread per core, so N workers oversubscribe the machine
+# N-fold (some numpy/scipy-heavy tests ran >10x slower). This must happen before
+# numpy is first imported. Explicit user settings are respected, and subprocesses
+# launched by tests inherit the limit.
+if "PYTEST_XDIST_WORKER" in os.environ:
+    for _var in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS"):
+        os.environ.setdefault(_var, "1")
+
 if sys.version_info[:2] == (3, 7) and sys.platform == "darwin":
     multiprocessing.set_start_method("forkserver")
 
@@ -42,6 +51,11 @@ def _build_filterwarnings_string() -> str:
             this_action.append(modregex.pattern)
             if line:
                 this_action.append(line)
+        # PYTHONWARNINGS separates filters with "," and fields with ":", with
+        # no escaping, so a filter containing either can't be passed on. Python
+        # would report a mangled one on stderr in every subprocess.
+        if any("," in str(x) or ":" in str(x) for x in this_action):
+            continue
         filter_parts.append(":".join(str(x) for x in this_action))
 
     return ",".join(filter_parts)

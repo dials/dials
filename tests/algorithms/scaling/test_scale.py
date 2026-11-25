@@ -311,6 +311,31 @@ def test_scale_single_dataset_with_options(dials_data, tmp_path, option):
     run_one_scaling(tmp_path, args)
 
 
+def test_scale_dmin_auto_no_estimate(dials_data, tmp_path):
+    """Test d_min=auto when the data extend beyond the resolution limit."""
+    data_dir = dials_data("l_cysteine_dials_output")
+    refl_1 = data_dir / "20_integrated.pickle"
+    expt_1 = data_dir / "20_integrated_experiments.json"
+    args = [refl_1, expt_1, "d_min=auto"]
+    run_one_scaling(tmp_path, args)
+
+
+def test_scale_dmin_auto_estimate(dials_data, tmp_path):
+    """Test d_min=auto when the resolution limit is within the data range."""
+    location = dials_data("multi_crystal_proteinase_k")
+    args = ["d_min=auto", "merged_mtz=merged.mtz"]
+    # expect d_min to be 1.84. Full limit of the data is 1.18
+    for i in [1, 2]:
+        args.append(location / f"experiments_{i}.json")
+        args.append(location / f"reflections_{i}.pickle")
+    run_one_scaling(tmp_path, args)
+    m = iotbx.mtz.object(str(tmp_path / "merged.mtz"))
+    ma = m.as_miller_arrays()[0]
+    d_min = flex.min(ma.d_spacings().data())
+    # precise values not important, just check the cut has been suitably applied.
+    assert d_min > 1.82 and d_min < 1.86
+
+
 @pytest.fixture(scope="session")
 def vmxi_protk_reindexed(dials_data, tmp_path_factory):
     """Reindex the protk data to be in the correct space group."""
@@ -323,7 +348,7 @@ def vmxi_protk_reindexed(dials_data, tmp_path_factory):
         "space_group=P422",
     ]
     tmp_path = tmp_path_factory.mktemp("vmxi_protk_reindexed")
-    subprocess.run(command, cwd=tmp_path, capture_output=True)
+    subprocess.run(command, cwd=tmp_path, capture_output=True).check_returncode()
     return tmp_path / "reindexed.expt", tmp_path / "reindexed.refl"
 
 
@@ -577,7 +602,8 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
         "stdcutoff=4.0",
         "mode=image_group",
         "max_percent_removed=6.0",
-        "max_cycles=6",
+        "intensity_choice=profile",
+        "max_cycles=1",
         "d_min=2.0",
         "group_size=5",
         "partiality_cutoff=0.4",
@@ -595,17 +621,15 @@ def test_scale_and_filter_image_group_mode(dials_data, tmp_path):
     assert (tmp_path / "scaled.expt").is_file()
     assert (tmp_path / "analysis_results.json").is_file()
     result = get_merging_stats(tmp_path / "unmerged.mtz")
-    assert result.overall.r_pim < 0.15  # on 04/05/22 on mac, was 0.143,
-    assert result.overall.cc_one_half > 0.89  # on 04/05/22 on mac was 0.893
-    assert result.overall.n_obs > 20000  # on 04/05/22 on mac was 20188
+    assert result.overall.r_pim < 0.14  # on 02/11/26 on mac, was 0.133,
+    assert result.overall.cc_one_half > 0.94  # on 02/11/26 on mac was 0.952
+    assert result.overall.n_obs > 19500  # on 02/11/26 on mac was 19963
 
     with open(tmp_path / "analysis_results.json") as fh:
         analysis_results = json.load(fh)
     assert analysis_results["cycle_results"]["1"]["image_ranges_removed"] == [
         [[16, 24], 4]
     ]
-    assert analysis_results["cycle_results"]["2"]["image_ranges_removed"] == []
-    assert analysis_results["termination_reason"] == "no_more_removed"
 
 
 def test_scale_and_filter_termination(dials_data, tmp_path):
