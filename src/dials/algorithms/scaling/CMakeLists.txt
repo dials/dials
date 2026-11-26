@@ -10,4 +10,4 @@ Python_add_library(
     tof/boost_python/tof_scaling.cc
 )
 target_link_libraries( dials_scaling_ext PUBLIC CCTBX::cctbx Boost::python )
-target_link_libraries( dials_tof_scaling_ext PUBLIC CCTBX::cctbx Boost::python )
+target_link_libraries( dials_tof_scaling_ext PUBLIC CCTBX::cctbx Boost::python dials_shoebox_codecs )

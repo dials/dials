@@ -149,10 +149,12 @@ class Shoebox:
     def __init__(self):
         self.flatten = False
         self.partials = False
+        self.compress = False
 
     def update(self, other):
         self.flatten = other.flatten
         self.partials = other.partials
+        self.compress = other.compress
 
 
 class Debug:
@@ -454,6 +456,7 @@ class Task:
             frame0,
             frame1,
             self.params.debug.output,
+            self.params.shoebox.compress,
         )
 
         # Loop through the imageset, extract pixels and process reflections
@@ -482,6 +485,11 @@ class Task:
             del image
             del mask
         assert processor.finished(), "Data processor is not finished"
+        if processor.compressed():
+            logger.debug(
+                "Peak memory for compressed shoeboxes: %.1f MB",
+                processor.max_compressed_bytes() / 1e6,
+            )
 
         # Optionally save the shoeboxes
         if self.params.debug.output and self.params.debug.separate_files:
@@ -785,6 +793,7 @@ class _Manager:
                 self.reflections,
                 self.params.shoebox.flatten,
                 getattr(self.executor, "bytes_per_reflection", 0),
+                self.params.shoebox.compress,
             )
         )
 

@@ -143,13 +143,21 @@ namespace dials { namespace algorithms { namespace boost_python {
    * the last frame, and then all three are freed. The executor may also add
    * columns to the reflection table, costing bytes_per_reflection for every
    * reflection in the job.
+   *
+   * With compress (3D shoeboxes only), the slices before the last frame are
+   * held compressed instead, at an assumed size per pixel plus a partly filled
+   * chunk, and the arrays are only allocated on the last frame. On frames
+   * where unusually many shoeboxes finish, they are decoded and processed in
+   * batches of at most finishing_batch_bytes (or one shoebox, if larger), and
+   * their last slices are compressed too.
    */
   inline std::size_t peak_shoebox_memory(af::const_ref<int6> bbox,
                                          af::const_ref<std::size_t> indices,
                                          int frame0,
                                          int frame1,
                                          bool flatten,
-                                         std::size_t bytes_per_reflection) {
+                                         std::size_t bytes_per_reflection,
+                                         bool compress = false) {
     DIALS_ASSERT(frame1 > frame0);
     af::shared<std::size_t> memory_to_alloc(frame1 - frame0, 0);
     af::shared<std::size_t> memory_to_free(frame1 - frame0, 0);
@@ -159,6 +167,12 @@ namespace dials { namespace algorithms { namespace boost_python {
     // overhead take 48 bytes more than the handle itself
     const std::size_t shoebox_object_bytes =
       sizeof(Shoebox<>) + 3 * (sizeof(af::sharing_handle) + 48);
+    compress = compress && !flatten;
+    const double compressed_bytes_per_pixel =
+      CompressedSliceStore::assumed_bytes_per_pixel();
+    std::vector<std::size_t> finishing(frame1 - frame0, 0);
+    std::vector<std::size_t> largest(frame1 - frame0, 0);
+    std::vector<std::size_t> last_slices(frame1 - frame0, 0);
     std::size_t memory_fixed = 0;
     for (std::size_t j = 0; j < indices.size(); ++j) {
       DIALS_ASSERT(indices[j] < bbox.size());
@@ -175,16 +189,48 @@ namespace dials { namespace algorithms { namespace boost_python {
       if (!flatten) {
         size *= zsize;
       }
-      // Data and mask persist for the lifetime of the shoebox
-      std::size_t persistent = size * (sizeof(Shoebox<>::float_type) + sizeof(uint8_t));
-      // Background only exists while the shoebox is processed
-      std::size_t transient = size * sizeof(Shoebox<>::float_type);
+      std::size_t persistent = 0;
+      std::size_t transient = 0;
+      std::size_t array_bytes =
+        size * (sizeof(Shoebox<>::float_type) + sizeof(uint8_t));
+      if (compress) {
+        // Compressed slices persist until the last frame, when the data, mask
+        // and background are allocated and processed
+        if (zsize > 1) {
+          persistent = static_cast<std::size_t>(compressed_bytes_per_pixel * xsize
+                                                * ysize * (zsize - 1))
+                       + CompressedSliceStore::chunk_size;
+        }
+        transient = decoded_shoebox_bytes(size);
+        std::size_t k = b[5] - frame0 - 1;
+        finishing[k] += transient;
+        largest[k] = std::max(largest[k], transient);
+        last_slices[k] +=
+          static_cast<std::size_t>(compressed_bytes_per_pixel * xsize * ysize)
+          + (zsize == 1 ? CompressedSliceStore::chunk_size : 0);
+      } else {
+        // Data and mask persist for the lifetime of the shoebox
+        persistent = array_bytes;
+        // Background only exists while the shoebox is processed
+        transient = size * sizeof(Shoebox<>::float_type);
+      }
       memory_to_alloc[b[4] - frame0] += persistent;
       memory_to_free[b[5] - frame0 - 1] += persistent;
       memory_transient[b[5] - frame0 - 1] += transient;
       // The Shoebox object, and one frame lookup index per frame it spans
       memory_fixed +=
         shoebox_object_bytes + zsize * sizeof(std::size_t) + bytes_per_reflection;
+      if (compress) {
+        memory_fixed += CompressedSliceStore::bytes_per_reflection;
+      }
+    }
+    if (compress) {
+      std::size_t batch_bytes = finishing_batch_bytes(finishing);
+      for (std::size_t k = 0; k < finishing.size(); ++k) {
+        if (finishing[k] > batch_bytes) {
+          memory_transient[k] = std::max(batch_bytes, largest[k]) + last_slices[k];
+        }
+      }
     }
     std::size_t max_memory_usage = 0;
     std::size_t cur_memory_usage = 0;
@@ -206,7 +252,8 @@ namespace dials { namespace algorithms { namespace boost_python {
   af::shared<std::size_t> job_list_shoebox_memory(const JobList& self,
                                                   af::reflection_table data,
                                                   bool flatten,
-                                                  std::size_t bytes_per_reflection) {
+                                                  std::size_t bytes_per_reflection,
+                                                  bool compress) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -238,7 +285,7 @@ namespace dials { namespace algorithms { namespace boost_python {
       int frame1 = lookup.job(i).frames()[1];
       af::const_ref<std::size_t> indices = lookup.indices(i);
       result[i] = peak_shoebox_memory(
-        bbox, indices, frame0, frame1, flatten, bytes_per_reflection);
+        bbox, indices, frame0, frame1, flatten, bytes_per_reflection, compress);
     }
 
     // Return the result
@@ -250,7 +297,8 @@ namespace dials { namespace algorithms { namespace boost_python {
                                 int frame0,
                                 int frame1,
                                 bool flatten,
-                                std::size_t bytes_per_reflection) {
+                                std::size_t bytes_per_reflection,
+                                bool compress) {
     // Check the input
     DIALS_ASSERT(data.is_consistent());
     DIALS_ASSERT(data.contains("bbox"));
@@ -273,8 +321,13 @@ namespace dials { namespace algorithms { namespace boost_python {
     for (std::size_t j = 0; j < indices.size(); ++j) {
       indices[j] = j;
     }
-    return peak_shoebox_memory(
-      bbox, indices.const_ref(), frame0, frame1, flatten, bytes_per_reflection);
+    return peak_shoebox_memory(bbox,
+                               indices.const_ref(),
+                               frame0,
+                               frame1,
+                               flatten,
+                               bytes_per_reflection,
+                               compress);
   }
 
   /**
@@ -314,7 +367,10 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("split", &job_list_split)
       .def("shoebox_memory",
            &job_list_shoebox_memory,
-           (arg("data"), arg("flatten"), arg("bytes_per_reflection") = 0));
+           (arg("data"),
+            arg("flatten"),
+            arg("bytes_per_reflection") = 0,
+            arg("compress") = false));
 
     class_<ReflectionManager>("ReflectionManager", no_init)
       .def(init<const JobList&, af::reflection_table>((arg("jobs"), arg("data"))))
@@ -341,7 +397,13 @@ namespace dials { namespace algorithms { namespace boost_python {
       .enable_pickling();
 
     class_<ShoeboxProcessor>("ShoeboxProcessor", no_init)
-      .def(init<af::reflection_table, std::size_t, int, int, bool>())
+      .def(init<af::reflection_table, std::size_t, int, int, bool, bool>(
+        (arg("data"),
+         arg("npanels"),
+         arg("frame0"),
+         arg("frame1"),
+         arg("save"),
+         arg("compress") = false)))
       .def("next", &ShoeboxProcessor::next<double>)
       .def("next", &ShoeboxProcessor::next<int>)
       .def("next_data_only", &ShoeboxProcessor::next_data_only<double>)
@@ -353,7 +415,9 @@ namespace dials { namespace algorithms { namespace boost_python {
       .def("npanels", &ShoeboxProcessor::npanels)
       .def("finished", &ShoeboxProcessor::finished)
       .def("extract_time", &ShoeboxProcessor::extract_time)
-      .def("process_time", &ShoeboxProcessor::process_time);
+      .def("process_time", &ShoeboxProcessor::process_time)
+      .def("compressed", &ShoeboxProcessor::compressed)
+      .def("max_compressed_bytes", &ShoeboxProcessor::max_compressed_bytes);
 
     def("max_memory_needed",
         &max_memory_needed,
@@ -361,7 +425,8 @@ namespace dials { namespace algorithms { namespace boost_python {
          arg("frame0"),
          arg("frame1"),
          arg("flatten"),
-         arg("bytes_per_reflection") = 0));
+         arg("bytes_per_reflection") = 0,
+         arg("compress") = false));
   }
 
 }}}  // namespace dials::algorithms::boost_python

@@ -1,6 +1,7 @@
 alabaster
 biopython
 bzip2
+c-blosc2
 c-compiler
 colorlog
 conda
@@ -17,6 +18,7 @@ hdf5plugin
 jinja2
 libboost-devel
 libboost-python-devel
+lz4-c
 matplotlib-base>=3.0.2
 mrcfile
 msgpack-cxx

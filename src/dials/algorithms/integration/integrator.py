@@ -123,6 +123,13 @@ def generate_phil_scope():
 
       }
 
+      compress_shoeboxes = True
+        .type = bool
+        .help = "Keep the pixels of each 3D shoebox compressed in memory until"
+                "all of its frames have been read. This reduces the memory"
+                "needed per process, at a small cost in run time."
+        .expert_level = 2
+
       use_dynamic_mask = True
         .type = bool
         .help = "Use dynamic mask if available"
@@ -418,6 +425,8 @@ class Parameters:
         block.max_memory_usage = params.block.max_memory_usage
 
         # Set the modelling processor parameters
+        result.modelling.shoebox.compress = params.compress_shoeboxes
+        result.integration.shoebox.compress = params.compress_shoeboxes
         result.modelling.mp = mp
         result.modelling.lookup = lookup
         result.modelling.block = block
@@ -1405,6 +1414,7 @@ class Integrator:
                         frame1,
                         flatten,
                         getattr(executor, "bytes_per_reflection", 0),
+                        self.params.integration.shoebox.compress,
                     ),
                     max_needed,
                 )

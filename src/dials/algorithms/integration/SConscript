@@ -9,7 +9,7 @@ env.SharedLibrary(
 env.SharedLibrary(
     target="#/lib/dials_algorithms_integration_integrator_ext",
     source=["boost_python/integration_integrator_ext.cc"],
-    LIBS=env["LIBS"],
+    LIBS=env["LIBS"] + env["DIALS_CODEC_LIBS"],
 )
 
 env.SharedLibrary(
@@ -44,5 +44,5 @@ env.SharedLibrary(
 env.SharedLibrary(
 	target="#/lib/dials_algorithms_tof_integration_ext",
     source=["tof/boost_python/tof_integration_ext.cc"],
-    LIBS=env["LIBS"],
+    LIBS=env["LIBS"] + env["DIALS_CODEC_LIBS"],
 )

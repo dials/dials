@@ -50,6 +50,12 @@ if not env_etc.no_boost_python and hasattr(env_etc, "boost_adaptbx_include"):
         + ["scitbx_boost_python", boost_python, "boost_thread", "cctbx"],
     )
 
+    # Codecs used to compress shoebox pixels in memory during integration
+    env["DIALS_CODEC_LIBS"] = [
+        "blosc2",
+        "liblz4" if env_etc.compiler == "win32_cl" else "lz4",
+    ]
+
     # Fix the build environment so that it doesn't break on modern C++
     for path in list(env["CPPPATH"]):
         if "msvc9.0_include" in path:
