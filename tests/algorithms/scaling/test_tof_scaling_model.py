@@ -359,8 +359,11 @@ def test_scale_tof_panels(dials_data, tmp_path, monkeypatch, absorption):
     assert panels[0][0] == 1.0
     assert panels[0] == pytest.approx(PANEL_SCALES, rel=0.05)
     scales = [m.components["scale"].parameters[0] for m in models]
+    # Each run samples different crystal-frame directions, so a free absorption
+    # surface can take up a little of the run scales.
+    rel = 0.03 if absorption else 0.02
     for scale, k in zip(scales, run_scales):
-        assert scale / scales[0] == pytest.approx(k / run_scales[0], rel=0.02)
+        assert scale / scales[0] == pytest.approx(k / run_scales[0], rel=rel)
     plot = plot_panel_scales(models[0])["panel_scales"]
     assert plot["data"][0]["y"] == pytest.approx(panels[0], abs=1e-5)
     assert check_panel_scales(algorithm.experiments) == []

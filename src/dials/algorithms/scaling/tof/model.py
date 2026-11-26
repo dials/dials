@@ -72,7 +72,7 @@ lmax = 4
     .type = int(value_min=2)
     .help = "Number of spherical harmonics to include for absorption correction."
     .expert_level = 2
-surface_weight = 5e5
+surface_weight = 1e3
     .type = float(value_min=0.0)
     .help = "Restraint weight applied to spherical harmonic terms in the"
             "absorption correction."
