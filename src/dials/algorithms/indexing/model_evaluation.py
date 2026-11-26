@@ -354,7 +354,9 @@ class ModelEvaluation(Strategy):
             else:
                 rmsds = refiner.rmsds()
                 xy_rmsds = math.sqrt(rmsds[0] ** 2 + rmsds[1] ** 2)
-                px_size = experiments[0].detector[0].get_pixel_size()[0]
+                # use the smallest pixel size on the detector so the threshold
+                # is well defined when panels have different pixel sizes
+                px_size = min(min(p.get_pixel_size()) for p in experiments[0].detector)
                 if (
                     xy_rmsds / px_size
                     > self._params.indexing.basis_vector_combinations.xy_rmsd_threshold
