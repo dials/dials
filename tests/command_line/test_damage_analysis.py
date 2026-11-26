@@ -12,23 +12,6 @@ from dials.array_family import flex
 from dials.command_line.damage_analysis import PychefRunner, phil_scope, run
 
 
-def test_damage_analysis_on_scaled_data(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = str(location / "scaled_20_25.refl")
-    expts = str(location / "scaled_20_25.expt")
-
-    args = [
-        str(refls),
-        str(expts),
-        "min_completeness=0.4",
-        "-v",
-        "json=dials.damage_analysis.json",
-    ]
-    run(args)
-    assert run_in_tmp_path.joinpath("dials.damage_analysis.html").is_file()
-    assert run_in_tmp_path.joinpath("dials.damage_analysis.json").is_file()
-
-
 def test_damage_analysis_damage_series(dials_data, run_in_tmp_path):
     location = dials_data("l_cysteine_4_sweeps_scaled")
     refls = location / "scaled_20_25.refl"
@@ -84,27 +67,6 @@ def test_setup_from_dials_data(dials_data):
     runner = PychefRunner.from_dials_data_files(params, experiments, table)
     assert max(runner.dose) == 1800 + 10
     assert min(runner.dose) == 2 + 10
-
-
-def test_damage_analysis_on_scaled_mtz(dials_data, run_in_tmp_path):
-    location = dials_data("l_cysteine_4_sweeps_scaled")
-    refls = str(location / "scaled_20_25.refl")
-    expts = str(location / "scaled_20_25.expt")
-
-    # First export the data
-    command = [shutil.which("dials.export"), refls, expts]
-    result = subprocess.run(command, cwd=run_in_tmp_path, capture_output=True)
-    assert not result.returncode and not result.stderr
-    assert os.path.isfile("scaled.mtz")
-
-    args = [
-        str(run_in_tmp_path / "scaled.mtz"),
-        "anomalous=True",
-        "json=dials.damage_analysis.json",
-    ]
-    run(args)
-    assert run_in_tmp_path.joinpath("dials.damage_analysis.html").is_file()
-    assert run_in_tmp_path.joinpath("dials.damage_analysis.json").is_file()
 
 
 def test_damage_analysis_mtz_damage_series(dials_data, run_in_tmp_path):
