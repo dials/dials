@@ -232,9 +232,12 @@ MSGPACK_API_VERSION_NAMESPACE(MSGPACK_DEFAULT_API_NS) {
             buffer.write((const char*)&it->mask[0],
                          it->mask.size() * element_size_helper<uint8_t>::size());
 
-            // Write background array
-            buffer.write((const char*)&it->background[0],
-                         it->background.size() * element_size_helper<T>::size());
+            // Write background array. An unallocated background means zero,
+            // so write zeros to keep the format unchanged.
+            scitbx::af::versa<T, scitbx::af::c_grid<3> > background =
+              it->background_or_zeros();
+            buffer.write((const char*)&background[0],
+                         background.size() * element_size_helper<T>::size());
 
           } else {
             // Write zero to indicate data is not present
