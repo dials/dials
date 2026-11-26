@@ -1,0 +1,1 @@
+Tests: create test for ``dials.ssx_index`` with `refinement_protocol.mode=repredict_only` keyword argument in ``test_ssx_index.py``.
