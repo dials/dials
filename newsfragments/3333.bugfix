@@ -1,0 +1,1 @@
+Fix ``dials.search_beam_position`` projection methods for a sequence of stills. 

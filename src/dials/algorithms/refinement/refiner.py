@@ -850,6 +850,9 @@ class Refiner:
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
                 rmsd_multipliers.append(RAD2DEG)
+            elif units == "usec":  # time of flight
+                header.append(name + "\n(usec)")
+                rmsd_multipliers.append(1.0)
             else:  # leave unknown units alone
                 header.append(name + "\n(" + units + ")")
 
@@ -890,6 +893,9 @@ class Refiner:
             elif units == "rad":  # convert radians to degrees for reporting
                 header.append(name + "\n(deg)")
                 rmsd_multipliers.append(RAD2DEG)
+            elif units == "usec":  # time of flight
+                header.append(name + "\n(usec)")
+                rmsd_multipliers.append(1.0)
             else:  # leave unknown units alone
                 header.append(name + "\n(" + units + ")")
 
@@ -922,8 +928,8 @@ class Refiner:
                 # will convert other angles in radians to degrees (e.g. for
                 # RMSD_DeltaPsi and RMSD_2theta)
                 header.append(name + "\n(deg)")
-            elif name == "RMSD_wavelength" and units == "frame":
-                header.append(name + "\n(frame)")
+            elif name == "RMSD_ToF" and units == "usec":
+                header.append(name + "\n(usec)")
             else:  # skip other/unknown RMSDs
                 pass
 
@@ -962,7 +968,7 @@ class Refiner:
                     rmsds.append(rmsd * px_per_mm[1])
                 elif name == "RMSD_Phi" and units == "rad":
                     rmsds.append(rmsd * images_per_rad)
-                elif name == "RMSD_wavelength" and units == "frame":
+                elif name == "RMSD_ToF" and units == "usec":
                     rmsds.append(rmsd)
                 elif units == "rad":
                     rmsds.append(rmsd * RAD2DEG)
@@ -1014,8 +1020,8 @@ class Refiner:
                     name == "RMSD_DeltaPsi" and units == "rad"
                 ):  # convert radians to degrees for reporting of stills
                     header.append(name + "\n(deg)")
-                elif name == "RMSD_wavelength" and units == "frame":
-                    header.append(name + "\n(frame)")
+                elif name == "RMSD_ToF" and units == "usec":
+                    header.append(name + "\n(usec)")
                 else:  # skip RMSDs that cannot be expressed in image/scan space
                     pass
 
@@ -1041,7 +1047,7 @@ class Refiner:
                         rmsds.append(rmsd * images_per_rad)
                     elif name == "RMSD_DeltaPsi" and units == "rad":
                         rmsds.append(rmsd * RAD2DEG)
-                    elif name == "RMSD_wavelength" and units == "frame":
+                    elif name == "RMSD_ToF" and units == "usec":
                         rmsds.append(rmsd)
                 rows.append([str(ipanel), str(num)] + [f"{r:.5g}" for r in rmsds])
 

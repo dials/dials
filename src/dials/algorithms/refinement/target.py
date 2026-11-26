@@ -844,24 +844,130 @@ class LaueLeastSquaresResidualWithRmsdCutoff(Target):
         return False
 
 
-class TOFLeastSquaresResidualWithRmsdCutoff(LaueLeastSquaresResidualWithRmsdCutoff):
-    _grad_names = ["dX_dp", "dY_dp", "dwavelength_dp"]
-    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_wavelength", "RMSD_wavelength"]
-    rmsd_units = ["mm", "mm", "A", "frame"]
+class TOFLeastSquaresResidualWithRmsdCutoff(Target):
+    """A time-of-flight Laue implementation of the target class providing a
+    least squares residual in terms of detector X, Y, and time
+    of flight. Unlike the wavelength, the observed ToF is a direct measurement
+    that does not depend on the model geometry, so it can be kept fixed during
+    refinement."""
+
+    _grad_names = ["dX_dp", "dY_dp", "dtof_dp"]
+    rmsd_names = ["RMSD_X", "RMSD_Y", "RMSD_ToF"]
+    rmsd_units = ["mm", "mm", "usec"]
+
+    def __init__(
+        self,
+        experiments,
+        predictor,
+        reflection_manager,
+        prediction_parameterisation,
+        restraints_parameterisation,
+        frac_binsize_cutoff: float = 0.33333,
+        absolute_cutoffs: list | None = None,
+        gradient_calculation_blocksize=None,
+    ):
+        Target.__init__(
+            self,
+            experiments,
+            predictor,
+            reflection_manager,
+            prediction_parameterisation,
+            restraints_parameterisation,
+            gradient_calculation_blocksize,
+        )
+
+        """
+        Set up the RMSD achieved criterion.
+        Cutoffs based on pixel size/bin width taken from the first Experiment
+        """
+
+        if not absolute_cutoffs:
+            detector = experiments[0].detector
+            pixel_sizes = [p.get_pixel_size() for p in detector]
+            min_px_size_x = min(e[0] for e in pixel_sizes)
+            min_px_size_y = min(e[1] for e in pixel_sizes)
+
+            # ToF bins are generally not of constant width, so take the narrowest
+            tof = flex.double(experiments[0].scan.get_property("time_of_flight"))
+            min_tof_bin_width = flex.min(tof[1:] - tof[:-1])
+
+            self._binsize_cutoffs = [
+                min_px_size_x * frac_binsize_cutoff,
+                min_px_size_y * frac_binsize_cutoff,
+                min_tof_bin_width * frac_binsize_cutoff,
+            ]
+        else:
+            assert len(absolute_cutoffs) == 3
+            self._binsize_cutoffs = absolute_cutoffs
+
+    @staticmethod
+    def _extract_residuals_and_weights(matches):
+        # return residuals and weights as 1d flex.double vectors
+        residuals = flex.double.concatenate(matches["x_resid"], matches["y_resid"])
+        residuals = flex.double.concatenate(residuals, matches["tof_resid"])
+
+        weights, w_y, w_z = matches["xyzobs.mm.weights"].parts()
+        weights.extend(w_y)
+        weights.extend(w_z)
+
+        return residuals, weights
+
+    @staticmethod
+    def _extract_squared_residuals(matches):
+        return flex.double.concatenate(
+            matches["x_resid2"],
+            flex.double.concatenate(matches["y_resid2"], matches["tof_resid2"]),
+        )
 
     def _rmsds_core(self, reflections):
         """calculate unweighted RMSDs for the specified reflections"""
 
         resid_x = flex.sum(reflections["x_resid2"])
         resid_y = flex.sum(reflections["y_resid2"])
-        resid_wavelength = flex.sum(reflections["wavelength_resid2"])
-        resid_frame = flex.sum(reflections["frame_resid2"])
+        resid_tof = flex.sum(reflections["tof_resid2"])
         n = len(reflections)
 
         rmsds = (
             math.sqrt(resid_x / n),
             math.sqrt(resid_y / n),
-            math.sqrt(abs(resid_wavelength) / n),
-            math.sqrt(abs(resid_frame) / n),
+            math.sqrt(resid_tof / n),
         )
         return rmsds
+
+    def _predict_core(self, reflections, skip_derivatives=False):
+        """perform prediction for the specified reflections"""
+
+        if hasattr(self._prediction_parameterisation, "compose"):
+            self._prediction_parameterisation.compose(reflections, skip_derivatives)
+
+        # do prediction (updates reflection table in situ). The ToF predictor
+        # sets the predicted ToF (usec) as the third component of xyzcal.mm
+        self._reflection_predictor(reflections)
+
+        x_obs, y_obs, tof_obs = reflections["xyzobs.mm.value"].parts()
+        x_calc, y_calc, tof_calc = reflections["xyzcal.mm"].parts()
+
+        # calculate residuals and assign columns
+        reflections["x_resid"] = x_calc - x_obs
+        reflections["x_resid2"] = reflections["x_resid"] ** 2
+        reflections["y_resid"] = y_calc - y_obs
+        reflections["y_resid2"] = reflections["y_resid"] ** 2
+        reflections["tof_resid"] = tof_calc - tof_obs
+        reflections["tof_resid2"] = reflections["tof_resid"] ** 2
+
+        return reflections
+
+    def achieved(self):
+        """RMSD criterion for target achieved"""
+        r = self._rmsds if self._rmsds else self.rmsds()
+
+        # reset cached rmsds to avoid getting out of step
+        self._rmsds = None
+
+        if (
+            r[0] < self._binsize_cutoffs[0]
+            and r[1] < self._binsize_cutoffs[1]
+            and r[2] < self._binsize_cutoffs[2]
+        ):
+            return True
+        return False
