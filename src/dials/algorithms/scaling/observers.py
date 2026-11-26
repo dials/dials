@@ -300,7 +300,11 @@ def make_outlier_plots(reflection_tables, experiments):
     for j, (table, expt) in enumerate(zip(reflection_tables, experiments)):
         outliers = table.get_flags(table.flags.outlier_in_scaling)
         x, y, z = table["xyzobs.px.value"].select(outliers).parts()
-        if expt.scan and (expt.scan.get_oscillation()[1] != 0.0):
+        if (
+            expt.scan
+            and expt.scan.has_property("oscillation")
+            and expt.scan.get_oscillation()[1] != 0.0
+        ):
             zrange = [
                 i / expt.scan.get_oscillation()[1]
                 for i in expt.scan.get_oscillation_range()

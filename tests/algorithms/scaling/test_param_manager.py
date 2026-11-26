@@ -191,6 +191,34 @@ def test_shared_apm():
     assert list(multi_apm.apm_data[1]["apm_sel"]) == [2, 1]
 
 
+def test_shared_apm_two_shared_components():
+    """Each of several shared components has one set of parameters in common."""
+
+    def component(n):
+        c = mock_component()
+        c.free_parameters = flex.double(n, 1.0)
+        c.n_params = n
+        return c
+
+    models = [
+        {"scale": component(1), "a": component(2), "b": component(3)} for _ in range(3)
+    ]
+    multi_apm = shared_active_parameter_manager(
+        ScalingTarget(),
+        models,
+        [["scale", "a", "b"]] * 3,
+        active_parameter_manager,
+        shared=("a", "b"),
+    )
+    # three run scales, then "a" and "b" once each
+    assert len(multi_apm.x) == 3 + 2 + 3
+    multi_apm.set_param_vals(flex.double([1.1, 2.0, 3.0, 4.0, 5.0, 6.0, 1.2, 1.3]))
+    for model, scale in zip(models, (1.1, 1.2, 1.3)):
+        assert list(model["scale"].free_parameters) == [scale]
+        assert list(model["a"].free_parameters) == [2.0, 3.0]
+        assert list(model["b"].free_parameters) == [4.0, 5.0, 6.0]
+
+
 def test_ParameterManagerGenerator_concurrent():
     """Test the apm factory for concurrent refinement."""
     components_1 = {
