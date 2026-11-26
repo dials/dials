@@ -804,9 +804,9 @@ def test_stills_indexer_multi_lattice_bug_MosaicSauter2014(dials_data, tmp_path)
     for ii, crys in enumerate(refined_explist.crystals()):
         assert isinstance(crys, dxtbx.model.MosaicCrystalSauter2014)
         if ii == 0:
-            assert crys.get_domain_size_ang() == pytest.approx(2242.0, rel=0.1)
+            assert crys.get_domain_size_ang() == pytest.approx(3139.0, rel=0.1)
         if ii == 1:
-            assert crys.get_domain_size_ang() == pytest.approx(2689.0, rel=0.1)
+            assert crys.get_domain_size_ang() == pytest.approx(3765.0, rel=0.1)
 
 
 def test_pink_indexer(

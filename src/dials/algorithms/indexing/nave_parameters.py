@@ -162,19 +162,6 @@ class NaveParameters:
             self._ML_full_mosaicity_rad = M.x[1]
             self._ML_domain_size_ang = 2.0 / M.x[0]
 
-            # params.refinement.mosaic.model_expansion_factor
-            """The expansion factor should be initially set to 1, then expanded so that the # reflections matched becomes
-        as close as possible to # of observed reflections input, in the last integration call.  Determine this by
-        inspecting the output log file interactively.  Do not exceed the bare minimum threshold needed.
-        The intention is to find an optimal value, global for a given dataset."""
-            model_expansion_factor = 1.4
-            crystal.set_half_mosaicity_deg(
-                crystal.get_half_mosaicity_deg() * model_expansion_factor
-            )
-            crystal.set_domain_size_ang(
-                crystal.get_domain_size_ang() / model_expansion_factor
-            )
-
             if (
                 self.ewald_proximal_volume(iid)
                 > self.params.indexing.stills.ewald_proximal_volume_max
