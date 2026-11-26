@@ -349,37 +349,37 @@ def run(args=None):
             parser.print_help()
             sys.exit(0)
 
-        # Compute the starting positions for all imagesets
-        imageset_positions = {}
-        start_index = 0
-        for exp in new_experiments:
-            imageset_positions[exp.imageset] = start_index
-            start_index += exp.imageset.size()
-
         json_output = []
 
         # Map imagesets to detectors
         detector_to_imagesets = {d: [] for d in new_experiments.detectors()}
+        detector_to_beams = {d: [] for d in new_experiments.detectors()}
+
         for expt in new_experiments:
-            detector_to_imagesets[expt.detector].append(expt.imageset)
+            imagesets = detector_to_imagesets[expt.detector]
+            if expt.imageset not in imagesets:
+                imagesets.append(expt.imageset)
+            beams = detector_to_beams[expt.detector]
+            if expt.beam not in beams:
+                beams.append(expt.beam)
 
         for det_index, detector in enumerate(detector_to_imagesets.keys()):
+            imagesets = detector_to_imagesets[detector]
+            n_imagesets = len(imagesets)
+
             average_image = None
             image_counter = 0
             positions_x = []
             positions_y = []
 
-            n_imagesets = len(detector_to_imagesets[detector])
+            for jj, imageset in enumerate(imagesets):
+                n_images = len(imageset)
 
-            for jj, imageset in enumerate(detector_to_imagesets[detector]):
-                start_index = imageset_positions[imageset]
-                end_index = start_index + imageset.size()
-
-                for i, ii in enumerate(range(start_index, end_index)):
+                for i in range(n_images):
                     if params.projection.bar and not params.projection.per_image:
                         print_progress(
                             image_index=i,
-                            n_images=abs(end_index - start_index),
+                            n_images=n_images,
                             set_index=jj,
                             n_sets=n_imagesets,
                         )
@@ -398,12 +398,16 @@ def run(args=None):
                             image, params, image_counter, det_index
                         )
 
-                        msg = f"[Detector {int(det_index)}] "
-                        msg += f"image {int(image_counter):05d}: "
-                        msg += f"{x:.2f} {y:.2f}"
-                        logger.info(msg)
-
-                        if x is not None and y is not None:
+                        if (
+                            x is not None
+                            and y is not None
+                            and np.isfinite(x)
+                            and np.isfinite(y)
+                        ):
+                            msg = f"[Detector {int(det_index)}] "
+                            msg += f"image {int(image_counter):05d}: "
+                            msg += f"{x:.2f} {y:.2f}"
+                            logger.info(msg)
                             positions_x.append(x)
                             positions_y.append(y)
                             json_output.append(
@@ -416,7 +420,10 @@ def run(args=None):
                             )
 
                         else:
-                            log.warn("WARNING: beam position not found.")
+                            logger.warning(
+                                f"[Detector {det_index}] "
+                                f"image {image_counter:05d}: beam position not found"
+                            )
 
                     else:
                         if average_image is None:
@@ -426,7 +433,17 @@ def run(args=None):
 
                     image_counter += 1
 
+            if image_counter == 0:
+                logger.warning(f"[Detector {det_index}] no images found")
+                continue
+
             if params.projection.per_image:
+                if not positions_x:
+                    logger.warning(
+                        f"[Detector {det_index}] beam position not found on "
+                        "any image; detector model not updated"
+                    )
+                    continue
                 x = np.array(positions_x).mean()
                 y = np.array(positions_y).mean()
                 msg = 40 * "=" + "\n"
@@ -439,20 +456,34 @@ def run(args=None):
                 x, y = compute_beam_position(
                     average_image, params, detector_index=det_index
                 )
+
+                if x is None or y is None or not (np.isfinite(x) and np.isfinite(y)):
+                    logger.warning(
+                        f"[Detector {det_index}] beam position not found on "
+                        "the average image; detector model not updated"
+                    )
+                    continue
+
                 msg = f"[Detector {det_index}] "
                 msg += "Beam position from the average image: \n "
                 msg += f" {x:.2f} {y:.2f}"
                 logger.info(msg)
 
+            # Move the detector so that this detector's beam hits pixel (x, y)
+            beams = detector_to_beams[detector]
+            if len(beams) > 1:
+                logger.warning(
+                    f"[Detector {det_index}] is shared by experiments with "
+                    f"{len(beams)} different beam models; using the first one "
+                    "to update the detector geometry"
+                )
+
+            beam_direction = np.array(beams[0].get_s0())
+            beam_direction = beam_direction / np.linalg.norm(beam_direction)
+
             if x is not None and y is not None:
                 for panel in detector:
                     xy = panel.pixel_to_millimeter((float(x), float(y)))
-
-                    beam = experiments[0].beam
-                    beam_direction = np.array(beam.get_s0())
-
-                    norm = np.linalg.norm(beam_direction)
-                    beam_direction = beam_direction / norm
 
                     distance = panel.get_distance()
                     beam_vec = beam_direction * distance
