@@ -146,6 +146,8 @@ def run(args: list[str] = None, phil: phil.scope = phil_scope) -> None:
     reflections, experiments = reflections_and_experiments_from_files(
         params.input.reflections, params.input.experiments
     )
+    params.input.reflections = []
+    params.input.experiments = []
     log.config(verbosity=options.verbose, logfile=params.output.log)
     params.individual_log_verbosity = options.verbose
     logger.info(dials_version())
