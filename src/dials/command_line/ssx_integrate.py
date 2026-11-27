@@ -511,6 +511,8 @@ def run(args: list[str] = None, phil=working_phil) -> None:
     params, options = parser.parse_args(args=args, show_diff_phil=False)
     reflections = flatten_reflections(params.input.reflections)
     experiments = flatten_experiments(params.input.experiments)
+    params.input.reflections = []
+    params.input.experiments = []
 
     if len(reflections) == 0 or len(experiments) == 0:
         parser.print_help()

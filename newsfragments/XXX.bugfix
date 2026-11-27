@@ -1,0 +1,1 @@
+``dials.ssx_index``, ``dials.ssx_integrate``: Improve memory usage and runtime by avoiding copying input data when parallel processing.
